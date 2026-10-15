@@ -2,71 +2,74 @@
 
 <p><img src="assets/financial-legacy-banner.svg" alt="Financial Legacy — find what’s yours, make sure nothing gets left behind" width="100%"></p>
 
-**An AI-native financial asset discovery, legacy preparation and claims-assistance platform for individuals and families in India.**
+**Help people in India find financial assets, organize records for their families, and work through financial claims.**
 
-[Product one-pager](ONE_PAGER.md) · [Product requirements](PRD.md) · [Start building](BUILD_SPEC.md) · [Architecture](ARCHITECTURE.md)
+Financial information is often spread across banks, investment companies, employers and insurers. A person may forget an old investment. After a death, their family may not know where to look or which documents to submit.
 
-We’re building one capable assistant to help people understand what they own, prepare a clearer financial record for their families and navigate claims when the time comes. Financial Legacy connects the conversation, evidence and next steps in one persistent case.
+Financial Legacy brings that work into one place. A person explains what they need in a conversation. The app keeps the records, shows the evidence, and tracks the next step.
 
-> **Current stage:** product definition and engineering contracts. The next milestone is the synthetic-data reference implementation. No live financial discovery or institutional submission is operating in this repository.
+## What people can use it for
 
-## The problem we are solving
-
-Financial assets become scattered across banks, employers, investment platforms and insurers. Records disappear, details change and families can be left with two difficult jobs: finding the assets and working through each institution’s claims process.
-
-Financial Legacy is designed to make that work clearer, more organized and easier to carry forward.
-
-## Three needs. One coordinated experience.
-
-| Discover my assets | Prepare my legacy | Find or claim after a death |
+| I want to… | What the app helps me do | What I get |
 | --- | --- | --- |
-| Build a reviewed picture of known holdings, possible matches and discovery gaps. | Organize a dated financial record, preparation checklist and controlled sharing instructions. | Establish the right authority, assemble institution-specific claim packs and track requests and outcomes. |
+| Find my assets | Review documents and follow the available search routes | A list of supported holdings, possible matches and unanswered questions |
+| Prepare for my family | Organize financial records, missing information and contact instructions | A dated record and a preparation checklist |
+| Handle a relative’s assets after death | Establish permission to act, collect documents and prepare institution-specific claims | Separate claim records with requirements, follow-ups and outcomes |
 
-Use any path independently. If an asset is already known, start directly with claims.
+Someone who already knows the asset can start a claim immediately. Discovery is optional.
 
-**Talk → verify → discover and review → prepare or claim → track the outcome.**
+## What we are building first
 
-The AI case manager coordinates the workflow. Structured views let users inspect records and make decisions. The full vision includes multilingual voice, document intelligence, evidence reconciliation, controlled family sharing and permitted institutional follow-ups.
+We are at the specification stage. There is no running application in this repository yet.
 
-## Coverage, with clear boundaries
+The first build uses **made-up records only**. It covers bank accounts, fixed deposits and mutual funds across all three paths above. People sign in, upload the supplied sample documents, review the extracted information, and use it in an inventory, legacy record or claim.
 
-The initial build focuses on **bank accounts, fixed deposits and mutual funds**. The full vision also covers shares and demat holdings, unclaimed dividends and shares, life insurance, EPF, NPS, PPF and small savings, and bank lockers.
+The first assistant follows fixed rules. The document reader returns known results from the supplied samples. These let us test the workflow before connecting an external AI service. They do not prove real AI quality or real financial access.
 
-Each asset category, institution and source has its own requirements. User-supplied evidence and approved access routes form the foundation; the product does not assume unrestricted APIs or a single source that finds every asset.
+The app will not send claims, contact institutions, email family members or retrieve real accounts in this build. For claims, it prepares a reviewed pack and records a simulated manual receipt and outcome.
 
-## Trust by design
+The wider product includes other investments, insurance, retirement benefits and lockers; voice; family sharing; and permitted financial connections. Each needs its own release checks before it can be used. The [PRD](PRD.md) keeps that complete scope.
 
-- **Evidence before certainty.** Holdings are labeled self-declared, potential match, document-backed or institution-verified.
-- **Amounts with context.** Every value has a type, source and date. Historical values and possible matches do not become current confirmed totals.
-- **Authority before action.** Identity, relationship, consent, authority and legal entitlement remain distinct.
-- **Review before disclosure.** Users inspect the exact recipient, documents and purpose; material changes invalidate approval.
-- **Controlled family access.** Adding a trusted contact creates no access. Inactivity or an inferred death cannot release records.
-- **Honest outcomes.** The product assists with information and workflows; it does not guarantee complete discovery, decide inheritance, transfer funds or promise settlement.
+## How a record moves through the app
 
-## Explore the project
+**Upload a document → check that it is safe → propose its fields → review the source → save the accepted information → show the next action.**
 
-| You want to… | Start here |
+For example, a sample statement shows ₹42,000 dated 10 October. The user reviews the account reference, owner, amount and date. An assigned reviewer checks institution support before the holding can receive that evidence label. The app then shows a dated value, not a live bank balance.
+
+A possible name match stays separate. An old deposit principal does not become today’s balance. When no value qualifies, the app says no reviewed value is available; it does not assume ₹0.
+
+## Rules we must preserve
+
+- An asset match does not establish inheritance or permission to claim it.
+- Every important financial value must have a source, type and date.
+- People can access only cases and records they are allowed to see.
+- Before a handoff or download, the authorized user reviews the exact content, recipient and purpose.
+- Adding a trusted contact sends nothing and gives them no access.
+- Failed requests and repeated clicks must not create duplicate records or actions.
+- The app assists with records and procedures. Institutions decide their own verification and claim outcomes.
+
+## Read the documents in this order
+
+| Document | The question it answers |
 | --- | --- |
-| Understand the product in a few minutes | [Product one-pager](ONE_PAGER.md) |
-| Review the complete product scope | [PRD](PRD.md): 55 traceable requirements, journeys, nine asset groups and release gates |
-| Start implementation | [Coding handoff](BUILD_SPEC.md): fixed stack, screen behavior, defaults and B-01–B-11 work packages |
-| Understand how the system fits together | [Architecture overview](ARCHITECTURE.md) and [low-level design](LLD.md) |
-| Inspect exact engineering contracts | [OpenAPI](contracts/openapi.json), [PostgreSQL schema](contracts/schema.sql) and [synthetic fixtures](contracts/fixtures.json) |
-| Review what must be verified | [Acceptance plan](ACCEPTANCE.md) and [delivery roadmap](ROADMAP.md) |
-| Contribute without changing scope silently | [Contribution rules](CONTRIBUTING.md) and [coding-agent instructions](AGENTS.md) |
+| [One-pager](ONE_PAGER.md) | What is the product, and why does it matter? |
+| [PRD](PRD.md) | What must it do, what is outside scope, and how will we know it works? |
+| [Architecture](ARCHITECTURE.md) | What are the main parts, and how do they work together? |
+| [Coding handoff](BUILD_SPEC.md) | What should a developer build first, using which tools and rules? |
+| [Low-level design](LLD.md) | What records, permissions and state changes must the code use? |
+| [Acceptance checks](ACCEPTANCE.md) | Which normal and failure cases must pass? |
+| [Roadmap](ROADMAP.md) | What comes first, and what must wait? |
 
-## Ready for the first implementation
+The [API format](contracts/openapi.json), [database structure](contracts/schema.sql) and [sample data](contracts/fixtures.json) give the exact engineering rules. Their technical names are for implementation; the documents above explain what they mean.
 
-**Start with [the first working journey](BUILD_SPEC.md#17-coding-readiness-review-and-first-increment), then B-01.** The reference build has a fixed local stack, typed API and database contracts, deterministic fixtures and an ordered implementation plan. It covers the three user paths using synthetic records and labeled stand-ins. Coding and runtime testing are the next work; documentation checks are not passing application tests.
+## Start coding
 
-The development setup needs no cloud credentials. Real financial access, external AI, family release and automated institutional actions remain behind their permission, policy, quality and release gates.
+Start B-01 in [BUILD_SPEC.md](BUILD_SPEC.md). Build one complete journey first: sign in → upload the sample statement → review its fields → save the holding → sign out and resume.
 
-## One product contract
+Then extend the same foundation to legacy preparation, claims and the remaining first-release requirements. Do not build future features merely because their names appear in a contract.
 
-**The PRD is the scope authority.** Every feature, screen, API, tool, integration, job and material behavior change maps to a requirement. New product behavior enters the PRD before implementation. The one-pager explains the product; the technical documents and contracts define how to build and verify the accepted scope.
-
-Use synthetic fixtures and generated local secrets. Never commit real financial records, identity documents, family claim evidence or credentials.
+**The PRD controls scope.** Change it before adding product behavior. Never commit real financial records, identity documents, family evidence or credentials.
 
 ---
 
-**Specification v0.3 · India-focused · Documentation and implementation contracts**
+Specification v0.3 · India-focused · First build: synthetic records only
