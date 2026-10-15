@@ -1,6 +1,6 @@
 # Financial Legacy — Low-Level Design
 
-Version 0.2 · 15 October 2026 · Proposed implementation of [PRD v0.2](PRD.md)
+Version 0.3 · 15 October 2026 · Reference implementation baseline for [PRD v0.3](PRD.md)
 
 Engineering owner: TBD · Security/operations reviewers: TBD · Implementation status: documentation only
 
@@ -10,7 +10,7 @@ The PRD is the product contract. This document selects structures and flows for 
 
 Use a modular backend with asynchronous workers, one transactional domain database, private evidence storage and a controlled connector gateway. AI produces proposals and coordinates tasks; deterministic domain services authorize, validate and execute transitions. Financial truth comes from reviewed evidence, not conversation memory.
 
-### Proposed implementation choices
+### Implementation choices
 
 | Layer | Proposed choice | Purpose and constraint |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Use a modular backend with asynchronous workers, one transactional domain databa
 | AI/speech | Versioned provider adapters behind policy checks | Approved payloads only; voice/languages disabled until F gate |
 | Operations | Redacted metrics/logs/traces plus a restricted audit store | Separate operational telemetry from financial evidence |
 
-Stack/region/provider contracts, retention and capacities are proposals subject to D-05/D-07. Native mobile has no separate implementation scope until D-11; it must use the same domain authorization if accepted.
+The reference stack and local budgets are fixed in BUILD_SPEC.md. Only real-data hosting/provider contracts, legally sufficient retention and production capacities remain D-05/D-07 gates. Native mobile has no separate implementation scope until D-11; it must use the same domain authorization if accepted.
 
 ### Modules and requirement ownership
 
@@ -180,29 +180,11 @@ Every read/write enforces object-level scope. Errors return code, safe message, 
 
 Identity-provider session recovery/logout/contact changes are integrated through approved provider flows (FL-48), not financial-account credentials. Operations APIs expose only metadata by role; inspecting financial evidence still needs assigned-case scope. All short routes in a row use the same /v1/cases/{id} scope unless explicitly /operations.
 
-### Example contract: claim creation
+### Canonical wire and relational contracts
 
-    POST /v1/cases/{case_id}/claims
-    Idempotency-Key: opaque-client-generated-key
-    {"asset_id":"uuid","institution_id":"uuid","workflow_version_id":"uuid"}
+Use [contracts/openapi.json](contracts/openapi.json) for exact field names, strict request/response envelopes, headers, status codes, command routes and P/F metadata. Resource identity is data.id; responses include meta and mutable resource ETags. No alternate shorthand payload in this narrative overrides that contract.
 
-    201 {"claim_id":"uuid","status":"AUTHORITY_REVIEW","version":1,
-         "requirements":[],"next_actions":["complete_authority_review"]}
-
-The server selects actual requirements from a reviewed template. A nonexistent/disabled template returns a review task, not an invented institution procedure.
-
-### Example contract: exact-action approval
-
-    POST /v1/cases/{case_id}/approvals
-    {"action_type":"CLAIM_SUBMISSION","claim_id":"uuid","pack_version":3,
-     "recipient_id":"approved-institution-id","channel":"enabled-channel",
-     "purpose":"claim-assistance"}
-
-    201 {"approval_id":"uuid","status":"PENDING","payload_hash":"sha256",
-         "preview":{"documents":[],"declarations":[],"recipient":"..."},
-         "expires_at":"policy-defined-timestamp"}
-
-The client cannot supply a trusted hash or arbitrary destination. Decision requires an authenticated authorized actor and the approved sensitive-action verification. Separate action execution rechecks the exact server-generated manifest.
+Use [contracts/schema.sql](contracts/schema.sql) for exact PostgreSQL names/types/keys/checks and runtime isolation. Conceptual entities above map to those plural snake_case tables. [BUILD_SPEC.md](BUILD_SPEC.md) fixes adapters, context/roles, local identity, jobs and seed behavior. The first Alembic migration and generated client/model types must agree with these contracts.
 
 ## 6. Transaction, job and external-action contracts
 
@@ -364,3 +346,13 @@ Before a feature is built: select PRD IDs and P/F scope; resolve the blocking D 
 No real-data intake until D-02/D-05 controls are accepted. No live source until D-03 validation. No recipient sharing/release until D-04. No qualifying current totals without D-06 rules. No performance/SLA claim without measured D-07 acceptance. No new category/language/native client merely because an adapter or library exists.
 
 This design defines interfaces and invariants, not a claim of a working system. The [roadmap](ROADMAP.md) orders existing PRD scope and the PRD remains the authoritative decision register.
+
+## 14. Fixed reference implementation decisions
+
+[BUILD_SPEC.md](BUILD_SPEC.md) is the coding handoff for existing PRD scope. It selects Next.js 16/Node 24, Python 3.13/FastAPI/Pydantic 2, PostgreSQL 18/SQLAlchemy 2/Alembic, local Keycloak OIDC, encrypted local storage, DB-backed leased jobs/outbox, scanner adapter, fixture extraction and a deterministic case-manager stand-in. There is no Redis/Celery/cloud dependency to choose before coding. Lock compatible patches and container digests in B-01.
+
+[contracts/openapi.json](contracts/openapi.json) contains 100 operations and strict schemas; disabled F operations expose no side effects. The SQL contract includes 44 tables, case-scoped links/RLS and separate runtime/dispatcher/configuration/purge roles. New supporting records DiscoveryPlan, LegacySnapshot, AccessCapability and ConfigurationAudit implement existing FL-10/11/18/34/44/45 and do not expand product scope.
+
+Local identity is limited to seeded synthetic personas; all real-data deployment/policy gates stay enforced. Synthetic-only intake, explicit review, dated totals, known/unknown remainder and manual-acceptance uncertainty follow the fixed reference policy. No fake adapter response may be presented as real identity verification, financial discovery, model quality or claim submission.
+
+Structured contract validation is part of documentation review; SQL migration execution, generated schema/client conformance, auth/security and application tests are B-01–B-11 deliverables. No runtime test is claimed until code exists. Implementation begins at B-01 without another architecture-selection task.
