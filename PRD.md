@@ -5,7 +5,7 @@
 
 Version 0.3 · Consolidated product scope · Application not yet built
 
-This is the product contract. [README.md](README.md) is the short overview; [LLD.md](LLD.md) defines implementation and tests; [DESIGN.md](DESIGN.md) defines UI/UX under this scope. Every feature must map to a requirement below. Technical choices may refine an existing requirement; new behavior, data use, access or promises require a PRD change first.
+This is the product contract. [BRD.md](BRD.md) explains the business case and outcomes; it does not authorize additional product scope. [README.md](README.md) is the short overview; [LLD.md](LLD.md) defines implementation and tests; [DESIGN.md](DESIGN.md) defines UI/UX under this scope. Every feature must map to a requirement below. Technical choices may refine an existing requirement; new behavior, data use, access or promises require a PRD change first.
 
 ## 1. The problem
 
