@@ -2,7 +2,30 @@
 
 Version 0.3 · 15 October 2026 · Implementation baseline for the reference release
 
+
+## Plain-language guide
+
+Start with the user’s goal, then follow what they do, what the app saves, and what can stop the next step. Technical record names below are exact names for developers; they are not terms users need to learn.
+
+| Term used below | Meaning |
+| --- | --- |
+| Case / subject | One goal and the person whose finances it concerns |
+| Evidence / provenance | A source record, and where it came from |
+| Holding / observation | An account or investment, and one dated fact about it |
+| Identity / relationship / authority | Who someone is, how they are related, and what they are permitted to do; one does not prove the others |
+| Consent / approval | Permission to use specified data for a purpose / permission for one exact action after review |
+| Snapshot / manifest | A frozen copy of selected records / the exact list of documents, versions and details included in a pack |
+| Hold | A recorded restriction while a dispute or uncertainty is resolved |
+| P / F | First-pilot requirements / later capabilities that need separate approval and tests |
+| Reference build | The first implementation using generated sample records; it does not process real finances |
+| Gate | A permission, policy or test that must pass before a capability is enabled |
+| FL-xx / B-xx / D-xx | Requirement number / coding work package / decision needed before the affected live or later capability |
+
+Example: a statement is evidence. The account is a holding. Its ₹42,000 balance dated 10 October is an observation. Accepting the transcription does not establish inheritance. The inventory shows the value only if ownership support, review, date and duplicate checks meet the stated rules.
+
 ## 1. Start here
+
+Your first deliverable is a local app that starts safely, not a complete financial service. Then make one path work from beginning to end: sign in, upload the sample statement, inspect its proposed fields, accept the reviewed information, and return to it after signing out. The later sections specify the exact rules that this path must use.
 
 The next task is **B-01: create the repository scaffold and local environment**, not another design exercise. Implement the numbered work packages below against [PRD.md](PRD.md), [contracts/openapi.json](contracts/openapi.json), [contracts/schema.sql](contracts/schema.sql) and [contracts/fixtures.json](contracts/fixtures.json).
 
@@ -15,6 +38,11 @@ A responsive web application covering all three user paths and all P requirement
 **Reference mode is synthetic-only.** Banner every page/export/pack: “Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.” No real customer financial documents, credentials, phone calls, emails or institution requests. The app must refuse a real-data configuration until launch policies are supplied. This is the first implementation, not a relabeling of a simulation as a live pilot.
 
 ## 2. Fixed technology decisions
+
+The web app is what the user sees. The API is the backend interface the web app calls. PostgreSQL stores linked records. The worker runs slow tasks after the API has accepted them. Keycloak handles sign-in. ClamAV checks files for malware. Docker Compose starts these local components together. The table selects the tools; developers should not choose a different framework before starting.
+
+API request means information sent to the backend. Response means what it sends back. A schema defines the allowed fields and types. An adapter connects our code to one storage, scanner or AI service.
+
 
 | Concern | Selection | Implementation rule |
 | --- | --- | --- |
@@ -153,7 +181,7 @@ Lists use opaque cursor, limit 1–100 (default 25), stable ordering created_at 
 
 Rate-limit reference defaults: 120 ordinary requests/minute/user, 20 message requests/minute/user, 10 upload sessions/hour/user; service tests use isolated configurable budgets. Exact counters use server-side storage/DB; never trust client throttling. Production capacity remains measured D-07.
 
-## 9. Persistence and transactions
+## 9. Saving records safely
 
 schema.sql defines relational names, types, constraints, case-bound foreign keys and isolation policies. Alembic starts from this contract. API uses fl_app runtime role, not schema owner/superuser. Authentication/authorization precede transaction-local actor/case settings. RLS is case-isolation defense in depth, not an alternative to membership/authority/consent checks.
 
@@ -161,7 +189,7 @@ A request transaction commits domain change, audit event and outbox event togeth
 
 Use UTC internally and injected Clock in tests; user display uses their IANA time zone. Default reference fixture clock is 2026-10-15T00:00:00Z. Sort and canonicalize manifests using UTF-8, stable keys/order and Decimal strings; hash actual generated file bytes plus manifest/recipient/channel/purpose/policy versions. Do not trust a client-provided content hash as an approval.
 
-## 10. State and workflow implementation
+## 10. Rules for moving work to the next step
 
 LLD state guards remain authoritative. Implement explicit command handlers, not arbitrary PATCH status. A transition records actor, expected version, guard result, evidence and event. For the reference release:
 
@@ -175,7 +203,7 @@ LLD state guards remain authoritative. Implement explicit command handlers, not 
 
 Templates in fixtures are explicitly demonstration procedures, not official forms or legally complete requirements. An institution-specific live template needs D-10 validation before real use.
 
-## 11. AI and tool contract
+## 11. What the assistant receives, returns and may do
 
 Case manager input: actor/case/mode, reviewed fact references, allowed actions, open tasks, policy version and current user message. Output: response text, cited evidence IDs, uncertainty flags, proposed questions and typed proposed actions. Persist output/model or rule version before showing completion. No chain-of-thought logging.
 
@@ -183,7 +211,7 @@ RuleBasedCaseManager handles intent confirmation, missing prerequisites, next ta
 
 Adapters expose typed schemas for ConversationProvider, ExtractionProvider, Scanner, Storage and SourceConnector. Future external AI is not enabled without approved provider terms and credentials. Every model/tool response is untrusted and revalidated. Actor/case/role/recipient scope cannot be model-controlled. SourceConnector implementations other than the synthetic fixture source are disabled in reference mode.
 
-## 12. Synthetic fixtures and test oracles
+## 12. Sample records and their expected results
 
 fixtures.json is seed input, not customer data. Bootstrap renders its synthetic document descriptions into deterministic PDFs, computes SHA-256, registers the allowlisted document IDs/hashes and seeds personas/cases/requirements. Never pretend the JSON itself is a PDF or predeclare an uncomputed binary hash.
 
@@ -193,19 +221,22 @@ Fixtures also include missing/expired authority, revoked consent, unsafe/unreada
 
 ## 13. Ordered coding work packages
 
+Each B number is a piece of implementation, not a separate product. Build and test a small working journey as these pieces come together. “Depends on” identifies work that must already exist. “Completion evidence” describes what must actually work before the package is considered done. B-01 means starting the local components safely; it is not a finished user journey.
+
+
 | ID | Implement | Depends on | Completion evidence |
 | --- | --- | --- | --- |
-| B-01 | Monorepo, compatible locks, Compose, config validation, health/readiness, CI command skeleton | This baseline | Local services start; startup rejects unsafe mode; no cloud credentials needed |
-| B-02 | schema migrations, runtime role/RLS, repository transactions, clock, audit/outbox/idempotency | B-01 | Fresh DB migrates/seeds twice safely; isolation/version/retry tests |
-| B-03 | OIDC/BFF/session/CSRF, personas, membership/authority/consent/holds and case modes | B-02 | Cross-case/revoked/expired/unassigned cases denied; known-asset routing |
-| B-04 | Encrypted storage, synthetic PDF generator/hash registry, scan/extract/review worker | B-02/03 | Upload stages, unsafe/unknown hash rejection, cited fields/corrections and cancellation |
-| B-05 | Inventory, observations, reconciliation, discovery plan and deterministic summaries | B-04 | INR 44,500 oracle and exclusions; no-result/partial/conflict/merge-reversal cases |
-| B-06 | Text case manager, persisted action cards/tasks and recoverable UI | B-03/05 | Resume/correct/failure/help paths without duplicate actions or invented facts |
-| B-07 | Legacy checklist/contact intent/snapshots/approved export | B-05/06 | Dated scope/gaps; no contact disclosure; download expiry/audit |
-| B-08 | Versioned claims, packs, exact approval, manual receipts/requests/partial outcomes/reopen | B-03/04/05 | Known-asset claim, invalidation, unknown outcome and remainder tests |
-| B-09 | Operator queues, support/complaints, due/preference reminders and workflow suspension | B-06/08 | Assignment and hold restrictions; idempotent in-app reminders |
-| B-10 | Retention purge, tombstones, recovery, accessible mobile/desktop states and redacted metrics | B-01–09 | Deletion/restore/outage, accessibility and metric privacy evidence |
-| B-11 | Full reference acceptance run and release handoff | B-01–10 | All P requirement/scenario results recorded; F disabled; no critical unresolved defect |
+| B-01 | Create the web/API/worker folders and local Docker setup; lock dependency versions; reject unsafe configuration; make health checks and basic CI run | This baseline | Local services start; startup rejects unsafe mode; no cloud credentials needed |
+| B-02 | Create the database from the SQL contract; connect through restricted roles; save changes and pending jobs together; implement version checks, audit and safe request retries | B-01 | Fresh DB migrates/seeds twice safely; isolation/version/retry tests |
+| B-03 | Connect sign-in; keep sessions server-side; create isolated cases; check case membership, verification, consent and holds on every action | B-02 | Cross-case/revoked/expired/unassigned cases denied; known-asset routing |
+| B-04 | Generate the sample PDFs; register their hashes; upload, encrypt and scan them; show cited field proposals and record accept/correct/reject reviews | B-02/03 | Upload stages, unsafe/unknown hash rejection, cited fields/corrections and cancellation |
+| B-05 | Save reviewed holdings and dated values; show discovery steps; review duplicates/conflicts; calculate totals and explain exclusions | B-04 | INR 44,500 oracle and exclusions; no-result/partial/conflict/merge-reversal cases |
+| B-06 | Build the text assistant and saved conversations; show proposed action cards and owned tasks; recover from failure without duplicate actions | B-03/05 | Resume/correct/failure/help paths without duplicate actions or invented facts |
+| B-07 | Build the legacy checklist, inert trusted-contact instructions, dated snapshots, preview and approved export | B-05/06 | Dated scope/gaps; no contact disclosure; download expiry/audit |
+| B-08 | Build claims from known holdings; review requirements; generate packs; approve exact handoffs; record manual receipts, requests and partial/unknown outcomes | B-03/04/05 | Known-asset claim, invalidation, unknown outcome and remainder tests |
+| B-09 | Build assigned operator queues, help/complaints, due dates, in-app reminders and the ability to stop an unsafe workflow | B-06/08 | Assignment and hold restrictions; idempotent in-app reminders |
+| B-10 | Remove eligible records through the deletion process; preserve deletion markers; test recovery; finish accessible desktop/mobile behavior and redacted measurements | B-01–09 | Deletion/restore/outage, accessibility and metric privacy evidence |
+| B-11 | Run every first-release journey and required failure case; record results and defects; confirm future capabilities are disabled; prepare a reproducible handoff | B-01–10 | All P requirement/scenario results recorded; F disabled; no critical unresolved defect |
 
 Each package maps to the requirement IDs in PRD/LLD/ACCEPTANCE; it may refine internal code without inventing scope. Start B-01 now. Source-provider contracts, legally sufficient real-data policies, commercial terms and F enablement are not prerequisites to coding this reference release.
 
@@ -215,7 +246,7 @@ A new developer can clone, bootstrap, run, exercise all three synthetic journeys
 
 Live launch remains a separate permission/policy/operational acceptance decision. Documentation is coding-ready when these contracts are internally consistent; it is not proof that code, security testing, legal approval or integrations already exist.
 
-## 15. Contract interpretation details
+## 15. Exact implementation rules
 
 - Header If-Match is a quoted positive integer ETag, for example \"3\". Server returns ETag with mutable resources; command routes require it where marked in OpenAPI.
 - Upload/download URLs remain same-origin authenticated endpoints. Upload-Token/Access-Token capabilities are separate short-lived headers, not secrets in query strings; persist only token hashes. Capabilities expire after 5 minutes and bind actor/case/object/version/purpose.
@@ -238,7 +269,7 @@ Manual submission supports SUBMITTED with a receipt/reference or SUBMISSION_UNKN
 
 Mode correction uses PATCH /cases/{id}: self_discovery↔legacy is allowed for the same living owner, preserves evidence and rechecks purpose/consent; any material change invalidates dependent approvals. A deceased-claim mode is not converted into another person’s case. Subject correction is limited to a confirmed same-person display/relationship correction with reason and re-review; a different subject requires a new isolated case. Legacy fixture case 101 has its own cloned synthetic documents/evidence/holdings with new IDs; there are no cross-case evidence links.
 
-## 16. Command guards and final implementation details
+## 16. Checks required before commands run
 
 | Command/event | Resulting behavior |
 | --- | --- |
