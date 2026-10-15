@@ -2,35 +2,43 @@
 
 <p><img src="assets/financial-legacy-banner.svg" alt="Financial Legacy — find what’s yours, make sure nothing gets left behind" width="100%"></p>
 
-**An AI-native financial asset discovery, legacy planning and recovery platform for India.**
-
+**An AI-native financial asset discovery, legacy planning and recovery platform.**  
 **Find what’s yours. Make sure nothing gets left behind.**
 
-Financial assets become scattered across institutions. People forget investments; families may not know what exists or how to claim it. Financial Legacy brings the conversation, evidence and next steps into one case.
+## The problem
 
-| User need | What we help with |
+People accumulate bank accounts, fixed deposits, mutual funds, shares, insurance policies and retirement benefits across institutions. Over time, records get lost, investments are forgotten and nomination information becomes incomplete. After a death, families face two different problems: finding the assets and navigating each institution’s claim process.
+
+## What we are building
+
+One assistant that helps individuals and families discover financial assets, organize them and pursue supported recovery workflows. It remembers the case, gathers relevant information, coordinates permitted tools, and tracks work through a documented outcome.
+
+| User need | What the platform helps deliver |
 | --- | --- |
-| Find my assets | Reviewed holdings, separate possible matches and remaining discovery gaps |
-| Prepare my legacy | A dated financial record, missing-information checklist and controlled sharing instructions |
-| Find or claim a relative’s assets | Permission review, institution-specific requirements, claim packs, follow-ups and documented outcomes |
+| **Discover my assets** | A reviewed inventory, separate possible matches and remaining discovery gaps |
+| **Prepare my legacy** | A dated financial record, missing-information checklist and controlled instructions for family sharing |
+| **Find or claim after a death** | Authority-reviewed discovery and institution-specific claims with documents, follow-ups and outcomes |
 
-The paths work independently. A family that knows the asset can skip discovery and start a claim.
+These paths work independently. A family that knows the asset can skip discovery and start claims assistance.
 
-**Talk → verify permission → collect/review evidence → organize a legacy or prepare a claim → track the outcome.**
+## How it works
 
-The assistant manages work through bounded tools; backend code enforces permissions and approvals. A match does not establish inheritance. Every value needs a source, type and date. Adding a trusted contact gives no access. Institutions retain their own verification and settlement decisions; complete discovery or recovery is not guaranteed.
+**Talk to AI → verify identity and authority → discover through permitted sources → consolidate and review → prepare a legacy or claim → track completion.**
 
-## The two core documents
+The AI manages work, not just answers. Its capabilities cover conversation, discovery planning, document reading, matching and duplicate review, legacy preparation, claims and follow-ups. Structured screens let people inspect evidence and approve important actions. Multilingual voice is part of the full vision, especially for older adults and people who prefer Indian languages; text remains available.
 
-- **[PRD.md](PRD.md):** the complete product scope, user journeys, all nine asset groups, requirements and release gates.
-- **[LLD.md](LLD.md):** the six architecture layers, exact implementation rules, first journey, coding order and tests. Expand technical references when needed.
+## Coverage
 
-The [API](contracts/openapi.json), [database](contracts/schema.sql) and [sample data](contracts/fixtures.json) are supporting engineering contracts. AGENTS.md is short coding-tool guidance, not extra team reading.
+The full vision includes bank accounts/FDs, mutual funds, shares/demat, unclaimed dividends and shares, life insurance, EPF benefits, NPS, PPF/small savings, and bank lockers. Each category has different discovery and recovery procedures. UDGAM, MITRA, DigiLocker, Account Aggregator and IEPF are potential parts of permitted workflows—not proof of unrestricted access or a universal financial database.
 
-## What happens next
+## Trust and control
 
-Start B-01 in the LLD and build the first owner → sample statement → review → saved inventory journey. The initial reference build uses **generated records only**, covering bank accounts, fixed deposits and mutual funds across all three paths. Its assistant/extraction are labeled stand-ins; no running application, real retrieval or institutional submission exists yet.
+Every holding has an evidence status; every important amount has a type, source and date. A possible match does not establish ownership or inheritance. Identity, relationship, authority, consent and legal entitlement stay separate.
 
-The full vision includes the other asset groups, multilingual voice, verified family sharing/release and permitted retrieval/submission/follow-up. They remain explicit PRD scope with separate access, policy and quality gates.
+Users review the exact content, recipient and purpose before a consequential handoff or disclosure. Adding a trusted contact grants no access. Inactivity cannot release records. Institutions retain verification and settlement decisions; complete discovery and successful recovery are not guaranteed.
 
-The PRD controls scope. Never commit real financial/identity/family records or credentials.
+## Where we start
+
+First, build and test the three paths with **generated sample records**, starting with bank/FD and mutual-fund workflows. The assistant and extractor initially use labeled stand-ins. Real data, external AI, live connectors, voice, family release and automated institutional actions need their specified permissions, policies and quality gates. No application or live integration is operating yet.
+
+**[PRD.md](PRD.md)** defines the complete product and evidence behind its boundaries. **[LLD.md](LLD.md)** defines the architecture, implementation and tests. This README is the one-pager; these are the only three documentation pages. The [contracts](contracts/openapi.json) are supporting engineering files.
