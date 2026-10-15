@@ -4,6 +4,11 @@ Version 0.3 · 15 October 2026 · Proposed sequence; owners/dates not yet assign
 
 ## 1. Authority and release labels
 
+There are two different sequences here. **Coding order** is B-01 through B-11 in BUILD_SPEC.md and uses made-up records. **Live release checks** are M0 through M6 below and cover permission, policy, quality and operations before real use. M0 does not stop developers starting the sample build.
+
+“P” means a requirement for the first pilot. “F” means a later capability that stays off until its own checks pass. “D” numbers link to decisions in the PRD. A missing live-source permission cannot be replaced by a working sample connector.
+
+
 [PRD v0.3](PRD.md) defines all product scope and the authoritative D-01–D-11 decision register. [LLD v0.3](LLD.md) maps the implementation to its 55 requirements. This roadmap sequences that scope; it cannot add features, sources, data uses or service promises.
 
 P = proposed first pilot. F = full-product requirement, gated until its prerequisites pass. Every milestone below must name its PRD requirement IDs and evidence. Changes in release timing update the PRD release baseline before implementation; a roadmap note alone cannot authorize scope.
