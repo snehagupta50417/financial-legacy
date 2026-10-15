@@ -29,15 +29,15 @@ Stack/region/provider contracts, retention and capacities are proposals subject 
 
 | Module | Owns | PRD IDs |
 | --- | --- | --- |
-| Case/conversation | Intent, subject, case switching, saved facts, messages and task context | FL-01/02/22/38/39/40 |
-| Identity/access | Verification, authority, membership, sessions, consent and holds | FL-03/04/23/24/45/47/48 |
-| Documents | Upload, quarantine, scan, field proposals, evidence and corrections | FL-05/06/25/26/46 |
-| Discovery/assets | Source plans/attempts, inventory, matching, observations, aggregates and categories | FL-07/08/09/10/27/28/29/30 |
-| Legacy/sharing | Checklists, contacts, snapshots, exports and gated recipient release | FL-11/31/32/33/34 |
-| Claims | Requirements, packs, approval, manual/direct submissions, requests and outcomes | FL-12/13/14/15/16/17/35/36/37 |
-| Operations/governance | Assigned queues, tasks, reminders, templates, source capabilities and escalation | FL-17/21/42/43/44/49 |
-| Voice | Recording state, transcripts, correction, language and text fallback | FL-20/41 |
-| Platform/lifecycle | Audit, deletion/retention, observability, resilience and release traceability | FL-18/19/45/46/50/51/52/53/54/55 |
+| Case/conversation | Intent, subject, case switching, saved facts, messages and task context | FL-01, FL-02, FL-22, FL-38, FL-39, FL-40 |
+| Identity/access | Verification, authority, membership, sessions, consent and holds | FL-03, FL-04, FL-23, FL-24, FL-45, FL-47, FL-48 |
+| Documents | Upload, quarantine, scan, field proposals, evidence and corrections | FL-05, FL-06, FL-25, FL-26, FL-46 |
+| Discovery/assets | Source plans/attempts, inventory, matching, observations, aggregates and categories | FL-07, FL-08, FL-09, FL-10, FL-27, FL-28, FL-29, FL-30 |
+| Legacy/sharing | Checklists, contacts, snapshots, exports and gated recipient release | FL-11, FL-31, FL-32, FL-33, FL-34 |
+| Claims | Requirements, packs, approval, manual/direct submissions, requests and outcomes | FL-12, FL-13, FL-14, FL-15, FL-16, FL-17, FL-35, FL-36, FL-37 |
+| Operations/governance | Assigned queues, tasks, reminders, templates, source capabilities and escalation | FL-17, FL-21, FL-42, FL-43, FL-44, FL-49 |
+| Voice | Recording state, transcripts, correction, language and text fallback | FL-20, FL-41 |
+| Platform/lifecycle | Audit, deletion/retention, observability, resilience and release traceability | FL-18, FL-19, FL-45, FL-46, FL-50, FL-51, FL-52, FL-53, FL-54, FL-55 |
 
 ## 2. Access model and trust boundaries
 
@@ -149,34 +149,34 @@ Every read/write enforces object-level scope. Errors return code, safe message, 
 
 | API route | Request → result | Requirement IDs |
 | --- | --- | --- |
-| POST /cases; GET /cases; GET/PATCH /cases/{id} | confirmed mode/subject/version → case, next tasks, permitted actions | FL-01/02/22 |
-| POST /cases/{id}/messages; GET /cases/{id}/messages | text, evidence IDs, client_message_id → persisted message and response/job ID | FL-02/38/39/40 |
-| POST /cases/{id}/verification-requests; GET status | check type/scope → provider/human review reference; no client “verified” flag | FL-03/48 |
+| POST /cases; GET /cases; GET/PATCH /cases/{id} | confirmed mode/subject/version → case, next tasks, permitted actions | FL-01, FL-02, FL-22 |
+| POST /cases/{id}/messages; GET /cases/{id}/messages | text, evidence IDs, client_message_id → persisted message and response/job ID | FL-02, FL-38, FL-39, FL-40 |
+| POST /cases/{id}/verification-requests; GET status | check type/scope → provider/human review reference; no client “verified” flag | FL-03, FL-48 |
 | POST /cases/{id}/consents; POST /consents/{cid}/revoke | purpose/data/recipient/expiry/policy version → receipt or immediate revocation | FL-04 |
-| GET/PATCH /cases/{id}/members; POST invites · F | verified scope/assignment/version → membership/invite state; no automatic access | FL-23/24/43 |
-| POST /cases/{id}/documents/upload-sessions; POST /documents/{did}/complete | name/type/size/checksum → short-lived single-object upload capability → quarantine job | FL-05/25 |
-| GET /cases/{id}/documents/{did}/access | purpose → audited short-lived authorized view/download capability | FL-18/23/45 |
-| GET /cases/{id}/field-proposals; POST /field-proposals/{pid}/review | accept/correct/reject, version, reason → reviewed field/evidence links | FL-06/25/26 |
-| POST/GET /cases/{id}/discovery-plans; POST /discovery-attempts | selected sources/manual/connector scope → coverage, prerequisites, attempts/tasks | FL-10/27 |
-| GET/POST /cases/{id}/assets; GET/PATCH /assets/{aid} | declaration/reviewed fields/version → masked holding and dated observations | FL-07/09/28/30 |
-| POST /cases/{id}/reconciliations; POST /reconciliations/{rid}/reverse | asset IDs/evidence/reason/versions → reviewed merge/reversal, retained aliases | FL-08/26 |
-| GET /cases/{id}/inventory-summary | as-of policy/category/currency → eligible totals, excluded amounts and policy/date | FL-09/29 |
-| GET/PATCH /cases/{id}/legacy; POST/PATCH /trusted-contacts | reviewed snapshot/checklist/contact intent/version → plan; no access or notification side effect | FL-11/31 |
-| POST /cases/{id}/exports; GET /exports/{eid} | object scope/snapshot/purpose → export job, expiry and authorized retrieval | FL-34/45 |
-| POST /cases/{id}/share-grants; POST revoke · F | verified recipient/scope/approval → time-bound grant | FL-24/32 |
-| POST /cases/{id}/release-requests; POST /release-requests/{rid}/review · F | evidence/recipient/review version → gated release workflow | FL-33/47 |
-| POST/GET /cases/{id}/claims; GET /claims/{cid} | known asset/institution/workflow version → claim/requirements; discovery optional | FL-01/12/15 |
-| POST /cases/{id}/claims/{cid}/packs | reviewed requirements/version → immutable manifest/pack hash | FL-13/26 |
-| POST /cases/{id}/approvals; POST /approvals/{aid}/decision | exact action/pack/recipient/purpose → frozen preview → approve/reject decision | FL-14/32/33 |
-| POST /cases/{id}/claims/{cid}/manual-submissions | submitted_at/reference/receipt evidence → reviewable manual record | FL-15/36 |
-| POST /cases/{id}/claims/{cid}/submit · F | approval/pack/version/idempotency key → external action/job ID only for enabled connector | FL-35/36 |
-| POST /cases/{id}/claims/{cid}/requests; POST outcomes; POST reopen | requirement/outcome/evidence/reason/version → reviewed transition and tasks | FL-15/16/37 |
-| GET/PATCH /cases/{id}/tasks; PATCH notification-preferences | assignee/due/state/preferences → owned tasks and reminders | FL-42/43 |
-| POST /cases/{id}/support-cases; POST /holds/{hid}/review | help/complaint/dispute evidence → restricted assignment/hold state | FL-17/47/49 |
+| GET/PATCH /cases/{id}/members; POST invites · F | verified scope/assignment/version → membership/invite state; no automatic access | FL-23, FL-24, FL-43 |
+| POST /cases/{id}/documents/upload-sessions; POST /documents/{did}/complete | name/type/size/checksum → short-lived single-object upload capability → quarantine job | FL-05, FL-25 |
+| GET /cases/{id}/documents/{did}/access | purpose → audited short-lived authorized view/download capability | FL-18, FL-23, FL-45 |
+| GET /cases/{id}/field-proposals; POST /field-proposals/{pid}/review | accept/correct/reject, version, reason → reviewed field/evidence links | FL-06, FL-25, FL-26 |
+| POST/GET /cases/{id}/discovery-plans; POST /discovery-attempts | selected sources/manual/connector scope → coverage, prerequisites, attempts/tasks | FL-10, FL-27 |
+| GET/POST /cases/{id}/assets; GET/PATCH /assets/{aid} | declaration/reviewed fields/version → masked holding and dated observations | FL-07, FL-09, FL-28, FL-30 |
+| POST /cases/{id}/reconciliations; POST /reconciliations/{rid}/reverse | asset IDs/evidence/reason/versions → reviewed merge/reversal, retained aliases | FL-08, FL-26 |
+| GET /cases/{id}/inventory-summary | as-of policy/category/currency → eligible totals, excluded amounts and policy/date | FL-09, FL-29 |
+| GET/PATCH /cases/{id}/legacy; POST/PATCH /trusted-contacts | reviewed snapshot/checklist/contact intent/version → plan; no access or notification side effect | FL-11, FL-31 |
+| POST /cases/{id}/exports; GET /exports/{eid} | object scope/snapshot/purpose → export job, expiry and authorized retrieval | FL-34, FL-45 |
+| POST /cases/{id}/share-grants; POST revoke · F | verified recipient/scope/approval → time-bound grant | FL-24, FL-32 |
+| POST /cases/{id}/release-requests; POST /release-requests/{rid}/review · F | evidence/recipient/review version → gated release workflow | FL-33, FL-47 |
+| POST/GET /cases/{id}/claims; GET /claims/{cid} | known asset/institution/workflow version → claim/requirements; discovery optional | FL-01, FL-12, FL-15 |
+| POST /cases/{id}/claims/{cid}/packs | reviewed requirements/version → immutable manifest/pack hash | FL-13, FL-26 |
+| POST /cases/{id}/approvals; POST /approvals/{aid}/decision | exact action/pack/recipient/purpose → frozen preview → approve/reject decision | FL-14, FL-32, FL-33 |
+| POST /cases/{id}/claims/{cid}/manual-submissions | submitted_at/reference/receipt evidence → reviewable manual record | FL-15, FL-36 |
+| POST /cases/{id}/claims/{cid}/submit · F | approval/pack/version/idempotency key → external action/job ID only for enabled connector | FL-35, FL-36 |
+| POST /cases/{id}/claims/{cid}/requests; POST outcomes; POST reopen | requirement/outcome/evidence/reason/version → reviewed transition and tasks | FL-15, FL-16, FL-37 |
+| GET/PATCH /cases/{id}/tasks; PATCH notification-preferences | assignee/due/state/preferences → owned tasks and reminders | FL-42, FL-43 |
+| POST /cases/{id}/support-cases; POST /holds/{hid}/review | help/complaint/dispute evidence → restricted assignment/hold state | FL-17, FL-47, FL-49 |
 | POST /cases/{id}/retention-requests; GET status | export/delete scope → purge/hold/processor/backup tracking | FL-19 |
-| GET /cases/{id}/activity | allowed scope/cursor → redacted access/change timeline | FL-18/23 |
-| GET/PATCH /operations/workflow-versions; source-capabilities; model-versions | reviewer-controlled validated version/config → enable/suspend/audit | FL-43/44/46 |
-| POST /cases/{id}/voice-sessions; POST stop; POST transcript-review · F | language/recording policy/consent → session/transcript correction/text fallback | FL-20/41 |
+| GET /cases/{id}/activity | allowed scope/cursor → redacted access/change timeline | FL-18, FL-23 |
+| GET/PATCH /operations/workflow-versions; source-capabilities; model-versions | reviewer-controlled validated version/config → enable/suspend/audit | FL-43, FL-44, FL-46 |
+| POST /cases/{id}/voice-sessions; POST stop; POST transcript-review · F | language/recording policy/consent → session/transcript correction/text fallback | FL-20, FL-41 |
 
 Identity-provider session recovery/logout/contact changes are integrated through approved provider flows (FL-48), not financial-account credentials. Operations APIs expose only metadata by role; inspecting financial evidence still needs assigned-case scope. All short routes in a row use the same /v1/cases/{id} scope unless explicitly /operations.
 
@@ -226,7 +226,7 @@ Use references, not raw statements or identifiers, in queues/logs. Workers fetch
 
 ## 7. Critical end-to-end flows
 
-### 7.1 Document → reviewed holding (FL-05/06/07/25/26/28)
+### 7.1 Document → reviewed holding (FL-05, FL-06, FL-07, FL-25, FL-26, FL-28)
 
 1. Authorize upload, create a single-object upload session with expiry and declared media/size/checksum.
 2. Server verifies uploaded content, file signature/type, limits and checksum. Keep in quarantine until malware/content validation passes.
@@ -238,7 +238,7 @@ Use references, not raw statements or identifiers, in queues/logs. Workers fetch
 
 Proposed limits are PDF/JPEG/PNG, 20 MB and 100 PDF pages per file, configurable after FL-52 workload/security approval. Limits are operational configuration, not additional asset/format scope. Processing errors preserve a clean original and provide bounded retry or human review.
 
-### 7.2 Discovery and reconciliation (FL-08/10/27/29/30)
+### 7.2 Discovery and reconciliation (FL-08, FL-10, FL-27, FL-29, FL-30)
 
 1. Plan sources from case mode, supported categories, available evidence and permitted subject type; show what is manual, unavailable or outside coverage.
 2. Each attempt snapshots source capability, scope and current authority/consent. Record RESULTS, NO_RESULTS, PARTIAL, BLOCKED or FAILED with coverage, not just a boolean success.
@@ -261,7 +261,7 @@ Amount aggregation is deterministic. Require reviewed ownership evidence, select
 8. Track additional requests, dates, responses and follow-ups. Outcomes require attributable evidence and review. PARTIALLY_SETTLED tracks settled amount and remaining amount/status separately; unknown remainder is unknown, not zero.
 9. Closure summary includes rejected/disputed/unresolved work; reopening appends reason and new evidence. Dispute holds cannot be overridden by an AI tool.
 
-### 7.4 Legacy snapshot, sharing and release (FL-11/24/31–34)
+### 7.4 Legacy snapshot, sharing and release (FL-11, FL-24, FL-31–34)
 
 P: snapshot reviewed inventory, checklist, dated observations and gaps. Contact intent is inert metadata. A user-requested export is an authorized immutable version with a short-lived download capability and audit receipt; exported copies cannot be recalled.
 
@@ -271,7 +271,7 @@ F post-death release: create ReleaseRequest; obtain required death/identity/auth
 
 Until D-04 is accepted, release APIs/workers remain disabled; storing release intent is not executing a release. This workflow shares information only and never transfers assets or adjudicates inheritance.
 
-### 7.5 Tasks, follow-up and operator work (FL-17/21/42–44/49)
+### 7.5 Tasks, follow-up and operator work (FL-17, FL-21, FL-42–44/49)
 
 Each actionable task has entity/context, owner, due_at, state and blocker. Reminders are idempotent by task + policy/window + channel; respect preferences, time zone and cancellation/closure. External notifications are F, opt-in and minimal-content, linking to an authenticated case rather than including financial details.
 
@@ -310,7 +310,7 @@ Templates contain requirement schema, source/review date, institution/asset/subj
 
 ## 10. Privacy, security and data lifecycle
 
-Implement FL-18/19/23/45–49 across all boundaries:
+Implement FL-18, FL-19, FL-23, FL-45–49 across all boundaries:
 
 - TLS; encryption at rest and for sensitive fields; managed keys with separate service permissions; no public storage.
 - Strong authentication, managed recovery, session expiry and policy-defined step-up for sensitive reads/exports/approvals. Contact changes must not bypass recipient verification.
@@ -340,20 +340,20 @@ The [acceptance plan](ACCEPTANCE.md) maps all 55 requirements individually. Ever
 
 | Scenario / invariant | Required check | PRD mapping |
 | --- | --- | --- |
-| Routing and continuity | All four entry paths; switch isolated cases; corrected facts survive resume/failure | FL-01/02/22/40 |
-| Identity/authority/access | Separate scope/expiry, cross-case IDs/search/download/export denied, reassignment and recovery cannot bypass authority | FL-03/04/23/45/48 |
-| Intake/extraction | Unsafe/unreadable/encrypted input; evidence/page citations; critical-field correction/rejection; no invented fields | FL-05/06/25/26 |
-| Inventory/discovery | No-result/partial coverage; name-only match; conflict/merge reversal; historical/duplicate/incompatible values excluded | FL-07/08/09/10/28/29 |
-| Legacy P | Missing/unknown information; contact intent grants nothing; export exact dated scope | FL-11/31/34 |
-| Claims | Known-asset path; versioned/stale requirements; pack preview; changed data invalidates approval; independent claims | FL-12/13/14/15/37 |
-| Outcomes and uncertainty | Unknown acceptance blocks retry; partial remainder tracked; rejection/dispute not success; closure/reopen evidence | FL-16/36/37 |
-| Operations | Help/complaint/dispute hold, assignment, due/preference-aware deduplicated reminders, suspended templates | FL-17/42/43/44/47/49 |
-| AI controls | Cross-case retrieval/prompt injection/role and URL substitution blocked; stale summary not authoritative; provider failure handoff | FL-38/39/40/46/53 |
-| Lifecycle | Audit sensitive reads, revoke queued access, processor/derived deletion, hold messaging, backup expiry and restore tombstones | FL-18/19/46 |
-| Quality/traceability | Accessible desktop/mobile journeys, agreed load/restore exercises, redacted metrics and complete requirement mapping | FL-50/51/52/53/54/55 |
-| F integrations/assets | Exact allowed subject/purpose, permission and receipts, each category schema and amount semantics | FL-27/30/35/36/44 |
-| F sharing/release | Invite grants nothing, verified scoped recipient, revoke, competing claimants/death evidence/hold/approval, no inactivity release | FL-24/32/33/47 |
-| F voice/follow-ups | Evaluated languages/transcript correction/microphone stop/text fallback; disclosed approved follow-ups and opt-out | FL-20/21/41/42 |
+| Routing and continuity | All four entry paths; switch isolated cases; corrected facts survive resume/failure | FL-01, FL-02, FL-22, FL-40 |
+| Identity/authority/access | Separate scope/expiry, cross-case IDs/search/download/export denied, reassignment and recovery cannot bypass authority | FL-03, FL-04, FL-23, FL-45, FL-48 |
+| Intake/extraction | Unsafe/unreadable/encrypted input; evidence/page citations; critical-field correction/rejection; no invented fields | FL-05, FL-06, FL-25, FL-26 |
+| Inventory/discovery | No-result/partial coverage; name-only match; conflict/merge reversal; historical/duplicate/incompatible values excluded | FL-07, FL-08, FL-09, FL-10, FL-28, FL-29 |
+| Legacy P | Missing/unknown information; contact intent grants nothing; export exact dated scope | FL-11, FL-31, FL-34 |
+| Claims | Known-asset path; versioned/stale requirements; pack preview; changed data invalidates approval; independent claims | FL-12, FL-13, FL-14, FL-15, FL-37 |
+| Outcomes and uncertainty | Unknown acceptance blocks retry; partial remainder tracked; rejection/dispute not success; closure/reopen evidence | FL-16, FL-36, FL-37 |
+| Operations | Help/complaint/dispute hold, assignment, due/preference-aware deduplicated reminders, suspended templates | FL-17, FL-42, FL-43, FL-44, FL-47, FL-49 |
+| AI controls | Cross-case retrieval/prompt injection/role and URL substitution blocked; stale summary not authoritative; provider failure handoff | FL-38, FL-39, FL-40, FL-46, FL-53 |
+| Lifecycle | Audit sensitive reads, revoke queued access, processor/derived deletion, hold messaging, backup expiry and restore tombstones | FL-18, FL-19, FL-46 |
+| Quality/traceability | Accessible desktop/mobile journeys, agreed load/restore exercises, redacted metrics and complete requirement mapping | FL-50, FL-51, FL-52, FL-53, FL-54, FL-55 |
+| F integrations/assets | Exact allowed subject/purpose, permission and receipts, each category schema and amount semantics | FL-27, FL-30, FL-35, FL-36, FL-44 |
+| F sharing/release | Invite grants nothing, verified scoped recipient, revoke, competing claimants/death evidence/hold/approval, no inactivity release | FL-24, FL-32, FL-33, FL-47 |
+| F voice/follow-ups | Evaluated languages/transcript correction/microphone stop/text fallback; disclosed approved follow-ups and opt-out | FL-20, FL-21, FL-41, FL-42 |
 
 Representative extraction evaluations include statement formats, scan quality, Indian names, date/amount ambiguity and duplicate/conflicting records. Critical fields are reported separately. Voice/language quality uses a representative separate evaluation. Release evidence stores expected/actual behavior, requirement IDs, dataset/environment, reviewer and defects without placing real financial records in the repo.
 
