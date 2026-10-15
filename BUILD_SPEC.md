@@ -3,27 +3,13 @@
 Version 0.3 · 15 October 2026 · Implementation baseline for the reference release
 
 
-## Plain-language guide
-
-Start with the user’s goal, then follow what they do, what the app saves, and what can stop the next step. Technical record names below are exact names for developers; they are not terms users need to learn.
-
-| Term used below | Meaning |
-| --- | --- |
-| Case / subject | One goal and the person whose finances it concerns |
-| Evidence / provenance | A source record, and where it came from |
-| Holding / observation | An account or investment, and one dated fact about it |
-| Identity / relationship / authority | Who someone is, how they are related, and what they are permitted to do; one does not prove the others |
-| Consent / approval | Permission to use specified data for a purpose / permission for one exact action after review |
-| Snapshot / manifest | A frozen copy of selected records / the exact list of documents, versions and details included in a pack |
-| Hold | A recorded restriction while a dispute or uncertainty is resolved |
-| P / F | First-pilot requirements / later capabilities that need separate approval and tests |
-| Reference build | The first implementation using generated sample records; it does not process real finances |
-| Gate | A permission, policy or test that must pass before a capability is enabled |
-| FL-xx / B-xx / D-xx | Requirement number / coding work package / decision needed before the affected live or later capability |
-
-Example: a statement is evidence. The account is a holding. Its ₹42,000 balance dated 10 October is an observation. Accepting the transcription does not establish inheritance. The inventory shows the value only if ownership support, review, date and duplicate checks meet the stated rules.
-
 ## 1. Start here
+
+**Read this section and the B-01–B-11 table first. Everything else is reference material to open as needed.**
+
+The system has a web app, one backend split into modules, one database, private encrypted files and a background worker. The assistant proposes questions and actions; backend code checks permission and saves accepted records. Slow jobs, such as scanning, run in the worker.
+
+The first journey is: sign in as Demo Owner → open case 100 → upload identity fixture 330 → complete reviewer checks and scoped consent → upload bank fixture 300 → inspect/correct its fields → save the reviewed holding → sign out and resume. Expected reviewed bank value: ₹42,000. See section 17 for its exact checks.
 
 Your first deliverable is a local app that starts safely, not a complete financial service. Then make one path work from beginning to end: sign in, upload the sample statement, inspect its proposed fields, accept the reviewed information, and return to it after signing out. The later sections specify the exact rules that this path must use.
 
@@ -36,6 +22,9 @@ This baseline fixes engineering choices and deterministic development behavior u
 A responsive web application covering all three user paths and all P requirements: text case manager, isolated cases, verification/authority review, secure evidence intake/review, bank/FD and mutual-fund inventory, legacy record/export/contact intent, manual claim packs/receipts/outcomes, tasks, operations, audit, deletion and recovery. F features have explicit disabled capabilities and contracts, not partially working hidden features.
 
 **Reference mode is synthetic-only.** Banner every page/export/pack: “Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.” No real customer financial documents, credentials, phone calls, emails or institution requests. The app must refuse a real-data configuration until launch policies are supplied. This is the first implementation, not a relabeling of a simulation as a live pilot.
+
+<details>
+<summary><strong>Implementation reference — stack, setup, security, screens, APIs and data rules</strong></summary>
 
 ## 2. Fixed technology decisions
 
@@ -191,7 +180,7 @@ Use UTC internally and injected Clock in tests; user display uses their IANA tim
 
 ## 10. Rules for moving work to the next step
 
-LLD state guards remain authoritative. Implement explicit command handlers, not arbitrary PATCH status. A transition records actor, expected version, guard result, evidence and event. For the reference release:
+The workflow guards in section 18 apply; exact fields/enums come from OpenAPI and SQL. Implement explicit command handlers, not arbitrary PATCH status. A transition records actor, expected version, guard result, evidence and event. For the reference release:
 
 - Claim requirements: MISSING, PROPOSED, ACCEPTED, REJECTED, NEEDS_UPDATE; shared template remains immutable per version.
 - Pack creation allowed only after current required evidence/authority reviewed. Material evidence/template/form changes mark old pack superseded and invalidate approval.
@@ -219,6 +208,9 @@ Expected reference inventory: one reviewed bank balance INR 42,000 and one revie
 
 Fixtures also include missing/expired authority, revoked consent, unsafe/unreadable document, competing claimant hold, stale template, changed pack, possible-acceptance timeout, partial settlement INR 1,000 of an evidenced INR 2,500 claim and unknown remainder variant. Known remainder is INR 1,500; never infer zero when outcome source gives no remaining figure.
 
+
+</details>
+
 ## 13. Ordered coding work packages
 
 Each B number is a piece of implementation, not a separate product. Build and test a small working journey as these pieces come together. “Depends on” identifies work that must already exist. “Completion evidence” describes what must actually work before the package is considered done. B-01 means starting the local components safely; it is not a finished user journey.
@@ -238,13 +230,16 @@ Each B number is a piece of implementation, not a separate product. Build and te
 | B-10 | Remove eligible records through the deletion process; preserve deletion markers; test recovery; finish accessible desktop/mobile behavior and redacted measurements | B-01–09 | Deletion/restore/outage, accessibility and metric privacy evidence |
 | B-11 | Run every first-release journey and required failure case; record results and defects; confirm future capabilities are disabled; prepare a reproducible handoff | B-01–10 | All P requirement/scenario results recorded; F disabled; no critical unresolved defect |
 
-Each package maps to the requirement IDs in PRD/LLD/ACCEPTANCE; it may refine internal code without inventing scope. Start B-01 now. Source-provider contracts, legally sufficient real-data policies, commercial terms and F enablement are not prerequisites to coding this reference release.
+Each package maps to the requirement IDs in PRD requirement rows and this guide; it may refine internal code without inventing scope. Start B-01 now. Source-provider contracts, legally sufficient real-data policies, commercial terms and F enablement are not prerequisites to coding this reference release.
 
 ## 14. Definition of coding completion
 
 A new developer can clone, bootstrap, run, exercise all three synthetic journeys, run checks/tests and inspect attributable evidence without cloud credentials or hidden manual database edits. All P normal/failure/revocation/hold/deletion cases have recorded results. OpenAPI, migrations, fixtures, generated client types and implementation agree; CI rejects drift. F capabilities return explicit disabled state. Reference behavior is labeled everywhere and cannot be promoted to real data by changing one unchecked flag.
 
 Live launch remains a separate permission/policy/operational acceptance decision. Documentation is coding-ready when these contracts are internally consistent; it is not proof that code, security testing, legal approval or integrations already exist.
+
+<details>
+<summary><strong>Exact command rules, first-journey checks and edge cases</strong></summary>
 
 ## 15. Exact implementation rules
 
@@ -345,7 +340,7 @@ Owner field review confirms what a document says. Institution-verified support a
 - Select one latest qualifying monetary observation per holding across CASH_BALANCE/CURRENT_VALUE; never count both representations of one holding. Units remain separate. Conflicting observations hold that holding for review.
 - Observation proposal route returns the primary amount FieldProposal; it creates a fixed group of scalar proposals with field_path observation:{asset_id}:{draft_id}:{field}. Allowed fields are evidence_id, amount, currency, amount_type, units and as_of_date; create every field, including explicit nulls. Each value is encrypted independently in field_proposals.value_ciphertext. Existing listFieldProposals exposes siblings; no new table or opaque JSON-in-string format is needed. The server creates draft_id and sets group context; clients cannot substitute asset/case/evidence scope through field_path. All six fields and associated critical ownership/source reviews must be resolved before an atomic commit creates Observation id=draft_id. A rejected sibling blocks the group. Corrections append superseding proposals within the same group; stale/conflicting corrections require re-review. A case-row lock and unique observation ID prevent double commit; repeated review returns the existing result. Never insert an accepted Observation early.
 - Evidence is created by controlled intake/declaration/fixture-source commands, not a client-supplied accepted flag. New uploads produce proposed source evidence; review finalizes its associations. Accepting a claim requirement/outcome does not let an operator invent institution provenance.
-- Document scan_state and processing_state are separate canonical fields. LLD's linear diagram is conceptual; a scan failure does not equal an extraction failure. Exact routes and enums come from OpenAPI/SQL.
+- Document scan_state and processing_state are separate canonical fields. Section 18's linear diagram is conceptual; a scan failure does not equal an extraction failure. Exact routes and enums come from OpenAPI/SQL.
 - Pack generation precedes approval. A CLAIM_HANDOFF approval binds pack, institution recipient and MANUAL_HANDOFF; controlled pack retrieval uses a CLAIM_PACK export referencing that approval. A legacy EXPORT approval binds the reviewed snapshot, requesting actor and APP_EXPORT. Operator download must be in that approved handoff scope. Creating/generating a pack never itself authorizes download or submission.
 - Missing If-Match on a marked command returns 422 PRECONDITION_REQUIRED; stale value returns 409 VERSION_CONFLICT. Failed authorization never returns a cached idempotent result.
 
@@ -358,3 +353,87 @@ B-01 must execute dependency/build checks and B-02 must run the SQL on fresh Pos
 No coding-blocking product decision remains for this synthetic baseline. Real-data permissions, legally sufficient policies, institution procedures, provider quality, business targets and production operations remain unresolved launch gates. Implementation PRs supply measured evidence; user research and live-source validation cannot be certified by this review.
 
 Second-pass review: source references and seeded holding references now agree, including the deliberate duplicate; generated statements include cited subject/ownership fields; each living-owner fixture has its own identity evidence. Review source association separately from field transcription. Regenerate fixture PDFs and hashes after fixture changes; never reuse an old hash registry with changed source text.
+
+</details>
+
+<details>
+<summary><strong>Workflow state changes and release test checklist — engineering reference</strong></summary>
+
+## 18. Workflow states and release checks
+
+This section carries the unique implementation and test guidance from the retired design/test pages. PRD requirement rows remain the acceptance authority; OpenAPI and SQL remain the exact wire/database formats. The state table describes logical workflow steps; document scan_state and processing_state are separate fields, as section 17 explains.
+
+### Allowed workflow moves
+
+A state tells us where a record is now. A transition is a permitted move to another state. A guard is the check required before that move. For example, a document cannot move into extraction until scanning passed. A claim cannot become ready for handoff until its current pack and permissions have been reviewed. The arrows below show possible moves, not steps the app can skip.
+
+| Aggregate | States / transition | Guard or evidence |
+| --- | --- | --- |
+| Case | DRAFT → ACTIVE ↔ WAITING_ON_USER / WAITING_ON_INSTITUTION / NEEDS_REVIEW → READY_TO_CLOSE → CLOSED | Mode/subject confirmed; closure review summarizes remaining work; reopening requires reason |
+| Identity/authority | NOT_STARTED → PENDING → VERIFIED / REJECTED; VERIFIED → EXPIRED / REVOKED | Qualified review/provider evidence and scope; AI cannot set final verified state |
+| Document | UPLOAD_PENDING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → REVIEW_REQUIRED → REVIEWED | Only CLEAN enters extraction; original evidence retained |
+| Document exceptions | BLOCKED / PROCESSING_FAILED; DELETE_PENDING → DELETED | Unsafe files blocked; retry policy explicit; deletion cancels processing |
+| Discovery | PLANNED → BLOCKED / READY → RUNNING → RESULTS / NO_RESULTS / PARTIAL / FAILED | Current permission and enabled/manual method; results include actual coverage |
+| Asset evidence | SELF_DECLARED / POTENTIAL_MATCH → DOCUMENT_BACKED → INSTITUTION_VERIFIED | Reviewed attributable evidence; freshness downgrade preserves prior verification history |
+| Asset lifecycle | UNKNOWN / OPEN / CLOSED / TRANSMITTED / DISPUTED | Separate from evidence status; institution/user evidence according to policy |
+| Claim | DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR_SUBMISSION → SUBMISSION_PENDING → SUBMITTED → INSTITUTION_REVIEW | Each transition validates current authority, template version and evidence |
+| Claim request | INSTITUTION_REVIEW → MORE_INFORMATION_REQUIRED → DOCUMENT_COLLECTION | Preserve prior pack/receipt; material edits invalidate approval |
+| Claim outcome | INSTITUTION_REVIEW → SETTLED / TRANSFERRED / PARTIALLY_SETTLED / REJECTED / UNRESOLVED_DISPUTE; explicit CANCELLED | Accepted outcome evidence; partial remainder stays open; rejected/disputed are not success |
+| Submission uncertainty | SUBMISSION_PENDING → SUBMISSION_UNKNOWN → reconciled SUBMITTED / safe-to-retry / FAILED | Possible remote acceptance blocks blind resubmission |
+| Approval | PENDING → APPROVED → CONSUMED; or REJECTED / EXPIRED / INVALIDATED | Exact content hash, actor, recipient, purpose, scope and current prerequisites |
+| External action | CREATED → POLICY_CHECKED → QUEUED → EXECUTING → SUCCEEDED / FAILED_RETRYABLE / FAILED_FINAL / OUTCOME_UNKNOWN | Only safe transient failures retry; consumption and receipts recorded |
+| Task | OPEN → IN_PROGRESS / BLOCKED → DONE; or CANCELLED | Owner, due time, blocker and completion reason/evidence |
+| Legacy release · F | REQUESTED → EVIDENCE_REVIEW → RECIPIENT_VERIFICATION → AUTHORITY_REVIEW → READY → APPROVED → RELEASED | D-04 policy, explicit scope, no hold; any disputed prerequisite blocks release |
+| Release exceptions · F | ON_HOLD / REJECTED / WITHDRAWN / EXPIRED | Qualified resolution; death/inactivity alone cannot execute release |
+
+A hold is a separate policy object; it can block reads/disclosures/submissions without overwriting the underlying claim’s history. Reopening/outcome correction appends evidence and a reason. Authority review and institution entitlement remain separate even when a claim is settled.
+
+
+### Keeping linked records correct and changing the database safely
+
+- Composite foreign keys include case_id for all evidence/asset/document/claim relationships. Check that subject belongs to case. Resolve Case/Subject creation with a transaction and deferred FK or insert/update order.
+- Unique active membership and idempotency constraints; unique external receipt/event keys within a provider; unique pack version per claim. Do not impose global uniqueness on names or ownership references.
+- Index (case_id, status, updated_at), (case_id, asset_id, as_of_date), (assignee, state, due_at), (claim_id, version), (provider_id, external_reference) and outbox/queue dispatch state as needed. Encrypt sensitive query values and use approved scoped matching keys.
+- Preserve accepted evidence/observations and approved manifests; corrections append a superseding record. Mutable resources require If-Match/version checking; stale edits return a safe conflict.
+- Apply backward-compatible migrations before dependent workers; retain schema/model/workflow versions needed to read old records. Never migrate a potential match into verified status without evidence review.
+
+
+### Complete journeys to test
+
+| Pack | Setup and journey | Critical result |
+| --- | --- | --- |
+| A — Living owner | Old bank statement + newer conflicting observation + duplicate upload + forgotten fund declaration | Reviewed evidence and correction; uncertainty preserved; historical/duplicate value does not inflate current total |
+| B — Legacy planner | Reviewed inventory, unknown nomination, missing document and one contact intent | Dated record/gaps/export; no contact access or notification in pilot |
+| C — Known-asset claimant | Supported authority + known fund holding + current template + additional institution request | Discovery optional; exact pack review/manual receipt; visible task/outcome/closure |
+| D — Unknown holdings | Deceased subject, incomplete records and a no-result/partial source attempt | Honest coverage/gaps and actionable handoff; no “no assets exist” assertion |
+| E — Access and dispute | Unverified/expired/revoked authority, cross-case IDs, competing claimant and hostile uploaded instructions | Restricted action blocked; affected hold with reviewer; no leaked evidence/tool authority |
+| F — Submission and outcomes | Changed pack, duplicate submit and timeout after possible acceptance; partial settlement | Old approval invalid, single action, reconciliation before retry and tracked remainder |
+| G — Outage and lifecycle | Unsafe/unreadable file, stale template, provider/worker failure, delete/hold and restore | Durable work, usable next steps, no unsafe processing, tombstones and tracked retention |
+| H — Full product | Verified collaborator/lifetime share, post-death release dispute, selected language/voice, extra class and source | Separate gated evidence per capability; no global F enablement shortcut |
+
+For specialized joint/minor/representative/nonresident cases, verify supported workflow routing or explicit block/handoff, never a guessed universal nominee procedure. Test institution/category/subject combinations separately where requirements differ.
+
+### Record evidence and decide whether the release passes
+
+Record test/scenario ID, PRD IDs, PRD/LLD version and Git commit, P/F scope, fixture/environment, expected/actual result, automated/manual steps, reviewer/date, defect IDs and decision. Protect test artifacts containing sensitive data under approved policy; keep synthetic evidence in repo.
+
+A pilot requires all P rows, section 4 packs A–G, accepted blocking decisions and named operators. No unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defect is acceptable. Mark failed/blocked tests honestly; a test plan is not a passing test.
+
+F needs pack H plus each language/category/source/subject/channel/release-specific gate. D-01 sets business targets; D-07 sets workload and service budgets; D-09 sets voice/language evaluation thresholds. Undefined thresholds are unresolved decisions, not default passes.
+
+
+### First-increment negative cases and fixture checks
+
+Execute BUILD_SPEC section 17 with the explicit intake fixture profile; the reviewed profile is a separate regression oracle. Require a real upload/scan/proposal/review/commit/resume path, not a prepopulated success screen. Record the Git commit, fixture profile/clock, generated binary hashes, actor, expected/actual result and failure evidence.
+
+Required negative cases: prerequisite upload works before verification; non-reviewer cannot verify authority or accept institution outcome; assigned operator cannot approve a user disclosure; expired/revoked scope blocks download and queued work; changed pack invalidates approval; unknown file is rejected; observation proposal cannot become accepted before all critical fields are reviewed; same holding is not summed twice; empty inventory is null and an evidenced eligible zero is 0.00.
+
+Documentation review checked requirement coverage, local links, JSON references/operation IDs, P/F flags, strict envelopes and fixture arithmetic. SQL execution, dependency compatibility, generated-model conformance, application security, usability and runtime behavior remain unexecuted implementation checks. Passing this review authorizes starting synthetic coding, not a real-data launch or a passing B-11 result.
+
+Fixture-integrity checks for B-02/B-04: every seeded holding reference and locator match its same-case statement; every extraction field exists at the cited generated page; owner case 100 can complete identity review using document 330 without case-102 evidence. An observation draft commits only after all scalar siblings and critical source/ownership reviews resolve; rejecting one sibling blocks it, corrections preserve history, and duplicate final-review delivery creates exactly one observation. Regenerated PDF hashes must replace the registry when source text changes.
+
+Use the PRD requirement IDs on every implementation task, API/job/schema change and relevant test. A task states the behavior, permissions/data, failure/revocation/retry rules, dependencies and expected result. A PR records measured results, defects and migration/recovery impact. Amend the PRD before new product behavior; keep requirement IDs stable.
+
+Before real deployment, keep runbooks for provider outage, unauthorized access, leaked credentials, wrong evidence association, unsafe templates, unknown submission, deletion failure and restoration. Before enabling an outside connector, validate its permitted subject/purpose/channel, source coverage, contracts, retention, callback verification, replay handling, recipient/egress allowlists and reconciliation behavior. Reference mode enables none of these real external effects.
+
+</details>
