@@ -164,13 +164,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-BANK-001",
           "amount: 42000.00",
           "currency: INR",
           "amount_type: CASH_BALANCE",
-          "as_of_date: 2026-10-10"
+          "as_of_date: 2026-10-10",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -209,11 +211,28 @@
           "value": "2026-10-10",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000301",
@@ -228,14 +247,16 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_AMC",
           "reference: DEMO-FOLIO-001",
           "amount: 2500.00",
           "currency: INR",
           "amount_type: CURRENT_VALUE",
           "units: 12.00000000",
-          "as_of_date: 2026-10-11"
+          "as_of_date: 2026-10-11",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -280,11 +301,28 @@
           "value": "2026-10-11",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000302",
@@ -299,13 +337,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-FD-OLD",
           "amount: 100000.00",
           "currency: INR",
           "amount_type: PRINCIPAL",
-          "as_of_date: 2020-01-01"
+          "as_of_date: 2020-01-01",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -344,11 +384,28 @@
           "value": "2020-01-01",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000303",
@@ -363,14 +420,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-UNCONFIRMED",
           "amount: 999999.00",
           "currency: INR",
           "amount_type: CASH_BALANCE",
           "as_of_date: 2026-10-12",
-          "ownership: UNCONFIRMED"
+          "ownership: UNCONFIRMED",
+          "subject: Unconfirmed name match"
         ]
       },
       "extraction_fields": [
@@ -415,11 +473,22 @@
           "value": "UNCONFIRMED",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Unconfirmed name match",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000304",
@@ -434,13 +503,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-BANK-001",
           "amount: 42000.00",
           "currency: INR",
           "amount_type: CASH_BALANCE",
-          "as_of_date: 2026-10-10"
+          "as_of_date: 2026-10-10",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -479,11 +550,28 @@
           "value": "2026-10-10",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000305",
@@ -498,13 +586,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-NODATE",
           "amount: 3500.00",
           "currency: INR",
           "amount_type: CASH_BALANCE",
-          "as_of_date: null"
+          "as_of_date: UNKNOWN",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -543,11 +633,28 @@
           "value": null,
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000306",
@@ -780,12 +887,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_AMC",
           "reference: DEMO-CLAIM-FOLIO",
           "amount: 2500.00",
           "currency: INR",
-          "as_of_date: 2026-10-10"
+          "as_of_date: 2026-10-10",
+          "subject: Demo Parent",
+          "ownership: SINGLE_OWNER",
+          "amount_type: CURRENT_VALUE"
         ]
       },
       "extraction_fields": [
@@ -818,11 +928,34 @@
           "value": "2026-10-10",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Parent",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "amount_type",
+          "value": "CURRENT_VALUE",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000313",
@@ -937,13 +1070,15 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_BANK",
           "reference: DEMO-BANK-001",
           "amount: 42000.00",
           "currency: INR",
           "amount_type: CASH_BALANCE",
-          "as_of_date: 2026-10-10"
+          "as_of_date: 2026-10-10",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -982,11 +1117,28 @@
           "value": "2026-10-10",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
       "expected_processing": "REVIEW_REQUIRED",
-      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000321",
@@ -1001,14 +1153,16 @@
         "pages": 1,
         "stable_metadata": true,
         "body": [
-          "DEMONSTRATION ONLY — no real account, institution or identity.",
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
           "institution: DEMO_AMC",
           "reference: DEMO-FOLIO-001",
           "amount: 2500.00",
           "currency: INR",
           "amount_type: CURRENT_VALUE",
           "units: 12.00000000",
-          "as_of_date: 2026-10-11"
+          "as_of_date: 2026-10-11",
+          "subject: Demo Owner",
+          "ownership: SINGLE_OWNER"
         ]
       },
       "extraction_fields": [
@@ -1053,6 +1207,173 @@
           "value": "2026-10-11",
           "page": 1,
           "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "ownership",
+          "value": "SINGLE_OWNER",
+          "page": 1,
+          "requires_review": true
+        }
+      ],
+      "expected_scan": "CLEAN",
+      "expected_processing": "REVIEW_REQUIRED",
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP",
+      "fixture_provenance": {
+        "source_type": "SYNTHETIC_INSTITUTION",
+        "review_required": true,
+        "description": "Trusted synthetic generator metadata; never inferred from arbitrary document text. Potential match ownership remains unconfirmed."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000330",
+      "fixture_id": "owner-identity-100",
+      "case_id": "00000000-0000-4000-8000-000000000100",
+      "filename": "owner-identity-100.pdf",
+      "media_type": "application/pdf",
+      "synthetic": true,
+      "pdf_title": "SYNTHETIC DEMONSTRATION — owner identity 100",
+      "render": {
+        "page_size": "A4",
+        "pages": 1,
+        "stable_metadata": true,
+        "body": [
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
+          "type: SYNTHETIC_IDENTITY",
+          "subject: Demo Owner",
+          "actor_id: 00000000-0000-4000-8000-000000000001",
+          "no_real_identifier: true"
+        ]
+      },
+      "extraction_fields": [
+        {
+          "field_path": "type",
+          "value": "SYNTHETIC_IDENTITY",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "actor_id",
+          "value": "00000000-0000-4000-8000-000000000001",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "no_real_identifier",
+          "value": true,
+          "page": 1,
+          "requires_review": true
+        }
+      ],
+      "expected_scan": "CLEAN",
+      "expected_processing": "REVIEW_REQUIRED",
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000331",
+      "fixture_id": "owner-identity-101",
+      "case_id": "00000000-0000-4000-8000-000000000101",
+      "filename": "owner-identity-101.pdf",
+      "media_type": "application/pdf",
+      "synthetic": true,
+      "pdf_title": "SYNTHETIC DEMONSTRATION — owner identity 101",
+      "render": {
+        "page_size": "A4",
+        "pages": 1,
+        "stable_metadata": true,
+        "body": [
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
+          "type: SYNTHETIC_IDENTITY",
+          "subject: Demo Owner",
+          "actor_id: 00000000-0000-4000-8000-000000000001",
+          "no_real_identifier: true"
+        ]
+      },
+      "extraction_fields": [
+        {
+          "field_path": "type",
+          "value": "SYNTHETIC_IDENTITY",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Demo Owner",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "actor_id",
+          "value": "00000000-0000-4000-8000-000000000001",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "no_real_identifier",
+          "value": true,
+          "page": 1,
+          "requires_review": true
+        }
+      ],
+      "expected_scan": "CLEAN",
+      "expected_processing": "REVIEW_REQUIRED",
+      "sha256": "COMPUTE_FROM_GENERATED_PDF_AT_BOOTSTRAP"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000333",
+      "fixture_id": "owner-identity-103",
+      "case_id": "00000000-0000-4000-8000-000000000103",
+      "filename": "owner-identity-103.pdf",
+      "media_type": "application/pdf",
+      "synthetic": true,
+      "pdf_title": "SYNTHETIC DEMONSTRATION — owner identity 103",
+      "render": {
+        "page_size": "A4",
+        "pages": 1,
+        "stable_metadata": true,
+        "body": [
+          "Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.",
+          "type: SYNTHETIC_IDENTITY",
+          "subject: Unrelated Demo User",
+          "actor_id: 00000000-0000-4000-8000-000000000004",
+          "no_real_identifier: true"
+        ]
+      },
+      "extraction_fields": [
+        {
+          "field_path": "type",
+          "value": "SYNTHETIC_IDENTITY",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "subject",
+          "value": "Unrelated Demo User",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "actor_id",
+          "value": "00000000-0000-4000-8000-000000000004",
+          "page": 1,
+          "requires_review": true
+        },
+        {
+          "field_path": "no_real_identifier",
+          "value": true,
+          "page": 1,
+          "requires_review": true
         }
       ],
       "expected_scan": "CLEAN",
@@ -1067,7 +1388,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "BANK",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-200",
+      "reference": "DEMO-BANK-001",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1083,7 +1404,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-200",
+          "record_key": "DEMO-BANK-001",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1103,7 +1424,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "MUTUAL_FUND",
       "institution_id": "00000000-0000-4000-8000-000000000011",
-      "reference": "DEMO-ASSET-201",
+      "reference": "DEMO-FOLIO-001",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1120,7 +1441,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-201",
+          "record_key": "DEMO-FOLIO-001",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1140,7 +1461,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "FD",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-202",
+      "reference": "DEMO-FD-OLD",
       "evidence_state": "DOCUMENT_BACKED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1156,7 +1477,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-202",
+          "record_key": "DEMO-FD-OLD",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1177,7 +1498,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "BANK",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-203",
+      "reference": "DEMO-UNCONFIRMED",
       "evidence_state": "POTENTIAL_MATCH",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1193,7 +1514,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-203",
+          "record_key": "DEMO-UNCONFIRMED",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1214,7 +1535,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "BANK",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-204",
+      "reference": "DEMO-BANK-001",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1230,7 +1551,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-204",
+          "record_key": "DEMO-BANK-001",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1252,7 +1573,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000110",
       "category": "BANK",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-205",
+      "reference": "DEMO-NODATE",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1268,7 +1589,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-205",
+          "record_key": "DEMO-NODATE",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1556,7 +1877,10 @@
     "Seed is idempotent by stable IDs and must not silently rewrite user-edited reference cases; reset is explicit",
     "Known-claim holding belongs to case 102; never reuse case 100 evidence across cases",
     "No real institution, personal identifier, account credential, email delivery, call or payment is involved",
-    "Legacy case receives its own separately identified evidence and holdings; do not link case-100 evidence into case 101"
+    "Legacy case receives its own separately identified evidence and holdings; do not link case-100 evidence into case 101",
+    "Seed asset reference and evidence locator.record_key must equal the source statement reference; duplicate bank assets deliberately share the same reference until reviewed reconciliation.",
+    "Render all extraction fields verbatim in the synthetic source PDF, including subject/ownership. Generator metadata marks synthetic provenance; only assigned reviewer acceptance can establish synthetic institution support.",
+    "Owner identity fixtures 330/331/333 are isolated to cases 100/101/103. Intake creates evidence through pre-verification upload, not seeded verified assertions; never borrow claim-case identity evidence."
   ],
   "legacy_seed_assets": [
     {
@@ -1565,7 +1889,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000111",
       "category": "BANK",
       "institution_id": "00000000-0000-4000-8000-000000000010",
-      "reference": "DEMO-ASSET-200",
+      "reference": "DEMO-BANK-001",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1581,7 +1905,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-200",
+          "record_key": "DEMO-BANK-001",
           "excerpt": "Synthetic fixture evidence"
         }
       },
@@ -1601,7 +1925,7 @@
       "subject_id": "00000000-0000-4000-8000-000000000111",
       "category": "MUTUAL_FUND",
       "institution_id": "00000000-0000-4000-8000-000000000011",
-      "reference": "DEMO-ASSET-201",
+      "reference": "DEMO-FOLIO-001",
       "evidence_state": "INSTITUTION_VERIFIED",
       "lifecycle_state": "OPEN",
       "attributes": {
@@ -1618,7 +1942,7 @@
         "review_state": "ACCEPTED",
         "locator": {
           "page": 1,
-          "record_key": "DEMO-ASSET-201",
+          "record_key": "DEMO-FOLIO-001",
           "excerpt": "Synthetic fixture evidence"
         }
       },
