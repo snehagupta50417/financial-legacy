@@ -4,11 +4,32 @@ Version 0.3 · 15 October 2026 · Reference implementation baseline for [PRD v0.
 
 Engineering owner: TBD · Security/operations reviewers: TBD · Implementation status: documentation only
 
+
+## Plain-language guide
+
+Start with the user’s goal, then follow what they do, what the app saves, and what can stop the next step. Technical record names below are exact names for developers; they are not terms users need to learn.
+
+| Term used below | Meaning |
+| --- | --- |
+| Case / subject | One goal and the person whose finances it concerns |
+| Evidence / provenance | A source record, and where it came from |
+| Holding / observation | An account or investment, and one dated fact about it |
+| Identity / relationship / authority | Who someone is, how they are related, and what they are permitted to do; one does not prove the others |
+| Consent / approval | Permission to use specified data for a purpose / permission for one exact action after review |
+| Snapshot / manifest | A frozen copy of selected records / the exact list of documents, versions and details included in a pack |
+| Hold | A recorded restriction while a dispute or uncertainty is resolved |
+| P / F | First-pilot requirements / later capabilities that need separate approval and tests |
+| Reference build | The first implementation using generated sample records; it does not process real finances |
+| Gate | A permission, policy or test that must pass before a capability is enabled |
+| FL-xx / B-xx / D-xx | Requirement number / coding work package / decision needed before the affected live or later capability |
+
+Example: a statement is evidence. The account is a holding. Its ₹42,000 balance dated 10 October is an observation. Accepting the transcription does not establish inheritance. The inventory shows the value only if ownership support, review, date and duplicate checks meet the stated rules.
+
 ## 1. Contract and architecture
 
 The PRD is the product contract. This document selects structures and flows for its requirements; it cannot authorize a new feature, data use, integration or permission. P/F release labels and D-01–D-11 decisions are defined only in the PRD. A pending decision blocks the affected implementation/release; fixed synthetic defaults in BUILD_SPEC satisfy reference coding decisions. Changes follow FL-55.
 
-Use a modular backend with asynchronous workers, one transactional domain database, private evidence storage and a controlled connector gateway. AI produces proposals and coordinates tasks; deterministic domain services authorize, validate and execute transitions. Financial truth comes from reviewed evidence, not conversation memory.
+Use one backend split into modules, background workers for slow tasks, one database for linked records, private document storage, and controlled connections to permitted services. AI produces proposals and coordinates tasks; deterministic domain services authorize, validate and execute transitions. Financial truth comes from reviewed evidence, not conversation memory.
 
 ### Implementation choices
 
@@ -64,6 +85,8 @@ All case-bound rows carry case_id. Enforce it in repositories, joins, search, st
 
 ## 3. Data model and constraints
 
+Think of the database as linked records, not one big chat history. Case identifies the goal, Document identifies a file, Evidence points to a source in that file, Asset identifies a holding, and Observation records a dated amount or quantity. A Claim links the holding to one institution’s procedure. Approval records exactly what a user agreed to. The table below gives developers the exact record and field names.
+
 UUID keys; UTC timestamps; exact decimal monetary values with currency and amount_type; immutable accepted observations; version columns for mutable aggregates. Encrypt sensitive identifiers and document content. Use separately keyed HMAC of normalized references only where approved for in-case matching; do not use unkeyed hashes of guessable identifiers or create a cross-family person index.
 
 | Entity | Important fields / relationships |
@@ -110,7 +133,7 @@ UUID keys; UTC timestamps; exact decimal monetary values with currency and amoun
 
 Category attributes follow PRD section 6 minimum fields and versioned per-category schemas; unknowns are explicit and arbitrary unvalidated JSON is rejected. Specialized claimant/ownership situations in PRD section 11 need an approved compatible workflow or a hold/handoff.
 
-### Integrity, indexes and migrations
+### Keeping linked records correct and changing the database safely
 
 - Composite foreign keys include case_id for all evidence/asset/document/claim relationships. Check that subject belongs to case. Resolve Case/Subject creation with a transaction and deferred FK or insert/update order.
 - Unique active membership and idempotency constraints; unique external receipt/event keys within a provider; unique pack version per claim. Do not impose global uniqueness on names or ownership references.
@@ -119,6 +142,8 @@ Category attributes follow PRD section 6 minimum fields and versioned per-catego
 - Apply backward-compatible migrations before dependent workers; retain schema/model/workflow versions needed to read old records. Never migrate a potential match into verified status without evidence review.
 
 ## 4. Domain states and transition guards
+
+A state tells us where a record is now. A transition is a permitted move to another state. A guard is the check required before that move. For example, a document cannot move into extraction until scanning passed. A claim cannot become ready for handoff until its current pack and permissions have been reviewed. The arrows below show possible moves, not steps the app can skip.
 
 | Aggregate | States / transition | Guard or evidence |
 | --- | --- | --- |
@@ -186,9 +211,9 @@ Use [contracts/openapi.json](contracts/openapi.json) for exact field names, stri
 
 Use [contracts/schema.sql](contracts/schema.sql) for exact PostgreSQL names/types/keys/checks and runtime isolation. Conceptual entities above map to those plural snake_case tables. [BUILD_SPEC.md](BUILD_SPEC.md) fixes adapters, context/roles, local identity, jobs and seed behavior. The first Alembic migration and generated client/model types must agree with these contracts.
 
-## 6. Transaction, job and external-action contracts
+## 6. Saving changes, running background work and tracking outside actions
 
-### Idempotency and concurrency
+### Repeated requests and simultaneous edits
 
 For a side-effecting request, bind Idempotency-Key to actor + case + operation and a canonical request hash. Reuse with the same hash returns the existing result/job; reuse with different content returns 409. Persist the request and domain result in a transaction. Pack/snapshot review also checks expected version. A key is not a substitute for authorization; repeated requests still require current read/access policy.
 
