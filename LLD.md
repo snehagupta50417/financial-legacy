@@ -157,6 +157,8 @@ Amounts/date/evidence semantics refine FL-07/09/28/29; production eligibility/fr
 
 ## 7. Screen-by-screen coding contract
 
+Use [DESIGN.md](DESIGN.md) for layout, visual tokens, navigation and interaction states. The route/data/permission rules below remain authoritative; presentation cannot enable an unsupported action.
+
 All case routes show subject, path, case state and synthetic-mode banner. All lists have loading, empty, error, retry and permission-expired states. UI derives permitted actions from server policy; hiding a button never replaces server authorization.
 
 | Route | Data and actions | Critical interaction |
@@ -448,4 +450,4 @@ Before real deployment, keep runbooks for provider outage, unauthorized access, 
 
 </details>
 
-Live-source implementation must apply the evidence and unresolved access limits in PRD section 6, not infer permission from an official URL. Each live-source adapter starts disabled; current source/subject/channel approval, scoped data/retention, workflow version, exact-action control and sandbox evidence precede enablement. The one-pager summarizes the vision, PRD owns behavior, and this LLD owns its implementation/testing instructions.
+Live-source implementation must apply the evidence and unresolved access limits in PRD section 6, not infer permission from an official URL. Each live-source adapter starts disabled; current source/subject/channel approval, scoped data/retention, workflow version, exact-action control and sandbox evidence precede enablement. The one-pager summarizes the vision, PRD owns behavior, DESIGN.md specifies presentation, and this LLD owns implementation/testing instructions.
