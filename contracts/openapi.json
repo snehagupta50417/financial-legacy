@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Legacy Reference API",
     "version": "0.3.0",
-    "description": "Coding contract for PRD v0.3. Synthetic-only reference release; F operations remain disabled. This is not a deployed API."
+    "description": "Coding contract for PRD v0.3. Synthetic-only reference release; F operations remain disabled. This is not a deployed API. Coding-readiness amendment: Inventory distinguishes unavailable values from evidenced zero; operation policies refine role guards. See BUILD_SPEC section 17."
   },
   "servers": [
     {
@@ -1060,7 +1060,7 @@
     },
     "/cases/{case_id}/authorities": {
       "get": {
-        "operationId": "listAuthoritys",
+        "operationId": "listAuthorities",
         "summary": "list Authoritys",
         "tags": [
           "cases"
@@ -1385,7 +1385,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -1481,7 +1481,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -1748,7 +1748,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Case OWNER/CLAIMANT only; configured OPERATOR assignment/revocation only in reference; cannot alter owner/claimant or enable recipient/collaborator",
         "parameters": [
           {
             "name": "case_id",
@@ -4531,7 +4531,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -4979,7 +4979,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Case OWNER/CLAIMANT only; own exact approval, recent authentication, current authority/consent/holds and immutable manifest; OPERATOR cannot approve",
         "parameters": [
           {
             "name": "case_id",
@@ -5359,7 +5359,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Assigned qualified reviewer; accepted attributable outcome evidence; current authority and holds; never self-adjudicate entitlement",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -5965,7 +5965,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -6048,7 +6048,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
         "parameters": [
           {
             "name": "case_id",
@@ -6143,7 +6143,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Case OWNER/CLAIMANT only; recent authentication; immediate access revocation and policy-controlled purge/hold tracking",
         "parameters": [
           {
             "name": "case_id",
@@ -6441,7 +6441,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "$ref": "#/components/parameters/Limit"
@@ -6506,7 +6506,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -6580,7 +6580,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "name": "workflow_id",
@@ -6666,7 +6666,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "$ref": "#/components/parameters/Limit"
@@ -6733,7 +6733,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "name": "source_id",
@@ -6820,7 +6820,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "WORKFLOW_REVIEWER service entitlement; configuration metadata only; configuration audit on mutation; no implied case evidence access",
         "parameters": [
           {
             "$ref": "#/components/parameters/Limit"
@@ -6887,7 +6887,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -6963,7 +6963,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7046,7 +7046,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7141,7 +7141,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7224,7 +7224,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7320,7 +7320,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7416,7 +7416,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7499,7 +7499,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -7595,7 +7595,7 @@
         ],
         "x-release-scope": "F",
         "x-enabled-reference": false,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
         "parameters": [
           {
             "name": "case_id",
@@ -11125,11 +11125,19 @@
             "const": "INR"
           },
           "total": {
-            "type": "string",
-            "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2}$",
-            "examples": [
-              "42000.00"
-            ]
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2}$",
+                "examples": [
+                  "42000.00"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when no qualifying reviewed observation exists; 0.00 only for an evidenced qualifying zero. Never implies complete asset discovery."
           },
           "as_of_policy_date": {
             "type": "string",
@@ -11154,6 +11162,14 @@
           },
           "synthetic": {
             "type": "boolean"
+          },
+          "summary_state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "NO_ELIGIBLE_VALUES"
+            ],
+            "description": "AVAILABLE requires at least one included holding; NO_ELIGIBLE_VALUES requires total=null and included_asset_ids=[]."
           }
         },
         "required": [
@@ -11164,7 +11180,43 @@
           "policy_version",
           "included_asset_ids",
           "excluded",
-          "synthetic"
+          "synthetic",
+          "summary_state"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "summary_state": {
+                  "const": "NO_ELIGIBLE_VALUES"
+                }
+              },
+              "required": [
+                "summary_state"
+              ]
+            },
+            "then": {
+              "properties": {
+                "total": {
+                  "type": "null"
+                },
+                "included_asset_ids": {
+                  "maxItems": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "total": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2}$"
+                },
+                "included_asset_ids": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
         ]
       },
       "ReconciliationCreate": {
