@@ -29,9 +29,9 @@ Example: a statement is evidence. The account is a holding. Its ₹42,000 balanc
 
 ## How to read this document
 
-Read sections 1–6 for the product, sections 7–13 for behavior, and sections 14–18 for quality, delivery and decisions. This PRD defines the full product vision and the first release. The [architecture overview](ARCHITECTURE.md) explains system boundaries, the [LLD](LLD.md) specifies implementation, the [acceptance plan](ACCEPTANCE.md) maps every requirement to evidence, and the [roadmap](ROADMAP.md) sequences existing scope. [Contribution rules](CONTRIBUTING.md) govern future changes.
+Read sections 1–5 for the product and user journeys. Expand the detailed requirements when you need a specific behavior, and use sections 17–19 for release decisions and coding boundaries. This PRD owns scope; [BUILD_SPEC.md](BUILD_SPEC.md) contains the implementation and test instructions.
 
-**Scope authority:** Every feature, screen, API, agent tool, integration, background job, operational capability and material behavior change must trace to a requirement in this PRD. Neither the LLD nor a ticket can introduce product scope. If a behavior is missing, amend this PRD and obtain product-owner acceptance before implementing it. An unresolved decision is a blocker for the affected capability, not permission to invent an answer. Implementation details may be chosen within an existing requirement when they do not change user behavior, data use, permissions, supported sources or service commitments.
+**Scope authority:** Every feature, screen, API, agent tool, integration, background job, operational capability and material behavior change must trace to a requirement in this PRD. Neither the build guide nor a ticket can introduce product scope. If a behavior is missing, amend this PRD and obtain product-owner acceptance before implementing it. An unresolved decision is a blocker for the affected capability, not permission to invent an answer. Implementation details may be chosen within an existing requirement when they do not change user behavior, data use, permissions, supported sources or service commitments.
 
 This revision preserves the founder’s three use cases and complete asset coverage, consolidates repeated source text and supplies explicit design proposals where the original brief stopped during feasibility. It is a specification, not a claim that the application or integrations exist. New product choices remain proposals until accepted; verified source descriptions do not establish our right to integrate.
 
@@ -150,6 +150,9 @@ Done means the selected preparation checklist is reviewed, the snapshot is dated
 
 A match does not establish inheritance. Another claimant, disputed evidence, suspected fraud or a conflicting entitlement request triggers a hold and qualified escalation, not AI adjudication.
 
+<details>
+<summary><strong>Asset coverage, fields and permitted sources — reference</strong></summary>
+
 ## 6. Asset coverage and discovery sources
 
 All nine categories are in the full vision; each needs separate discovery and claims validation. The table describes candidate paths, not guaranteed access or institution-specific legal instructions.
@@ -192,6 +195,9 @@ All categories retain institution, subject, masked reference, evidence state/sou
 
 References checked 15 October 2026 for planning context. They are not a completed legal review or integration validation. Every enabled source must record coverage, supported subject types, permitted method, authority/consent requirements, data fields, freshness, costs/limits, contractual approval, retention, review date and responsible reviewer.
 
+
+</details>
+
 ## 7. Experience and information architecture
 
 | Surface | What a first-time user can see/do | Required when a step cannot finish normally |
@@ -209,6 +215,9 @@ References checked 15 October 2026 for planning context. They are not a complete
 | Operator workspace | Assigned queues, evidence review, escalation and workflow/source review | No assignment; restricted scope; stale template; fraud/dispute hold |
 
 Each surface has a clear title, plain-language state, next action and route to help. No sensitive document, declaration or sharing decision is approved solely by an ambiguous chat reply. The user can inspect the structured preview and correct information before actions that disclose records or affect a claim.
+
+<details>
+<summary><strong>Detailed requirements and acceptance rules — expand when reviewing a feature</strong></summary>
 
 ## 8. Functional requirements — case, authorization and documents
 
@@ -316,6 +325,9 @@ Retention periods, identity strength, authority evidence and legal requirements 
 
 No benchmark is met merely because it is written here. Engineering, operations and product owners must agree a workload and record measured evidence before accepting FL-52/53. Production credentials and customer records must not enter GitHub or synthetic development fixtures.
 
+
+</details>
+
 ## 15. Business and measurement
 
 ### Product hypothesis
@@ -340,7 +352,7 @@ Numerical business targets and pricing are open under D-01/D-08. Do not fabricat
 
 ## 16. Release acceptance and traceability
 
-The first pilot covers every P requirement. F requirements cannot be silently enabled; they need their listed gate and inclusion in a release scope. [LLD.md](LLD.md) maps modules/APIs/data/tests to these IDs. [ROADMAP.md](ROADMAP.md) may change sequencing but cannot expand scope.
+The first pilot covers every P requirement. F requirements cannot be silently enabled; they need their listed gate and inclusion in a release scope. [BUILD_SPEC.md](BUILD_SPEC.md) sequences implementation and records the technical and test rules; it cannot expand scope.
 
 Mandatory end-to-end scenarios:
 
@@ -379,9 +391,9 @@ Unknown future ideas are not implicitly included. Add them through FL-55 once th
 
 ## 18. Scope control and revision history
 
-Before implementation, each ticket must name PRD IDs, release, user-visible behavior, permissions/data used, failure states and acceptance evidence. An implementation PR must map its APIs/jobs/tools/schema and tests to those IDs. Review rejects unmapped scope or an LLD/roadmap-only feature.
+Before implementation, each ticket must name PRD IDs, release, user-visible behavior, permissions/data used, failure states and acceptance evidence. An implementation PR must map its APIs/jobs/tools/schema and tests to those IDs. Review rejects unmapped scope or a build-guide-only feature.
 
-A change request states the problem, proposed requirement/acceptance change, affected users/data/permissions, release/dependencies, migration/compatibility impact and owner. Update this PRD first, obtain owner acceptance, then update LLD, roadmap and tests together. Preserve existing IDs; mark retired requirements rather than reusing numbers. A release baseline records PRD version and Git commit.
+A change request states the problem, proposed requirement/acceptance change, affected users/data/permissions, release/dependencies, migration/compatibility impact and owner. Update this PRD first, obtain owner acceptance, then update build guide, contracts and tests together. Preserve existing IDs; mark retired requirements rather than reusing numbers. A release baseline records PRD version and Git commit.
 
 | Version | Change |
 | --- | --- |
