@@ -6,7 +6,7 @@ Engineering owner: TBD · Security/operations reviewers: TBD · Implementation s
 
 ## 1. Contract and architecture
 
-The PRD is the product contract. This document selects structures and flows for its requirements; it cannot authorize a new feature, data use, integration or permission. P/F release labels and D-01–D-11 decisions are defined only in the PRD. A pending decision blocks the affected implementation/release. Changes follow FL-55.
+The PRD is the product contract. This document selects structures and flows for its requirements; it cannot authorize a new feature, data use, integration or permission. P/F release labels and D-01–D-11 decisions are defined only in the PRD. A pending decision blocks the affected implementation/release; fixed synthetic defaults in BUILD_SPEC satisfy reference coding decisions. Changes follow FL-55.
 
 Use a modular backend with asynchronous workers, one transactional domain database, private evidence storage and a controlled connector gateway. AI produces proposals and coordinates tasks; deterministic domain services authorize, validate and execute transitions. Financial truth comes from reviewed evidence, not conversation memory.
 
@@ -229,7 +229,7 @@ Proposed limits are PDF/JPEG/PNG, 20 MB and 100 PDF pages per file, configurable
 5. Reviewed reconciliation selects canonical holding and aliases while preserving all evidence. Reversal records a new decision and recomputes derived totals/pack dependencies.
 6. Refresh appends observations and evidence; it never overwrites history or turns “not returned by this source” into “asset does not exist.”
 
-Amount aggregation is deterministic. Require reviewed ownership evidence, selected amount_type, currency, qualifying as-of date/freshness and no unresolved duplicate/conflict/hold. Select one eligible observation per holding/type under D-06. Show exclusions and reasons; never combine cash value, policy benefit, locker contents or historical settlement indiscriminately. If the policy is unresolved, show individual observations and no misleading current total.
+Amount aggregation is deterministic. Require reviewed ownership evidence, selected amount_type, currency, qualifying as-of date/freshness and no unresolved duplicate/conflict/hold. Select one latest qualifying monetary observation per holding under the reference policy; do not add CASH_BALANCE and CURRENT_VALUE for the same holding. Production rules remain D-06. Show exclusions and reasons; never combine cash value, policy benefit, locker contents or historical settlement indiscriminately. If the policy is unresolved, show individual observations and no misleading current total. With no qualifying observation, return total=null and NO_ELIGIBLE_VALUES; an evidenced eligible zero is AVAILABLE with total=0.00.
 
 ### 7.3 Claim pack → manual or direct submission (FL-12–16/35–37)
 
@@ -341,7 +341,7 @@ Representative extraction evaluations include statement formats, scan quality, I
 
 ## 13. Implementation handoff and boundaries
 
-Before a feature is built: select PRD IDs and P/F scope; resolve the blocking D decisions; specify request/event/schema version changes; document normal/error/hold/revocation behavior; identify tests and operations owner. OpenAPI schemas, migrations and runbooks refine these contracts under FL-55; they cannot add unmapped behavior.
+Before a feature is built: select PRD IDs and P/F scope; use accepted reference defaults for synthetic development and resolve D decisions before affected real-data/F enablement; specify request/event/schema version changes; document normal/error/hold/revocation behavior; identify tests and operations owner. OpenAPI schemas, migrations and runbooks refine these contracts under FL-55; they cannot add unmapped behavior.
 
 No real-data intake until D-02/D-05 controls are accepted. No live source until D-03 validation. No recipient sharing/release until D-04. No qualifying current totals without D-06 rules. No performance/SLA claim without measured D-07 acceptance. No new category/language/native client merely because an adapter or library exists.
 
