@@ -3,7 +3,7 @@
 **An AI-native financial asset discovery, legacy planning and recovery platform.**  
 **Find what’s yours. Make sure nothing gets left behind.**
 
-Version 0.3 · Consolidated product scope · Application not yet built
+Version 0.4 · Consolidated product scope · Application not yet built
 
 This is the product contract. [BRD.md](BRD.md) explains the business case and outcomes; it does not authorize additional product scope. [README.md](README.md) is the short overview; [LLD.md](LLD.md) defines implementation and tests; [DESIGN.md](DESIGN.md) defines UI/UX under this scope. Every feature must map to a requirement below. Technical choices may refine an existing requirement; new behavior, data use, access or promises require a PRD change first.
 
@@ -22,6 +22,8 @@ We own the quality of the reviewed record, checklist, pack, permissions and trac
 We identify nomination gaps and guide the supported process; changing nominees or account details is outside this baseline. Never request financial-account passwords/OTPs or bypass restricted access. No release based on inactivity or inferred death. Real estate, physical valuables, crypto, debts, business ownership and foreign assets are outside scope. Pricing, billing and commissions are undecided; billing is not a build feature.
 
 ## 3. Users and essential terms
+
+**Initial audience:** mainly millennials across HNI, UHNI and NRI segments, concerning Indian financial assets. Wealth, residency and generation overlap; they are not separate access roles or proof of eligibility. [BRD §2](BRD.md#2-customers-and-desired-outcomes) defines the targeting, needs and validation plan. All three journeys remain supported within release boundaries. Net-worth disclosure is not an onboarding requirement. Helping or paying for a parent's case gives no access to that living parent's records. NRI targeting does not enable foreign assets or unsupported nonresident procedures: real cases require accepted institution, residency/document and authority workflows; unsupported actions go on hold/handoff. The synthetic coding baseline and disabled F capabilities remain unchanged.
 
 An owner manages their finances; a claimant requests help concerning a deceased person; an assigned operator reviews only permitted cases. A trusted contact has no access merely because they are listed. Later collaborators/recipients need explicit verified access. Support has no blanket financial access; procedure reviewers manage configuration without unrestricted case evidence.
 
@@ -225,7 +227,7 @@ These gates do not block the isolated reference build. Named owners and accepted
 
 | ID | Decision / responsible role |
 | --- | --- |
-| D-01 | Founder: pilot personas/institutions/formats, service boundary and success targets |
+| D-01 | Founder: initial targeting accepted—mainly millennials across HNI/UHNI/NRI (BRD §2); exact pilot personas, supported NRI situations, institutions/formats, service boundary and success targets remain to be selected |
 | D-02 | Product + qualified reviewers: identity/relationship/authority evidence, scope, roles, expiry and sensitive-action checks |
 | D-03 | Integration + qualified reviewers: eligible role/partner/contracts, source/channel permission and living/deceased applicability |
 | D-04 | Product + qualified reviewers: collaboration, family sharing/release, recipient verification, notices/contest and hold resolution |
