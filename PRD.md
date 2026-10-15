@@ -321,7 +321,7 @@ Retention periods, identity strength, authority evidence and legal requirements 
 | FL-52 · P | Approved performance, capacity and recovery budgets | Suggested budgets: p95 ordinary API <1 s, chat acknowledgement <2 s, 20-page clean-document extraction <2 min; 99.5% monthly internal API availability; RPO 24 h/RTO 8 h. Workload/exclusions/cost and final targets require D-07 acceptance before pilot; these are not external SLAs |
 | FL-53 · P | Evaluate extraction, AI decisions and workflow quality on representative cases | Critical identifiers/amounts/ownership reviewed independently; adversarial tests block unauthorized disclosure, false verification and tool misuse; language/voice has a separate gate |
 | FL-54 · P | Collect minimal operational/product metrics with explicit definitions | Pseudonymous events, no document text/account identifiers/balances in analytics; segment waiting time and assisted/manual work honestly |
-| FL-55 · P | Trace every deliverable and change to the PRD | Every feature/ticket/API/job/tool/test maps to IDs; undefined behavior blocks work; PRD amendment precedes new scope; LLD/roadmap updated in the same change |
+| FL-55 · P | Trace every deliverable and change to the PRD | Every feature/ticket/API/job/tool/test maps to IDs; undefined behavior blocks work; PRD amendment precedes new scope; build guide/contracts updated in the same change |
 
 No benchmark is met merely because it is written here. Engineering, operations and product owners must agree a workload and record measured evidence before accepting FL-52/53. Production credentials and customer records must not enter GitHub or synthetic development fixtures.
 
@@ -371,7 +371,7 @@ Release evidence includes requirement IDs, environment/data set, expected/actual
 
 For coding, the reference decisions in section 19 and BUILD_SPEC.md are fixed. The D decisions below now govern real-data deployment, commercial commitments or F expansion; they do not require another planning round before B-01. Synthetic-only defaults must never be treated as legally sufficient production policy.
 
-This is the authoritative decision register. The roadmap references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
+This is the authoritative decision register. The build guide references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
 
 | ID | Decision and accountable role | Blocks |
 | --- | --- | --- |
