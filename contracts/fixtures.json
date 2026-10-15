@@ -1444,7 +1444,8 @@
         "00000000-0000-4000-8000-000000000200",
         "00000000-0000-4000-8000-000000000201"
       ],
-      "title": "Reviewed value from dated sources"
+      "title": "Reviewed value from dated sources",
+      "summary_state": "AVAILABLE"
     },
     "claims": {
       "partial_settlement": {
@@ -1470,6 +1471,22 @@
       "EXTERNAL_NOTIFICATIONS",
       "AUTOMATED_CALLS",
       "NATIVE_CLIENT"
+    ],
+    "inventory_edge_cases": [
+      {
+        "name": "No reviewed eligible amount",
+        "included_asset_ids": [],
+        "total": null,
+        "summary_state": "NO_ELIGIBLE_VALUES",
+        "display": "No reviewed value available"
+      },
+      {
+        "name": "One reviewed eligible zero observation",
+        "total": "0.00",
+        "summary_state": "AVAILABLE",
+        "included_holding_count": 1,
+        "display": "Reviewed value from dated sources"
+      }
     ]
   },
   "authority_defaults": {
@@ -1615,5 +1632,9 @@
         "review_state": "ACCEPTED"
       }
     }
-  ]
+  ],
+  "seed_profiles": {
+    "reviewed": "Default: existing reviewed fixture records and expected INR 44500.00 inventory",
+    "intake": "Fresh disposable database only: seed personas/cases/institutions/sources/templates and generated-document hash registry; do not seed documents/evidence/proposals/assets/observations/claims. Upload/review creates them through application commands. Never apply over an edited database."
+  }
 }
