@@ -10,6 +10,16 @@ Each implementation ticket/PR names its requirement IDs and links relevant scena
 
 ## 2. Test strategy
 
+This document is a checklist of behavior to prove, not a statement that tests have passed. For every check, record the starting records, user action, expected result and actual result. If the result differs, record a defect.
+
+- A domain test checks one product rule, such as excluding an old value.
+- An integration test checks connected parts, such as an API write reaching the database and audit history.
+- An end-to-end test uses the app like a person, from sign-in to the saved result.
+- A security test attempts an action that must be refused, such as reading another case.
+
+Example: sign in as Unrelated Demo User and request case 100’s document. Expected: no document and no information revealing its contents. A hidden button alone is not a pass; the backend must refuse the request.
+
+
 - Domain tests verify evidence states, money/date/type rules, policy guards, state transitions, version conflicts and approval invalidation.
 - Integration tests verify database isolation/constraints, storage authorization/quarantine, outbox/worker retries, deletion and provider adapters using approved fakes/sandboxes.
 - End-to-end tests exercise complete owner, planner and claimant journeys, including a user correcting extracted data.
@@ -19,7 +29,7 @@ Each implementation ticket/PR names its requirement IDs and links relevant scena
 
 Use synthetic records by default. Properly consented real evaluation data requires D-05 approval/access/retention and stays outside GitHub. Safe sandbox responses do not establish real source permissions.
 
-## 3. Requirement coverage matrix
+## 3. One check for every product requirement
 
 P rows are pilot gates; F rows are disabled until their explicit expansion gate. P/F means an in-app pilot capability plus gated external/full-product extension. Each expected result is interpreted with the complete PRD row, not as a replacement for it.
 
@@ -81,7 +91,7 @@ P rows are pilot gates; F rows are disabled until their explicit expansion gate.
 | FL-54 | P | Metrics match PRD definitions, separate waiting/human work and contain no document text/identifiers/balances |
 | FL-55 | P | Every feature/API/job/tool/schema change and test maps to PRD IDs; no LLD/ticket-only scope; amendment/acceptance precedes expansion |
 
-## 4. End-to-end scenario packs
+## 4. Complete user journeys to test
 
 | Pack | Setup and journey | Critical result |
 | --- | --- | --- |
@@ -104,7 +114,7 @@ A pilot requires all P rows, section 4 packs A–G, accepted blocking decisions 
 
 F needs pack H plus each language/category/source/subject/channel/release-specific gate. D-01 sets business targets; D-07 sets workload and service budgets; D-09 sets voice/language evaluation thresholds. Undefined thresholds are unresolved decisions, not default passes.
 
-## 6. Concrete reference acceptance oracles
+## 6. Exact expected results for the sample build
 
 Use [BUILD_SPEC.md](BUILD_SPEC.md) and [contracts/fixtures.json](contracts/fixtures.json). Fixture time is 2026-10-15T00:00:00Z. Eligible reviewed bank INR 42,000 + fund INR 2,500 = INR 44,500. Historical FD, potential-name match, duplicate and unknown-date records are excluded with the contract’s precedence/reasons. Known partial claim INR 1,000 of INR 2,500 leaves INR 1,500; an unknown remainder stays null/unknown. No cross-case evidence reuse.
 
