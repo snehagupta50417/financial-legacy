@@ -41,4 +41,4 @@ Users review the exact content, recipient and purpose before a consequential han
 
 First, build and test the three paths with **generated sample records**, starting with bank/FD and mutual-fund workflows. The assistant and extractor initially use labeled stand-ins. Real data, external AI, live connectors, voice, family release and automated institutional actions need their specified permissions, policies and quality gates. No application or live integration is operating yet.
 
-**[PRD.md](PRD.md)** defines the complete product and evidence behind its boundaries. **[LLD.md](LLD.md)** defines the architecture, implementation and tests. This README is the one-pager; these are the only three documentation pages. The [contracts](contracts/openapi.json) are supporting engineering files.
+**[PRD.md](PRD.md)** defines product scope and research. **[LLD.md](LLD.md)** defines architecture, implementation and tests. **[DESIGN.md](DESIGN.md)** defines screens, visual style, navigation and interaction states. This README remains the one-pager. The [contracts](contracts/openapi.json) are supporting engineering files.
