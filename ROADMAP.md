@@ -1,18 +1,20 @@
 # Financial Legacy — Delivery and Release Plan
 
-Version 0.2 · 15 October 2026 · Proposed sequence; owners/dates not yet assigned
+Version 0.3 · 15 October 2026 · Proposed sequence; owners/dates not yet assigned
 
 ## 1. Authority and release labels
 
-[PRD v0.2](PRD.md) defines all product scope and the authoritative D-01–D-11 decision register. [LLD v0.2](LLD.md) maps the implementation to its 55 requirements. This roadmap sequences that scope; it cannot add features, sources, data uses or service promises.
+[PRD v0.3](PRD.md) defines all product scope and the authoritative D-01–D-11 decision register. [LLD v0.3](LLD.md) maps the implementation to its 55 requirements. This roadmap sequences that scope; it cannot add features, sources, data uses or service promises.
 
 P = proposed first pilot. F = full-product requirement, gated until its prerequisites pass. Every milestone below must name its PRD requirement IDs and evidence. Changes in release timing update the PRD release baseline before implementation; a roadmap note alone cannot authorize scope.
+
+Implementation starts B-01 in BUILD_SPEC.md now. The milestone table below governs product rollout and real-data readiness; its external review gates do not block isolated synthetic development.
 
 ## 2. Delivery sequence
 
 | Milestone | Deliverables already specified in PRD | Requirement coverage | Exit evidence / dependencies |
 | --- | --- | --- | --- |
-| M0 — Agree baseline | Confirm pilot persona/institutions/formats, service boundaries, identities/authority, processing/retention and claims procedures | FL-03, FL-04, FL-12, FL-44, FL-45, FL-46, FL-55 | Resolve affected D-01/02/05/10 decisions; named owners; accepted PRD baseline |
+| M0 — Validate live-pilot readiness | Confirm pilot persona/institutions/formats, service boundaries, identities/authority, processing/retention and claims procedures | FL-03, FL-04, FL-12, FL-44, FL-45, FL-46, FL-55 | Resolve affected D-01/02/05/10 decisions; named owners; accepted PRD baseline |
 | M1 — Secure case foundation | Managed sign-in/recovery, case/subject separation, membership/assignment, consent/holds, audit, uploads and tasks | FL-01, FL-02, FL-03, FL-04, FL-05, FL-18, FL-22, FL-23, FL-25, FL-42, FL-43, FL-45, FL-47, FL-48 | Cross-case and revoked-access tests; quarantine; durable state; privacy-approved providers |
 | M2 — Reviewed inventory | Text case manager, cited extraction/correction, guided discovery, reconciliation, evidence/amount semantics and explicit coverage | FL-06, FL-07, FL-08, FL-09, FL-10, FL-26, FL-28, FL-29, FL-38, FL-39, FL-40 | Representative quality results; D-06 policies; living-owner/no-result/duplicate journeys pass |
 | M3 — Legacy preparation | Checklist, dated record, trusted-contact intent, reviewed exports and review reminders | FL-11, FL-31, FL-34, FL-42 | Planner journey; no accidental contact disclosure; scoped export and stale-record behavior |
@@ -81,3 +83,9 @@ A work item is ready when it lists PRD IDs, P/F label, accepted decisions, user 
 A work item is done when its normal and negative cases pass, evidence and operations are reviewed, no hidden product behavior was added, and PRD/LLD/roadmap remain consistent. A release records the PRD version and Git commit. Preserve requirement IDs and update them explicitly; retired IDs are not reused.
 
 The authoritative unresolved decisions are [PRD section 17](PRD.md#17-decisions-that-must-not-be-guessed). Dates, budgets, commercial terms and owners remain uncommitted until accepted there. No work is authorized solely by an entry in this roadmap.
+
+## 8. Coding starts now: fixed reference baseline
+
+The next task is B-01 in [BUILD_SPEC.md](BUILD_SPEC.md), followed by B-02–B-11 in dependency order. M0 no longer blocks synthetic reference coding: its engineering defaults are fixed, and remaining D decisions apply to real-data deployment/F/commercial commitments. Do not reopen stack, database names, wire fields or fixture oracles as separate planning work.
+
+Reference development uses the [OpenAPI](contracts/openapi.json), [SQL](contracts/schema.sql) and [fixtures](contracts/fixtures.json). It implements P behavior with explicit synthetic identity/evidence/AI stand-ins and no real external effects. Passing reference acceptance is not approval for real-data pilot or F enablement. The original milestones continue to govern promotion and real operation.
