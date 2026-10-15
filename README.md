@@ -57,7 +57,7 @@ Each asset category, institution and source has its own requirements. User-suppl
 
 ## Ready for the first implementation
 
-**Start with B-01 in [BUILD_SPEC.md](BUILD_SPEC.md).** The reference build has a fixed local stack, 100 API operations, a 44-table relational contract, deterministic fixtures and an ordered implementation plan. It covers the three user paths using synthetic records and labeled stand-ins. Coding and runtime testing are the next work; documentation checks are not passing application tests.
+**Start with [the first working journey](BUILD_SPEC.md#17-coding-readiness-review-and-first-increment), then B-01.** The reference build has a fixed local stack, typed API and database contracts, deterministic fixtures and an ordered implementation plan. It covers the three user paths using synthetic records and labeled stand-ins. Coding and runtime testing are the next work; documentation checks are not passing application tests.
 
 The development setup needs no cloud credentials. Real financial access, external AI, family release and automated institutional actions remain behind their permission, policy, quality and release gates.
 
