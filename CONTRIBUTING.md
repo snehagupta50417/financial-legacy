@@ -43,4 +43,10 @@ Use synthetic fixtures. Never commit financial statements, account identifiers, 
 
 Do not test live retrieval, submit claims, disclose documents or place automated calls solely because a connector exists. PRD gates, valid case authority/consent and exact-action approval still apply. Never collect third-party financial passwords/OTPs in chat.
 
-This repository is documentation-only at v0.2. Acceptance scenarios are planned, not executed application tests. Mark delivery and evaluation status accurately.
+This repository is documentation-only at v0.3. Acceptance scenarios are planned, not executed application tests. Mark delivery and evaluation status accurately.
+
+## 6. First implementation work
+
+Start B-01 in [BUILD_SPEC.md](BUILD_SPEC.md). The reference stack, schema, API payloads, synthetic policy, test oracles and B-01–B-11 order are selected. Use [contracts/openapi.json](contracts/openapi.json), [contracts/schema.sql](contracts/schema.sql) and [contracts/fixtures.json](contracts/fixtures.json); generate and verify implementation types/migrations against them. Do not create a framework-selection or rediscovery task before coding.
+
+Real-data/D gates and F remain blocked until accepted, while isolated synthetic reference work can proceed. Never claim the rule/fixture adapters prove real AI quality or institution integration. A newly discovered contract defect should be fixed consistently during implementation; product behavior changes still require the PRD change process.
