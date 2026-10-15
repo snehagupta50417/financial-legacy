@@ -29,7 +29,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Authenticated actor; case/object membership, assignment, authority, consent and holds as applicable",
+        "x-policy": "Unauthenticated minimal process health only; no customer data, credentials or configuration details",
         "parameters": [],
         "responses": {
           "200": {
@@ -1061,7 +1061,7 @@
     "/cases/{case_id}/authorities": {
       "get": {
         "operationId": "listAuthorities",
-        "summary": "list Authoritys",
+        "summary": "List authorities",
         "tags": [
           "cases"
         ],
@@ -4531,7 +4531,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Assigned OPERATOR only; current scoped permissions and holds; attributable reviewed evidence and rationale; no entitlement adjudication or self-approved disclosure",
+        "x-policy": "OWNER/CLAIMANT or assigned OPERATOR may PROPOSE evidence; ACCEPT/REJECT/NEEDS_UPDATE require assigned OPERATOR, current scope, rationale and attributable evidence",
         "parameters": [
           {
             "name": "case_id",
@@ -6143,7 +6143,7 @@
         ],
         "x-release-scope": "P",
         "x-enabled-reference": true,
-        "x-policy": "Case OWNER/CLAIMANT only; recent authentication; immediate access revocation and policy-controlled purge/hold tracking",
+        "x-policy": "Case OWNER/CLAIMANT only; recent authentication; DELETE immediately revokes access/cancels work with policy-controlled purge/hold tracking; EXPORT follows existing scoped export approvals without deletion",
         "parameters": [
           {
             "name": "case_id",
