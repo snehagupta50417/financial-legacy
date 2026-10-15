@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="440" viewBox="0 0 1400 440" role="img" aria-labelledby="title desc">
+  <title id="title">Financial Legacy</title>
+  <desc id="desc">Find what’s yours. Make sure nothing gets left behind. Discover assets, prepare your legacy and navigate claims.</desc>
+  <rect width="1400" height="440" rx="16" fill="#F5F2E9"/>
+  <path d="M0 16A16 16 0 0 1 16 0H1384A16 16 0 0 1 1400 16V84H0Z" fill="#102E32"/>
+  <rect x="48" y="25" width="34" height="34" rx="7" fill="none" stroke="#D6C39A" stroke-width="1.5"/>
+  <path d="M59 49V35H72M59 41H69M65 35V49H73" fill="none" stroke="#D6C39A" stroke-width="1.7" stroke-linecap="square"/>
+  <text x="100" y="51" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" letter-spacing="3" fill="#F5F2E9">FINANCIAL LEGACY</text>
+  <text x="1348" y="49" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" letter-spacing="2" fill="#C7D4CE">FINANCIAL CLARITY. FAMILY CONTINUITY.</text>
+  <text x="52" y="174" font-family="Georgia, 'Times New Roman', serif" font-size="65" fill="#102E32">Find what’s yours.</text>
+  <text x="52" y="238" font-family="Georgia, 'Times New Roman', serif" font-size="47" fill="#102E32">Make sure nothing gets left behind.</text>
+  <text x="54" y="286" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#4D6462">An AI-native platform for individuals and families in India.</text>
+  <line x1="52" y1="322" x2="1348" y2="322" stroke="#D4D8CC" stroke-width="1"/>
+  <text x="54" y="370" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="1.5" font-weight="700" fill="#102E32">DISCOVER ASSETS</text>
+  <text x="54" y="399" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#4D6462">Bring scattered holdings into view.</text>
+  <line x1="475" y1="348" x2="475" y2="405" stroke="#D4D8CC" stroke-width="1"/>
+  <text x="510" y="370" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="1.5" font-weight="700" fill="#102E32">PREPARE YOUR LEGACY</text>
+  <text x="510" y="399" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#4D6462">Leave your family a clearer record.</text>
+  <line x1="938" y1="348" x2="938" y2="405" stroke="#D4D8CC" stroke-width="1"/>
+  <text x="973" y="370" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="1.5" font-weight="700" fill="#102E32">NAVIGATE CLAIMS</text>
+  <text x="973" y="399" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#4D6462">Know the next step. Track progress.</text>
+</svg>
