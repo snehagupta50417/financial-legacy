@@ -265,3 +265,63 @@ Rule-based case-manager priority is deterministic: unsupported/risky request→h
 For reference correctness, serialize case-bound writes with a case-row lock and recheck guards after acquiring it. Update the relevant aggregate version when dependencies change. Inventory/snapshot reads use one consistent transaction/view; snapshot/export manifests freeze all dependent record versions. Never keep the case lock open during network/scanner/model I/O. Recheck policy when a job resumes and before authorizing access.
 
 Unexpected server errors return the shared INTERNAL_ERROR envelope with request ID and no financial/stack details; record only redacted diagnostics. Apply the production/real-data gate to the entire binary/configuration, not merely the UI or a connector flag. The first reference build must not accept real uploads or real-source/provider calls by toggling an environment variable alone.
+
+
+## 17. Coding-readiness review and first increment
+
+**Decision: ready to begin the synthetic reference implementation.** Product scope is PRD section 19; exact wire/relational names come from the contracts. This is a documentation review, not a passing application, security or usability test. D-01–D-11 remain external/pilot/expansion gates. No external permission is needed to start the isolated synthetic build.
+
+### Keep the implementation small
+
+Use one modular API application and one worker entry point sharing domain code, one database and one web client. Existing identity/scanner containers are dependencies, not new product services. No independent agent services, vector database, message broker or cloud deployment is required. The 100 operations describe the release contract; do not implement 100 handlers before a user can complete one journey. The 44-table schema is a relational baseline, not 44 screens or repositories. Use module-level repositories and shared guards. Reserved F records may exist empty; F endpoints return the standard disabled response without implementing voice, sharing, release or connector internals.
+
+Build B-01–B-05 as a narrow end-to-end increment: foundations needed for one bank-document journey, then extend those foundations in the remaining packages. Do not defer case isolation, review, encryption or audit to a later hardening phase. All P behavior and all three paths still gate B-11; the first increment is not the completed reference release.
+
+### First executable journey: owner → statement → reviewed inventory
+
+Use fixtures.json intake profile in a fresh disposable database at the fixture clock. It seeds personas/cases/configuration and the generated hash registry, but no pre-reviewed domain records. Default reviewed profile remains the INR 44,500 oracle. Profile selection is explicit; seed never overwrites an edited database.
+
+| Step | Action | Observable acceptance |
+| --- | --- | --- |
+| 1 | Demo Owner signs in and opens case ending 100 | Subject/mode/synthetic banner visible; empty inventory shows no reviewed value available, total=null |
+| 2 | Complete synthetic identity review and scoped consent | Assigned Demo Reviewer accepts fixture evidence with rationale; distinct verification/consent records, no real verification claim |
+| 3 | Upload generated bank fixture document ending 300 | Upload → quarantine/scan → field proposals; unknown hash and unsafe fixture blocked; retry creates no duplicate |
+| 4 | Inspect citations and accept/correct critical fields | Source page, ownership, reference, source type, amount/type/date reviewed explicitly; no monetary observation before review |
+| 5 | Commit reviewed bank holding | Exactly one qualifying bank holding; total=42000.00, summary_state=AVAILABLE, dated source shown |
+| 6 | Sign out, resume, then retry original mutation | Accepted facts persist; same idempotency key returns original result; unrelated persona receives non-enumerating denial |
+| 7 | Add/review fund fixture and exercise exclusions in separate reviewed-profile test | Total=44500.00; historical/potential/duplicate/undated records excluded; no complete-discovery assertion |
+
+Do not satisfy this journey by displaying seeded accepted records or hard-coded totals. Screens call domain commands and persisted evidence; fixture extraction supplies proposals only. Authentication and authority evidence intake must work before verification is complete, or onboarding deadlocks. Permit case creation, own-case prerequisite upload/review, consent and help under membership; gate financial retrieval/disclosure/claim actions separately.
+
+### Explicit role and command rules
+
+All actions require current actor, accessible case, object scope, supported mode, version/idempotency rules and applicable holds. The OpenAPI policy metadata is a summary; enforce this matrix in a single deterministic policy service.
+
+| Action | Authorized reference actor and rule |
+| --- | --- |
+| Declare/upload/correct fields, inspect own evidence, propose inventory/claims | OWNER/CLAIMANT or assigned OPERATOR within action scope; a declaration alone cannot verify institution provenance |
+| Accept identity/relationship/authority, institution claim requirements or outcomes; create/resolve fraud/dispute hold | Assigned OPERATOR only, attributable evidence and rationale; no AI or client verified flag |
+| Approve exact handoff/export or request deletion | Case OWNER/CLAIMANT, recent authentication and current scoped prerequisites; OPERATOR cannot approve on their behalf |
+| Assign/revoke staff | Case OWNER/CLAIMANT may select configured reference OPERATOR; no ownership transfer, new claimant or F recipient access |
+| Change shared source/template configuration | WORKFLOW_REVIEWER service entitlement and configuration audit; not inferred from OPERATOR membership |
+| Run worker/purge | Closed job registry/service role, initiating context and execution-time checks; purge has separate lifecycle credentials |
+
+Owner field review confirms what a document says. Institution-verified support additionally requires accepted attributable institution evidence and an assigned reviewer; never derive it solely from owner assertion or AI confidence. Rejection/correction invalidates dependent pending approvals. Existing submitted history remains intact. No emergency-access UI or universal administrator bypass is part of reference scope.
+
+### Contract clarifications engineers must use
+
+- Empty/unqualified inventory: total=null, summary_state=NO_ELIGIBLE_VALUES, included_asset_ids=[]; show excluded values/reasons separately. An evidenced qualifying zero uses total=0.00 and AVAILABLE with at least one included holding. These totals describe reviewed coverage, never all wealth.
+- Select one latest qualifying monetary observation per holding across CASH_BALANCE/CURRENT_VALUE; never count both representations of one holding. Units remain separate. Conflicting observations hold that holding for review.
+- Observation proposal route returns a FieldProposal. Store its typed aggregate proposal encrypted as an internal draft referenced by field_path; do not encode arbitrary JSON in a text field or insert an accepted Observation early. All critical sibling fields must be resolved together before one atomic observation commit; reject leaves no monetary observation.
+- Evidence is created by controlled intake/declaration/fixture-source commands, not a client-supplied accepted flag. New uploads produce proposed source evidence; review finalizes its associations. Accepting a claim requirement/outcome does not let an operator invent institution provenance.
+- Document scan_state and processing_state are separate canonical fields. LLD's linear diagram is conceptual; a scan failure does not equal an extraction failure. Exact routes and enums come from OpenAPI/SQL.
+- Pack generation precedes approval. A CLAIM_HANDOFF approval binds pack, institution recipient and MANUAL_HANDOFF; controlled pack retrieval uses a CLAIM_PACK export referencing that approval. A legacy EXPORT approval binds the reviewed snapshot, requesting actor and APP_EXPORT. Operator download must be in that approved handoff scope. Creating/generating a pack never itself authorizes download or submission.
+- Missing If-Match on a marked command returns 422 PRECONDITION_REQUIRED; stale value returns 409 VERSION_CONFLICT. Failed authorization never returns a cached idempotent result.
+
+### Review outcome and remaining work
+
+Reviewed product journeys, P/F boundaries, screen/failure states, role guards, money/evidence rules, API/SQL/fixture structure, lifecycle policy and work-package dependencies. Corrected empty-value semantics in PRD/API/fixtures, role-policy metadata and the authorities operation name. Retained the modular architecture and relational baseline; no runtime evidence supports a wholesale redesign now.
+
+B-01 must execute dependency/build checks and B-02 must run the SQL on fresh PostgreSQL with runtime-role isolation tests before downstream work. If a contract fails, repair the smallest affected contract with a recorded reason and relevant requirement IDs. Reference retention request EXPORT is an authenticated request for the existing scoped export workflow, not a purge; only DELETE revokes access/cancels work. These checks are coding deliverables, not another documentation phase.
+
+No coding-blocking product decision remains for this synthetic baseline. Real-data permissions, legally sufficient policies, institution procedures, provider quality, business targets and production operations remain unresolved launch gates. Implementation PRs supply measured evidence; user research and live-source validation cannot be certified by this review.
