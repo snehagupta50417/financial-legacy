@@ -415,7 +415,7 @@ For specialized joint/minor/representative/nonresident cases, verify supported w
 
 ### Record evidence and decide whether the release passes
 
-Record test/scenario ID, PRD IDs, PRD/LLD version and Git commit, P/F scope, fixture/environment, expected/actual result, automated/manual steps, reviewer/date, defect IDs and decision. Protect test artifacts containing sensitive data under approved policy; keep synthetic evidence in repo.
+Record test/scenario ID, PRD IDs, PRD/build-guide version and Git commit, P/F scope, fixture/environment, expected/actual result, automated/manual steps, reviewer/date, defect IDs and decision. Protect test artifacts containing sensitive data under approved policy; keep synthetic evidence in repo.
 
 A pilot requires all P rows, section 4 packs A–G, accepted blocking decisions and named operators. No unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defect is acceptable. Mark failed/blocked tests honestly; a test plan is not a passing test.
 
