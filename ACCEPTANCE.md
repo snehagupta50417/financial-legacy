@@ -53,7 +53,7 @@ P rows are pilot gates; F rows are disabled until their explicit expansion gate.
 | FL-26 | P | Accept/correct/reject fields/source associations with version/reason; material corrections invalidate dependent pack/approval |
 | FL-27 | F | Per-source subject/purpose/consent/authority and permitted channel validated; refresh preserves evidence and coverage; disabled source blocked |
 | FL-28 | P | Old/new observations and closure/transmission evidence remain attributable; no destructive replacement or missing-source inference |
-| FL-29 | P | Duplicate/potential/stale/historical/unknown/incompatible values excluded; one qualifying observation/type/currency; exclusions explained |
+| FL-29 | P | Duplicate/potential/stale/historical/unknown/incompatible values excluded; one qualifying monetary observation per holding; exclusions explained; no eligible value returns null, while an evidenced zero returns 0.00 |
 | FL-30 | F | Each of nine classes passes its schema, amount, evidence, discovery/authority and claim workflow evaluation before enablement |
 | FL-31 | P | Contact intent creates no invite/disclosure; planner corrections/contact replacement/review reminder retain history |
 | FL-32 | F | Lifetime sharing verifies recipient, exact approved scope, expiry/access log and revoke; no unapproved family access |
@@ -111,3 +111,12 @@ Use [BUILD_SPEC.md](BUILD_SPEC.md) and [contracts/fixtures.json](contracts/fixtu
 Tests cover generated-PDF SHA registration, unsafe/unknown hash rejection, separate review, 15-minute approval expiry, 30-day consent expiry, revocation of queued work, unknown manual acceptance and safe retry, exact role/case context, deletion/tombstone restoration and all F routes disabled. Fixed load/browser/session/retention budgets and command behavior are specified in BUILD_SPEC.md; no additional threshold-choice meeting is needed to implement the reference tests.
 
 CI must parse/validate OpenAPI and references, check request/response/generated model agreement, execute SQL migrations on fresh PostgreSQL 18, seed twice idempotently, run domain/integration/E2E packs and report all failures. These runtime checks are not yet executed; the current deliverable is the coding contract. Real-provider/model/language quality and monthly production availability cannot be certified by synthetic tests.
+
+
+## 7. First-increment evidence and audit findings
+
+Execute BUILD_SPEC section 17 with the explicit intake fixture profile; the reviewed profile is a separate regression oracle. Require a real upload/scan/proposal/review/commit/resume path, not a prepopulated success screen. Record the Git commit, fixture profile/clock, generated binary hashes, actor, expected/actual result and failure evidence.
+
+Required negative cases: prerequisite upload works before verification; non-reviewer cannot verify authority or accept institution outcome; assigned operator cannot approve a user disclosure; expired/revoked scope blocks download and queued work; changed pack invalidates approval; unknown file is rejected; observation proposal cannot become accepted before all critical fields are reviewed; same holding is not summed twice; empty inventory is null and an evidenced eligible zero is 0.00.
+
+Documentation review checked requirement coverage, local links, JSON references/operation IDs, P/F flags, strict envelopes and fixture arithmetic. SQL execution, dependency compatibility, generated-model conformance, application security, usability and runtime behavior remain unexecuted implementation checks. Passing this review authorizes starting synthetic coding, not a real-data launch or a passing B-11 result.
