@@ -1,4 +1,4 @@
-# Financial Legacy — Coding Handoff
+# Financial Legacy — Low-Level Design (LLD)
 
 Version 0.3 · 15 October 2026 · Implementation baseline for the reference release
 
@@ -424,7 +424,7 @@ F needs pack H plus each language/category/source/subject/channel/release-specif
 
 ### First-increment negative cases and fixture checks
 
-Execute BUILD_SPEC section 17 with the explicit intake fixture profile; the reviewed profile is a separate regression oracle. Require a real upload/scan/proposal/review/commit/resume path, not a prepopulated success screen. Record the Git commit, fixture profile/clock, generated binary hashes, actor, expected/actual result and failure evidence.
+Execute LLD section 17 with the explicit intake fixture profile; the reviewed profile is a separate regression oracle. Require a real upload/scan/proposal/review/commit/resume path, not a prepopulated success screen. Record the Git commit, fixture profile/clock, generated binary hashes, actor, expected/actual result and failure evidence.
 
 Required negative cases: prerequisite upload works before verification; non-reviewer cannot verify authority or accept institution outcome; assigned operator cannot approve a user disclosure; expired/revoked scope blocks download and queued work; changed pack invalidates approval; unknown file is rejected; observation proposal cannot become accepted before all critical fields are reviewed; same holding is not summed twice; empty inventory is null and an evidenced eligible zero is 0.00.
 
