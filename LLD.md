@@ -1,21 +1,27 @@
 # Financial Legacy — Low-Level Design (LLD)
 
-Version 0.3 · 15 October 2026 · Implementation baseline for the reference release
+Version 0.3 · 16 October 2026 · Implementation baseline for the reference release
 
 
 ## 1. Start here
 
-**Read this section and the B-01–B-11 table first. Everything else is reference material to open as needed.**
+### The six product layers
 
-The system has a web app, one backend split into modules, one database, private encrypted files and a background worker. The assistant proposes questions and actions; backend code checks permission and saves accepted records. Slow jobs, such as scanning, run in the worker.
+| Layer | What it does | First implementation |
+| --- | --- | --- |
+| User experience | Conversation, document upload/review and views for holdings, legacy, claims and tasks | Responsive web/text; voice and native apps later |
+| Identity and authorization | Sign-in, consent, claimant checks, permissions and access history | Local OIDC plus case-scoped reviewer/backend checks |
+| AI orchestration | Understand the goal, propose questions/actions, coordinate tools and handle exceptions | One rule-based case manager; approved external providers later |
+| Financial integration | Permitted APIs/partners, official workflows and authorized imports | Sample source/document adapters and guided steps; no real connector |
+| Asset and document records | Evidence, extraction, matching, dated values, storage and audit | PostgreSQL and encrypted private files with reviewed proposals |
+| Claims and workflow | Institution requirements, forms/packs, approval, tasks, follow-ups and outcomes | Versioned demonstration procedures and manually recorded sample receipts/outcomes |
 
-The first journey is: sign in as Demo Owner → open case 100 → upload identity fixture 330 → complete reviewer checks and scoped consent → upload bank fixture 300 → inspect/correct its fields → save the reviewed holding → sign out and resume. Expected reviewed bank value: ₹42,000. See section 17 for its exact checks.
+These are responsibilities inside one modular backend, not six independent services. The assistant coordinates work; deterministic backend code controls access and accepted changes.
 
-Your first deliverable is a local app that starts safely, not a complete financial service. Then make one path work from beginning to end: sign in, upload the sample statement, inspect its proposed fields, accept the reviewed information, and return to it after signing out. The later sections specify the exact rules that this path must use.
 
-The next task is **B-01: create the repository scaffold and local environment**, not another design exercise. Implement the numbered work packages below against [PRD.md](PRD.md), [contracts/openapi.json](contracts/openapi.json), [contracts/schema.sql](contracts/schema.sql) and [contracts/fixtures.json](contracts/fixtures.json).
+**Start B-01 in the coding table below, using the [PRD](PRD.md), [API](contracts/openapi.json), [SQL](contracts/schema.sql) and [fixtures](contracts/fixtures.json).** Expand reference sections only for the module being built.
 
-This baseline fixes engineering choices and deterministic development behavior under existing PRD requirements. It does not approve real financial access, certify claimant authority or select a legally sufficient production policy. Those are real-data/deployment gates, not blockers to implementing and testing the specified reference product.
+First journey: Demo Owner → case 100 → identity fixture 330 → reviewer checks/scoped consent → bank fixture 300 → field review → saved holding → sign out/resume. Expected reviewed bank value: ₹42,000. Section 17 gives exact checks. Build this slice before extending the remaining first-release paths.
 
 ### What is being coded
 
@@ -293,15 +299,11 @@ For reference correctness, serialize case-bound writes with a case-row lock and 
 Unexpected server errors return the shared INTERNAL_ERROR envelope with request ID and no financial/stack details; record only redacted diagnostics. Apply the production/real-data gate to the entire binary/configuration, not merely the UI or a connector flag. The first reference build must not accept real uploads or real-source/provider calls by toggling an environment variable alone.
 
 
-## 17. Coding-readiness review and first increment
+## 17. First journey, role rules and edge cases
 
-**Decision: ready to begin the synthetic reference implementation.** Product scope is PRD section 19; exact wire/relational names come from the contracts. This is a documentation review, not a passing application, security or usability test. D-01–D-11 remain external/pilot/expansion gates. No external permission is needed to start the isolated synthetic build.
+Use the synthetic policy and exact contracts below. Real-data and later-feature gates remain in PRD section 17.
 
-### Keep the implementation small
-
-Use one modular API application and one worker entry point sharing domain code, one database and one web client. Existing identity/scanner containers are dependencies, not new product services. No independent agent services, vector database, message broker or cloud deployment is required. The 100 operations describe the release contract; do not implement 100 handlers before a user can complete one journey. The 44-table schema is a relational baseline, not 44 screens or repositories. Use module-level repositories and shared guards. Reserved F records may exist empty; F endpoints return the standard disabled response without implementing voice, sharing, release or connector internals.
-
-Build B-01–B-05 as a narrow end-to-end increment: foundations needed for one bank-document journey, then extend those foundations in the remaining packages. Do not defer case isolation, review, encryption or audit to a later hardening phase. All P behavior and all three paths still gate B-11; the first increment is not the completed reference release.
+Reserved F tables may stay empty; F routes return disabled state without building voice, sharing, release or connector internals. Case isolation, review, encryption and audit apply from the first slice. All P behavior and all three paths still gate completion.
 
 ### First executable journey: owner → statement → reviewed inventory
 
@@ -344,15 +346,9 @@ Owner field review confirms what a document says. Institution-verified support a
 - Pack generation precedes approval. A CLAIM_HANDOFF approval binds pack, institution recipient and MANUAL_HANDOFF; controlled pack retrieval uses a CLAIM_PACK export referencing that approval. A legacy EXPORT approval binds the reviewed snapshot, requesting actor and APP_EXPORT. Operator download must be in that approved handoff scope. Creating/generating a pack never itself authorizes download or submission.
 - Missing If-Match on a marked command returns 422 PRECONDITION_REQUIRED; stale value returns 409 VERSION_CONFLICT. Failed authorization never returns a cached idempotent result.
 
-### Review outcome and remaining work
+Retention request EXPORT follows the existing scoped export workflow and does not revoke access. Only DELETE triggers access revocation/cancellation and the policy-controlled purge.
 
-Reviewed product journeys, P/F boundaries, screen/failure states, role guards, money/evidence rules, API/SQL/fixture structure, lifecycle policy and work-package dependencies. Corrected empty-value semantics in PRD/API/fixtures, role-policy metadata and the authorities operation name. Retained the modular architecture and relational baseline; no runtime evidence supports a wholesale redesign now.
-
-B-01 must execute dependency/build checks and B-02 must run the SQL on fresh PostgreSQL with runtime-role isolation tests before downstream work. If a contract fails, repair the smallest affected contract with a recorded reason and relevant requirement IDs. Reference retention request EXPORT is an authenticated request for the existing scoped export workflow, not a purge; only DELETE revokes access/cancels work. These checks are coding deliverables, not another documentation phase.
-
-No coding-blocking product decision remains for this synthetic baseline. Real-data permissions, legally sufficient policies, institution procedures, provider quality, business targets and production operations remain unresolved launch gates. Implementation PRs supply measured evidence; user research and live-source validation cannot be certified by this review.
-
-Second-pass review: source references and seeded holding references now agree, including the deliberate duplicate; generated statements include cited subject/ownership fields; each living-owner fixture has its own identity evidence. Review source association separately from field transcription. Regenerate fixture PDFs and hashes after fixture changes; never reuse an old hash registry with changed source text.
+Dependency compatibility, SQL execution, isolation, accessibility, security and journey tests must be run during implementation; no runtime result is implied by this document.
 
 </details>
 
@@ -361,7 +357,7 @@ Second-pass review: source references and seeded holding references now agree, i
 
 ## 18. Workflow states and release checks
 
-This section carries the unique implementation and test guidance from the retired design/test pages. PRD requirement rows remain the acceptance authority; OpenAPI and SQL remain the exact wire/database formats. The state table describes logical workflow steps; document scan_state and processing_state are separate fields, as section 17 explains.
+PRD requirement rows are the acceptance authority; OpenAPI and SQL are the exact wire/database formats. The state table describes logical workflow steps; document scan_state and processing_state are separate fields, as section 17 explains.
 
 ### Allowed workflow moves
 
@@ -428,7 +424,6 @@ Execute LLD section 17 with the explicit intake fixture profile; the reviewed pr
 
 Required negative cases: prerequisite upload works before verification; non-reviewer cannot verify authority or accept institution outcome; assigned operator cannot approve a user disclosure; expired/revoked scope blocks download and queued work; changed pack invalidates approval; unknown file is rejected; observation proposal cannot become accepted before all critical fields are reviewed; same holding is not summed twice; empty inventory is null and an evidenced eligible zero is 0.00.
 
-Documentation review checked requirement coverage, local links, JSON references/operation IDs, P/F flags, strict envelopes and fixture arithmetic. SQL execution, dependency compatibility, generated-model conformance, application security, usability and runtime behavior remain unexecuted implementation checks. Passing this review authorizes starting synthetic coding, not a real-data launch or a passing B-11 result.
 
 Fixture-integrity checks for B-02/B-04: every seeded holding reference and locator match its same-case statement; every extraction field exists at the cited generated page; owner case 100 can complete identity review using document 330 without case-102 evidence. An observation draft commits only after all scalar siblings and critical source/ownership reviews resolve; rejecting one sibling blocks it, corrections preserve history, and duplicate final-review delivery creates exactly one observation. Regenerated PDF hashes must replace the registry when source text changes.
 
