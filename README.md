@@ -35,10 +35,10 @@ A statement value has a source and date; it is not a live balance. A possible ma
 | You need to… | Read |
 | --- | --- |
 | Understand exactly what the product must do | [PRD.md](PRD.md) |
-| Implement and test it | [BUILD_SPEC.md](BUILD_SPEC.md) |
+| Understand the low-level design, implement and test it | [LLD.md](LLD.md) |
 
-This README is the product overview. Engineers can expand the reference sections in the build guide when needed. The [API](contracts/openapi.json), [database](contracts/schema.sql) and [sample data](contracts/fixtures.json) files are exact technical contracts, not additional team reading.
+This README is the product overview. Engineers can expand the reference sections in the LLD when needed. The [API](contracts/openapi.json), [database](contracts/schema.sql) and [sample data](contracts/fixtures.json) files are exact technical contracts, not additional team reading.
 
-**Next: B-01 in the build guide.** Build sign-in → sample statement upload → field review → saved inventory first. Then complete legacy preparation, claims and the remaining first-release checks.
+**Next: B-01 in the LLD.** Build sign-in → sample statement upload → field review → saved inventory first. Then complete legacy preparation, claims and the remaining first-release checks.
 
 The PRD controls scope. Use synthetic records and generated local secrets; never commit real financial or identity documents or credentials.
