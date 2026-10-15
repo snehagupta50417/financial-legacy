@@ -1,72 +1,79 @@
-# Financial Legacy — Architecture Overview
+# Financial Legacy — How the System Works
 
-Version 0.3 · 15 October 2026 · Proposed; no running system
+Version 0.3 · Plain-language explanation of the reference design · No running system yet
 
-## 1. Product and scope boundary
+## 1. What this document explains
 
-Financial Legacy coordinates financial discovery, legacy preparation and claims assistance through one persistent AI case manager. The [PRD](PRD.md) owns every product requirement and unresolved decision. This overview explains how the pieces fit; [LLD.md](LLD.md) defines records, APIs and transition guards. Nothing here expands PRD scope (FL-55).
+The [PRD](PRD.md) says what the product must do. This document explains the main parts needed to do it. The [coding handoff](BUILD_SPEC.md) selects the software tools, and the [low-level design](LLD.md) specifies exact records and rules.
 
-P is the proposed document-led pilot. F is the gated full vision. A manual enquiry, prepared pack or mock response is never presented as a live integration.
+A **case** is one person’s goal concerning one financial subject. For example, “find my investments” is a case about the signed-in owner. “Help me claim my father’s mutual fund” is a different case about the father. Their evidence must stay separate.
 
-## 2. System at a glance
+## 2. The main parts
 
-| Boundary | Components | Responsibility |
+| Part | Its job | Example |
 | --- | --- | --- |
-| User experience | Responsive web, chat, structured review/inventory/legacy/claim/task views; voice/native client gated | Explain current subject/state, collect information and obtain reviewable decisions |
-| Trust and policy | Managed identity, case membership, verification, authority, consent, holds and approval | Decide who may see/do what for which subject/purpose, now |
-| Application domain | Case, documents, discovery/assets, legacy, claims, tasks and operations modules | Own durable facts and deterministic transitions |
-| AI orchestration | Case manager and bounded capability/provider adapters | Propose questions/fields/steps, cite evidence, coordinate permitted tools |
-| Financial integration | Approved connector gateway and versioned institution workflows | Retrieve or submit only for validated source/subject/channel scopes |
-| Data/operations | Transactional database, private evidence store, durable workers/outbox, audit and redacted monitoring | Preserve evidence, reliability, traceability and controlled lifecycle |
+| Web app | Show conversations, documents, reviews, holdings and tasks | The user corrects an extracted account reference |
+| Sign-in and permission checks | Establish who is using the app and which actions they may take | An operator can review only assigned cases |
+| Application backend | Apply the product rules and save accepted changes | Reject a claim-pack approval if its documents changed |
+| Database | Store linked records and their history | Keep a holding, its source document, review and dated value together |
+| Private file storage | Keep original documents and generated packs encrypted | Return a document only after checking permission |
+| Background worker | Run tasks that take time without blocking the page | Scan a document, propose fields or generate an export |
+| Assistant and document-reading adapters | Suggest questions, fields and next actions | Explain why a historical amount is excluded |
 
-The pilot should use a modular backend, not a fleet of autonomous microservices. Module boundaries can later support independent deployment if real scale or ownership needs justify it. The reference choices are fixed in BUILD_SPEC.md; real-data provider/hosting approvals remain D-05/D-07.
+An **adapter** is a replaceable connection between our code and a specific service. In the first build, the assistant uses fixed rules and document reading uses sample answers. Later adapters may connect approved external services without changing the permission rules.
 
-## 3. Core system flows
+Use one backend divided into modules, with one database and a worker that shares its code. A module is a group of related functions, such as documents or claims. We do not need separate independent services for every module or an autonomous agent for each task.
 
-### Evidence to inventory
+## 3. Example: a statement becomes a holding
 
-Authorized upload → quarantine and scan → approved extraction → cited field proposals → user/operator review → evidence-linked holding and immutable dated observations → deterministic inventory summary.
+1. The user signs in and opens their case.
+2. The backend checks membership and allows the required evidence upload. Upload must work before verification is complete, because the evidence may be needed for verification.
+3. The file enters quarantine: private storage where it cannot yet be used for extraction.
+4. The worker checks file type, size, content and malware-scan result. Failure produces a visible reason and a next step. A scanner outage does not mean a file is safe.
+5. The document reader proposes fields with page references. It does not directly create confirmed financial facts.
+6. The user or assigned reviewer compares the proposals with the source and accepts, corrects or rejects them. Institution-supported status needs the specified reviewer and attributable evidence.
+7. The backend saves the accepted holding and dated value together. It keeps the original source and review history.
+8. The inventory includes only values allowed by the summary rules. Possible matches, duplicates, historical-only amounts and unresolved conflicts remain visible but excluded.
 
-A possible match remains a possible match. A model confidence score cannot verify ownership. Historical amounts, unknown freshness, duplicate candidates and incompatible amount types cannot inflate a current total (FL-05–10, FL-25–30).
+An empty eligible set means “no reviewed value available.” It does not prove the person has no money. An evidenced eligible zero can be displayed as ₹0.
 
-### Inventory to legacy
+## 4. Example: holdings become a legacy record
 
-Reviewed inventory → preparation checklist and gap review → dated snapshot/contact intent → scoped export in P → verified lifetime sharing or controlled post-death release only after F policy gates.
+The app builds a checklist from reviewed holdings and missing information. The user reviews the gaps and saves a dated snapshot: a frozen copy of the record at that point in time.
 
-A contact entry is inert. No inferred death, inactivity or agent decision creates recipient access. Release shares information; it does not transfer assets or decide entitlement (FL-11, FL-24, FL-31–34/47).
+A trusted contact is an instruction about intended sharing. Recording the contact gives them no access and sends no message. The first build allows an approved user export. Lifetime sharing and release after death remain disabled until their separate rules and tests are accepted.
 
-### Known asset to claim outcome
+An export is a copy. Changing or deleting the original cannot recall a copy someone already downloaded.
 
-Known or discovered holding → action-specific authority → reviewed institution requirements → immutable claim pack → exact user approval → manual handoff in P or enabled connector in F → receipt and follow-up → evidenced outcome with outstanding remainder/dispute tracked.
+## 5. Example: a known holding becomes a claim
 
-Discovery is optional for known holdings. Each institution claim progresses independently. Possible remote acceptance without a receipt enters an unknown state and requires reconciliation before retry (FL-12–17/35–37).
+1. The claimant selects a known holding; discovery is unnecessary.
+2. An assigned reviewer checks identity, relationship and permission to perform the required action. These are separate checks.
+3. The claim uses a reviewed procedure for the institution and asset category. The app shows missing and accepted documents.
+4. The worker prepares a claim pack from specific document versions. The authorized user sees the recipient, purpose, documents and declarations before approving.
+5. In the first build, the platform prepares a manual handoff. It does not submit to the institution. Simulated receipts and responses are recorded as such.
+6. A receipt, additional request or outcome updates that claim’s history and next tasks. A partial settlement leaves the remaining work open. An unknown remainder stays unknown.
 
-## 4. What the AI controls
+If an outside submission may have been accepted but there is no receipt, the status is unknown. Check what happened before attempting another submission. A timeout is not proof of failure.
 
-The AI understands the goal, gathers information, reads approved evidence, suggests matches, prepares drafts and coordinates tasks. It uses server-scoped, schema-validated tools.
+## 6. Rules that apply everywhere
 
-It cannot grant authority, expand access, establish inheritance, promote institution verification without evidence, approve its own disclosure or invoke unrestricted external tools. Documents are untrusted data, not instructions. Persistent domain records are authoritative; conversation summaries reference them and can be rebuilt (FL-38–40/46/53).
+**Permission follows the record.** API requests, searches, file reads and background tasks must all check the current case and action. Knowing a record ID is not permission to read it. A database isolation rule is an extra barrier; it does not replace these checks.
 
-## 5. Data and trust boundaries
+**The assistant suggests; application code enforces.** The assistant cannot grant access, decide inheritance, approve its own disclosure or treat an instruction inside a document as permission.
 
-Case and subject scope follow every record, retrieval, job and storage access. The domain database owns state; private storage owns binaries; audit stores minimal attributable access/change events. Processors receive only approved purpose-scoped data. Development uses synthetic records; no financial evidence belongs in GitHub.
+**Accepted changes and work requests are saved together.** The backend writes the change and a pending-work record in one database transaction: both succeed or neither does. This pending-work pattern is called an outbox. The worker can resume it after a restart.
 
-Identity, relationship, authority, consent, nominee information, approval and institutional entitlement are distinct. Policy is checked at request time and immediately before queued execution. Revocation blocks future access/work; already delivered disclosures and downloaded exports cannot be recalled (FL-03, FL-04, FL-18, FL-19, FL-23, FL-45–48).
+**Repeated requests must be safe.** An idempotency key identifies one intended change. Retrying the same request returns its earlier result; reusing the key for different content fails. A version check also prevents someone from overwriting newer edits with an old screen.
 
-## 6. Reliability boundary
+**Permission is checked again before delayed work.** Revocation or a hold may happen after a task was queued. A hold is a recorded restriction while a dispute or uncertainty is resolved. Completed disclosures cannot be undone; the app records that limit honestly.
 
-Writes and outbox events commit together. Workers assume duplicate delivery, use bounded retries and recheck current policy. Version checks prevent stale reviews/approvals. External execution uses provider idempotency where available, stored receipts and explicit unknown-outcome reconciliation; an internal queue alone does not guarantee exactly-once external effects (FL-36, FL-51).
+**Data has a lifecycle.** A deletion request stops access and queued work, then tracks which files and derived records were removed or remain under a justified hold. A deletion marker prevents an old backup from silently restoring deleted information.
 
-User-visible states distinguish waiting on the user, waiting on an institution, review, errors and unresolved outcomes. Monitoring is redacted. Backup/restore, deletion tombstones, accessibility and measured service budgets are release evidence, not implementation assumptions (FL-40, FL-50–54).
+## 7. What is available now and later
 
-## 7. Expansion and decisions
+The first implementation uses generated sample documents, local sign-in, encrypted local storage, rule-based conversation and sample extraction. It needs no cloud credentials and has no real external financial effects.
 
-Voice/languages, collaboration/sharing/release, all nine asset categories, live retrieval, direct submissions and automated follow-ups are explicit F requirements. Each source/category/channel/language has a separate gate; no universal “enable AI” switch authorizes all of them.
+Voice, family access, post-death release, other asset categories, live retrieval, direct submission and automated follow-ups each remain behind a separate release gate. A release gate is a list of permissions, policies and tests that must pass before enabling the capability.
 
-D-02 governs identity/authority; D-03 source access; D-04 family release; D-05 processors/retention; D-06 evidence/amount policies; D-07 capacity/operations; D-09 voice; D-10 procedures; D-11 native client. The full authoritative register is PRD section 17.
-
-Read [ACCEPTANCE.md](ACCEPTANCE.md) for requirement-level verification and [CONTRIBUTING.md](CONTRIBUTING.md) before creating implementation work.
-
-## 8. Implementation entry point
-
-The reference architecture is now fixed in [BUILD_SPEC.md](BUILD_SPEC.md) and its API/SQL/fixture contracts. Start B-01: scaffold and local Compose, then migrations, identity/policy and the three synthetic journeys. Production provider/permission choices remain launch gates; they are not a reason to delay isolated reference coding. The deterministic case manager/extractor are testable stand-ins, not evidence that real AI/provider behavior works.
+The [acceptance plan](ACCEPTANCE.md) describes the evidence needed. Documentation is not proof those checks have passed.
