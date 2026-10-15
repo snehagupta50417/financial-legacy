@@ -1,6 +1,6 @@
 # Financial Legacy — Architecture Overview
 
-Version 0.2 · 15 October 2026 · Proposed; no running system
+Version 0.3 · 15 October 2026 · Proposed; no running system
 
 ## 1. Product and scope boundary
 
@@ -19,7 +19,7 @@ P is the proposed document-led pilot. F is the gated full vision. A manual enqui
 | Financial integration | Approved connector gateway and versioned institution workflows | Retrieve or submit only for validated source/subject/channel scopes |
 | Data/operations | Transactional database, private evidence store, durable workers/outbox, audit and redacted monitoring | Preserve evidence, reliability, traceability and controlled lifecycle |
 
-The pilot should use a modular backend, not a fleet of autonomous microservices. Module boundaries can later support independent deployment if real scale or ownership needs justify it. Provider and hosting decisions remain D-05/D-07.
+The pilot should use a modular backend, not a fleet of autonomous microservices. Module boundaries can later support independent deployment if real scale or ownership needs justify it. The reference choices are fixed in BUILD_SPEC.md; real-data provider/hosting approvals remain D-05/D-07.
 
 ## 3. Core system flows
 
@@ -66,3 +66,7 @@ Voice/languages, collaboration/sharing/release, all nine asset categories, live 
 D-02 governs identity/authority; D-03 source access; D-04 family release; D-05 processors/retention; D-06 evidence/amount policies; D-07 capacity/operations; D-09 voice; D-10 procedures; D-11 native client. The full authoritative register is PRD section 17.
 
 Read [ACCEPTANCE.md](ACCEPTANCE.md) for requirement-level verification and [CONTRIBUTING.md](CONTRIBUTING.md) before creating implementation work.
+
+## 8. Implementation entry point
+
+The reference architecture is now fixed in [BUILD_SPEC.md](BUILD_SPEC.md) and its API/SQL/fixture contracts. Start B-01: scaffold and local Compose, then migrations, identity/policy and the three synthetic journeys. Production provider/permission choices remain launch gates; they are not a reason to delay isolated reference coding. The deterministic case manager/extractor are testable stand-ins, not evidence that real AI/provider behavior works.
