@@ -2,44 +2,40 @@
 
 **Find what’s yours. Make sure nothing gets left behind.**
 
-An AI-native financial asset discovery, legacy preparation and claims-assistance platform for individuals and families in India.
+An assistant for people in India who need to find financial assets, prepare a record for their families, or work through claims after a death.
 
 ## The problem
 
-A financial life rarely stays in one place. Bank accounts, deposits, investments, insurance and retirement benefits accumulate across institutions. Old records get lost, contact details change and nomination information becomes incomplete. After a death, families may need to discover the holdings first—and then navigate a separate claims process at each institution.
+A person’s money and investments can be spread across banks, employers, investment companies and insurers. Documents get lost. Contact details change. Families may not know what exists or which institution to contact. Finding an asset and successfully claiming it are two different jobs.
 
-## What we are building
+## What we help people do
 
-One persistent AI case manager that helps people find and organize financial information, prepare for their families and move supported claims forward. The experience starts with a conversation and continues through evidence review, clear next actions and tracked outcomes.
+| Need | What the product helps with | Result |
+| --- | --- | --- |
+| Find my assets | Collect records, follow permitted search routes and review possible matches | A reviewed list of holdings and unanswered questions |
+| Prepare for my family | Organize records, identify missing information and record contact instructions | A dated financial record and a preparation checklist |
+| Handle a relative’s assets after death | Establish permission to act, collect evidence and prepare institution-specific claims | Separate claim records with documents, next tasks and outcomes |
 
-| User need | What Financial Legacy is designed to deliver |
-| --- | --- |
-| **Discover my assets** | A reviewed inventory of known holdings, possible matches and unresolved discovery gaps |
-| **Prepare my legacy** | A dated financial record, preparation checklist and controlled instructions for sharing information |
-| **Find or claim a relative’s assets** | Authority-reviewed discovery and institution-specific claims assistance, with documents, follow-ups and outcomes in one case |
-
-The paths work independently. A family that already knows the asset can go directly to claims.
+Use one path without completing the others. If an asset is already known, skip discovery and start the claim.
 
 ## How it works
 
-**Talk → verify identity and authority → discover and review evidence → organize a legacy or prepare a claim → track the outcome.**
+Tell the assistant what you need. It asks for the information relevant to that goal and explains why it is needed. Documents are checked, their fields are proposed with source references, and important information is reviewed before it is accepted.
 
-The case manager coordinates document intelligence, record reconciliation, checklists and follow-up tasks. Structured views let users inspect the evidence and approve consequential actions. Multilingual voice is part of the full vision, helping people who prefer speaking to navigating financial portals.
+The app keeps the evidence, reviewed holdings, missing items and next tasks in one case. For a claim, it shows the institution’s reviewed requirements, prepares a pack for approval, and tracks receipts, requests and outcomes. The institution makes its own verification and settlement decisions.
 
-## Coverage and product approach
+## What we are building first
 
-The first implementation focuses on bank accounts, fixed deposits and mutual funds. The wider vision includes shares and demat holdings, unclaimed dividends and shares, life insurance, EPF benefits, NPS, PPF and small savings, and bank lockers. Each category and source has its own access and workflow requirements.
+The first implementation uses made-up records only. It covers bank accounts, fixed deposits and mutual funds across all three paths. A fixed-rule assistant and sample document-reading results let us test the workflow before connecting external AI or financial services. It prepares simulated manual claims; it does not send real submissions.
 
-The product brings these workflows into a coordinated experience through user-supplied evidence and permitted sources. It does not assume a universal financial database or unrestricted access to official portals.
+The wider scope includes shares, unclaimed dividends and shares, insurance, EPF, NPS, PPF and small savings, and bank lockers. Voice, family sharing and permitted financial connections come later, after their separate permissions, policies and tests.
 
-## Trust is part of the product
+## What makes the information trustworthy
 
-Every holding has a clear evidence state. Every amount has a source, type and date. Identity, relationship, authority and legal entitlement remain separate. Users review the exact documents, recipient and purpose before a consequential disclosure. Adding a trusted contact creates no automatic access, and an inferred death cannot release information.
+Every important value has a source, type and date. A possible match stays separate from an accepted holding. Old or unknown values do not become current totals. A family relationship or nomination record does not automatically establish inheritance or permission to act.
 
-The platform assists with information and workflows; institutions retain verification and settlement decisions. Complete discovery or successful recovery is not guaranteed.
+Users review the exact content, recipient and purpose before a handoff or export. Adding a trusted contact sends nothing and gives them no access. Inactivity never triggers information release. Complete discovery and successful recovery are not guaranteed.
 
-## Where we are today
+## Current stage
 
-**Stage: product and engineering specification. Next: coding the synthetic-data reference release.** The PRD, architecture, database/API contracts, fixtures and acceptance plan define the build. Real financial access, external AI services, controlled family sharing and automated institutional actions require their specified permissions and release gates.
-
-[Product requirements](PRD.md) · [Coding handoff](BUILD_SPEC.md) · [Architecture](ARCHITECTURE.md)
+Product and engineering specifications are prepared; the application has not been built. The next step is the local sample-data implementation defined in [BUILD_SPEC.md](BUILD_SPEC.md). [PRD.md](PRD.md) controls the full scope and acceptance rules.
