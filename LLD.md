@@ -5,6 +5,21 @@ Version 0.3 · 16 October 2026 · Implementation baseline for the reference rele
 
 ## 1. Start here
 
+### First-principles design rules
+
+| Reality of the problem | Design consequence |
+| --- | --- |
+| Financial records can be incomplete, stale or wrong | Preserve source/type/date and uncertainty; review critical fields before accepted facts or totals |
+| Knowing someone is family does not establish permission | Check actor, subject, action, authority and consent separately; a match never decides inheritance |
+| Institutions own different records and procedures | Use source/category/subject-specific adapters and versioned templates; no universal financial connector |
+| Sharing may be irreversible | Freeze exact content/recipient/purpose, approve it, recheck permission at download/execution and retain the receipt/history |
+| Requests repeat and jobs fail | Persist domain state and pending work together; use versions, safe retries, receipts and unknown-outcome reconciliation |
+| Conversation and model output are fallible | Keep reviewed domain records authoritative; AI proposes through bounded tools and cannot alter policy |
+| Sensitive records need a bounded lifetime | Encrypt, minimize access/processors, audit reads, revoke future work and track deletion/holds/restore markers |
+| The first build must teach us cheaply | One modular backend, one database and shared worker code; sample adapters first, no separate agent fleet or unapproved real connections |
+
+These rules implement the existing PRD requirements; they do not create extra product features. The wire/database contracts remain the exact implementation format.
+
 ### The six product layers
 
 | Layer | What it does | First implementation |
@@ -432,3 +447,5 @@ Use the PRD requirement IDs on every implementation task, API/job/schema change 
 Before real deployment, keep runbooks for provider outage, unauthorized access, leaked credentials, wrong evidence association, unsafe templates, unknown submission, deletion failure and restoration. Before enabling an outside connector, validate its permitted subject/purpose/channel, source coverage, contracts, retention, callback verification, replay handling, recipient/egress allowlists and reconciliation behavior. Reference mode enables none of these real external effects.
 
 </details>
+
+Live-source implementation must apply the evidence and unresolved access limits in PRD section 6, not infer permission from an official URL. Each live-source adapter starts disabled; current source/subject/channel approval, scoped data/retention, workflow version, exact-action control and sandbox evidence precede enablement. The one-pager summarizes the vision, PRD owns behavior, and this LLD owns its implementation/testing instructions.
