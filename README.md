@@ -11,6 +11,8 @@ People accumulate bank accounts, fixed deposits, mutual funds, shares, insurance
 
 ## What we are building
 
+**Our initial audience is mainly millennials across HNI, UHNI and NRI segments**, helping them organize Indian financial assets and prepare for their families. These audiences overlap; supported cases depend on permission and institution procedures, including for NRIs.
+
 One assistant that helps individuals and families discover financial assets, organize them and pursue supported recovery workflows. It remembers the case, gathers relevant information, coordinates permitted tools, and tracks work through a documented outcome.
 
 | User need | What the platform helps deliver |
