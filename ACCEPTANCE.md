@@ -1,6 +1,6 @@
 # Financial Legacy — Acceptance and Traceability Plan
 
-Version 0.2 · 15 October 2026 · Planned verification; no application tests have been executed
+Version 0.3 · 15 October 2026 · Planned verification; no application tests have been executed
 
 ## 1. Purpose and authority
 
@@ -103,3 +103,11 @@ Record test/scenario ID, PRD IDs, PRD/LLD version and Git commit, P/F scope, fix
 A pilot requires all P rows, section 4 packs A–G, accepted blocking decisions and named operators. No unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defect is acceptable. Mark failed/blocked tests honestly; a test plan is not a passing test.
 
 F needs pack H plus each language/category/source/subject/channel/release-specific gate. D-01 sets business targets; D-07 sets workload and service budgets; D-09 sets voice/language evaluation thresholds. Undefined thresholds are unresolved decisions, not default passes.
+
+## 6. Concrete reference acceptance oracles
+
+Use [BUILD_SPEC.md](BUILD_SPEC.md) and [contracts/fixtures.json](contracts/fixtures.json). Fixture time is 2026-10-15T00:00:00Z. Eligible reviewed bank INR 42,000 + fund INR 2,500 = INR 44,500. Historical FD, potential-name match, duplicate and unknown-date records are excluded with the contract’s precedence/reasons. Known partial claim INR 1,000 of INR 2,500 leaves INR 1,500; an unknown remainder stays null/unknown. No cross-case evidence reuse.
+
+Tests cover generated-PDF SHA registration, unsafe/unknown hash rejection, separate review, 15-minute approval expiry, 30-day consent expiry, revocation of queued work, unknown manual acceptance and safe retry, exact role/case context, deletion/tombstone restoration and all F routes disabled. Fixed load/browser/session/retention budgets and command behavior are specified in BUILD_SPEC.md; no additional threshold-choice meeting is needed to implement the reference tests.
+
+CI must parse/validate OpenAPI and references, check request/response/generated model agreement, execute SQL migrations on fresh PostgreSQL 18, seed twice idempotently, run domain/integration/E2E packs and report all failures. These runtime checks are not yet executed; the current deliverable is the coding contract. Real-provider/model/language quality and monthly production availability cannot be certified by synthetic tests.
