@@ -1,255 +1,366 @@
-# Low-Level Design — Financial Legacy
+# Financial Legacy — Low-Level Design
 
-Version: 0.1 | Date: 15 October 2026 | Status: Proposed, not implemented
+Version 0.2 · 15 October 2026 · Proposed implementation of [PRD v0.2](PRD.md)
 
-Companion: [PRD](PRD.md) | [Delivery plan](ROADMAP.md)
+Engineering owner: TBD · Security/operations reviewers: TBD · Implementation status: documentation only
 
-## 1. Design basis
+## 1. Contract and architecture
 
-This design implements the proposed document-led pilot in the PRD. Technology choices, limits and service objectives are recommendations that require engineering approval. No live financial API, identity provider, model vendor or regulatory permission is assumed.
+The PRD is the product contract. This document selects structures and flows for its requirements; it cannot authorize a new feature, data use, integration or permission. P/F release labels and D-01–D-11 decisions are defined only in the PRD. A pending decision blocks the affected implementation/release. Changes follow FL-55.
 
-Start with a modular backend and asynchronous workers rather than independently deployed microservices. This keeps case/evidence/approval transactions consistent while retaining clear module boundaries. External integrations remain disabled until individually validated.
+Use a modular backend with asynchronous workers, one transactional domain database, private evidence storage and a controlled connector gateway. AI produces proposals and coordinates tasks; deterministic domain services authorize, validate and execute transitions. Financial truth comes from reviewed evidence, not conversation memory.
 
-### Proposed stack
+### Proposed implementation choices
 
-| Layer | Proposal | Reason / boundary |
+| Layer | Proposed choice | Purpose and constraint |
 | --- | --- | --- |
-| Client | Responsive TypeScript web app | Text chat, accessible review screens, uploads and task views |
-| API | Python API service with typed request/response schemas | Workflow and document-processing ecosystem; vendor-neutral |
-| Database | PostgreSQL | Transactions, foreign keys, case-scoped row policies and versioned records |
-| Binary storage | Private object store with managed keys | Quarantine, clean documents, generated packs; no public objects |
-| Jobs | Durable queue and workers; database outbox | Retryable extraction, reminders and permitted connector work |
-| Identity | Managed identity provider with MFA support | No custom password or authentication-token implementation |
-| AI | Provider adapters for conversation and extraction | Swap/evaluate providers; tools mediated by policy services |
-| Observability | Structured redacted logs, traces and audit store | Separate operational telemetry from evidence and audit |
+| Client | Responsive TypeScript web application | Chat, review, documents, inventory, legacy, claims and task views; no offline cache of sensitive documents |
+| API/domain | Python service with typed schemas; modules below | Shared transactions and policy enforcement; vendor-neutral implementation |
+| Records | PostgreSQL with migrations, foreign keys and row-level isolation | Durable case/evidence/approval state; exact decimal amounts |
+| Documents | Private object store, quarantine/clean/generated areas, managed keys | No public objects; short-lived authorized access |
+| Jobs | Durable queue, database outbox and bounded workers | Recoverable extraction, reminders, exports and permitted connector operations |
+| Identity | Managed identity provider with MFA/step-up support | No custom password handling; session/recovery/contact-change policy follows D-02/D-05 |
+| AI/speech | Versioned provider adapters behind policy checks | Approved payloads only; voice/languages disabled until F gate |
+| Operations | Redacted metrics/logs/traces plus a restricted audit store | Separate operational telemetry from financial evidence |
 
-Vendor selection, hosting region and provider processing/retention terms are release decisions, not defaults hidden in the implementation.
+Stack/region/provider contracts, retention and capacities are proposals subject to D-05/D-07. Native mobile has no separate implementation scope until D-11; it must use the same domain authorization if accepted.
 
-## 2. Component responsibilities
+### Modules and requirement ownership
 
-Client → API/authentication → case and authorization services → domain database.
-
-Document upload → quarantine storage → malware/type validation → clean storage → extraction worker → review proposals → reviewed evidence and assets.
-
-Conversation → orchestration service → scoped evidence retrieval → proposed tool/action → deterministic policy check → user review where needed → domain service or approved connector.
-
-| Module | Owns | Must not do |
+| Module | Owns | PRD IDs |
 | --- | --- | --- |
-| Case service | Intent, subject, membership, tasks, closure | Treat case membership as source permission |
-| Authorization service | Identity, authority, consent, object-level decisions | Delegate final access decisions to an LLM |
-| Document service | Upload sessions, scan states, evidence coordinates | Expose raw storage keys or unsafe files |
-| Extraction/reconciliation | Field proposals, conflicts, duplicate candidates | Silently establish ownership or merge records |
-| Asset service | Reviewed holdings, evidence links, dated observations | Replace old balances with undocumented estimates |
-| Workflow/claims | Versioned checklists, packs, approvals, outcomes | Submit changed content under an old approval |
-| Legacy service | Inventory snapshot, sharing intent and review reminders | Release information solely on inferred death/inactivity |
-| Connector gateway | Capability registry, scoped execution, receipts | Use unapproved APIs, scrape restricted portals or bypass auth |
-| Audit/operations | Append-only events, restricted case review, incident tasks | Include full documents or secrets in operational logs |
+| Case/conversation | Intent, subject, case switching, saved facts, messages and task context | FL-01/02/22/38/39/40 |
+| Identity/access | Verification, authority, membership, sessions, consent and holds | FL-03/04/23/24/45/47/48 |
+| Documents | Upload, quarantine, scan, field proposals, evidence and corrections | FL-05/06/25/26/46 |
+| Discovery/assets | Source plans/attempts, inventory, matching, observations, aggregates and categories | FL-07/08/09/10/27/28/29/30 |
+| Legacy/sharing | Checklists, contacts, snapshots, exports and gated recipient release | FL-11/31/32/33/34 |
+| Claims | Requirements, packs, approval, manual/direct submissions, requests and outcomes | FL-12/13/14/15/16/17/35/36/37 |
+| Operations/governance | Assigned queues, tasks, reminders, templates, source capabilities and escalation | FL-17/21/42/43/44/49 |
+| Voice | Recording state, transcripts, correction, language and text fallback | FL-20/41 |
+| Platform/lifecycle | Audit, deletion/retention, observability, resilience and release traceability | FL-18/19/45/46/50/51/52/53/54/55 |
 
-## 3. Roles and policy evaluation
+## 2. Access model and trust boundaries
 
-Roles: case owner, claimant, explicitly authorized collaborator, assigned case operator and restricted support administrator. Trusted contacts are stored as contact intent, not an access role in the MVP. Internal administrators do not receive blanket document access by default.
+### Authorization evaluation
 
-For every request, evaluate: authenticated actor → active case membership → allowed action → subject/record scope → valid identity/authority prerequisites → purpose-bound consent → document sharing scope → workflow/connector capability → current approval, if external action.
+For every API request and background job: authenticate actor/service → verify active membership and assignment → scope to case and subject → authorize action/object → check holds → check required identity/authority → check purpose/data/recipient consent → check workflow/connector capability → check exact approval for external action.
 
-Deny by default. Check authorization on reads, downloads, searches, background jobs, exports and write operations. Case IDs supplied by the client are never sufficient. Reviewers see only assigned cases and necessary fields. Emergency access requires a reason, short duration and an audit event.
+Deny by default. The server supplies actor, case and permitted scope to AI tools; clients/models cannot grant roles or set verified states. Case membership does not imply source access; consent does not replace legal authority. Review identity, relationship, authority and institution entitlement separately.
 
-Claimant identity, relationship, source-specific authority and final institutional entitlement are stored separately. Revocation/expiry invalidates pending jobs and derived access before execution. Revoking a consent does not erase an already delivered disclosure; preserve its audit receipt and apply the approved retention policy.
+| Actor | Allowed baseline | Denied without separate policy/approval |
+| --- | --- | --- |
+| Owner/planner | Own-case declarations, uploads, review, approved exports/permissions | Another subject’s data; automatic post-death release |
+| Claimant | Own case and action-specific permitted evidence/work | Source retrieval/disclosure without valid authority |
+| Operator | Assigned review/task scope and reviewed status updates | Unassigned cases, final entitlement rulings, self-authorized disclosure |
+| Collaborator/recipient · F | Verified, explicitly granted object/action scope until expiry | Other case data, re-sharing, broad access through an invite alone |
+| Support admin | Account metadata and approved narrow diagnostic access | Blanket financial-document access |
+| Worker/service | Job-specific service role and references with execution-time policy check | Reuse of a user’s old access after revocation/hold |
 
-## 4. Data model
+Emergency access is time-bound, justified and audited; it does not create a product bypass for external disclosure. A dispute hold applies to the affected subject/action scope; do not unnecessarily freeze an unrelated case.
 
-Identifiers are UUIDs; timestamps are UTC; monetary values use exact decimal types and ISO currency codes. All mutable domain entities carry a version for optimistic concurrency. Sensitive identifiers use encrypted storage plus separately keyed hashes where matching is necessary; UI references are masked.
+### Isolation and client behavior
 
-| Entity | Core fields and constraints |
+All case-bound rows carry case_id. Enforce it in repositories, joins, search, storage access and database policies. Authorize downloads before issuing short-lived links. Never infer authorization from an unguessable UUID or object path. The client shows subject/path on case switch and clears old case data; caches and streaming responses are case-scoped and cancelled on switch/sign-out.
+
+## 3. Data model and constraints
+
+UUID keys; UTC timestamps; exact decimal monetary values with currency and amount_type; immutable accepted observations; version columns for mutable aggregates. Encrypt sensitive identifiers and document content. Use separately keyed HMAC of normalized references only where approved for in-case matching; do not use unkeyed hashes of guessable identifiers or create a cross-family person index.
+
+| Entity | Important fields / relationships |
 | --- | --- |
-| User | id, identity_provider_subject (unique), display_name, locale, status |
-| Case | id, mode (self_discovery/legacy/deceased_claim), owner_user_id, subject_id, status, version, created_at, closed_at |
-| Subject | id, case_id, living_status, encrypted_name, encrypted_identifiers, declared_relationship; no global person merge by name |
-| CaseMember | case_id, user_id, role, scope, status, expires_at; unique active membership key |
-| IdentityCheck | id, case_id, user_id, provider_reference, status, checked_at, expires_at; avoid retaining raw ID where unnecessary |
-| AuthorityAssessment | id, case_id, claimant_user_id, institution_scope, evidence_ids, review_status, reviewer, rationale, expires_at |
-| Consent | id, case_id, grantor, subject_scope, purpose, data_scope, recipient_scope, version, status, granted_at, expires_at, revoked_at |
+| User | id, idp_subject unique, status, locale, notification_preferences; sensitive contacts encrypted |
+| Case | id, owner_user_id, subject_id, mode, status, version, created_at, closed_at |
+| Subject | id, case_id, living_status, encrypted_name/identifiers, declared_relationship; case and subject created transactionally |
+| CaseMember | case_id, user_id, role, object/action_scope, status, expires_at, assignment_reason |
+| Verification | id, case_id, user_id, type, provider_reference, status, evidence_ids, reviewer, rationale, checked_at, expires_at |
+| Authority | id, case_id, claimant_id, subject_scope, institution/action_scope, evidence_ids, status, reviewer, rationale, expires_at |
+| Consent | id, case_id, grantor, subject/data/purpose/recipient_scope, version, status, granted_at, expires_at, revoked_at |
+| Hold | id, case_id, subject/asset/claim/action_scope, reason_code, restricted_actions, reviewer, status, resolution_evidence_id |
 | Document | id, case_id, uploader, storage_reference, sha256, media_type, size, scan_status, processing_status, retention_class, deleted_at |
-| Evidence | id, case_id, source_type, document_id/source_reference, page_or_record_locator, observed_at, received_at, authority_context, review_status |
-| ExtractionProposal | id, case_id, document_id, field_name, encrypted_value, evidence_id, confidence, model/prompt_version, review_state, reviewer |
-| Asset | id, case_id, subject_id, category, institution_id, encrypted_reference, evidence_status, lifecycle_status, version |
-| AssetEvidence | asset_id, evidence_id, relationship_type; cross-case links forbidden |
-| AssetObservation | id, case_id, asset_id, amount, currency, amount_type, as_of_date, evidence_id, review_state; immutable once accepted |
-| NominationRecord | id, case_id, asset_id, status (unknown/declared/documented), evidence_id, reviewed_at; no inferred legal entitlement |
-| DiscoveryAttempt | id, case_id, source_id, status, consent_id, authority_id, coverage, started_at, result_evidence_ids, error_code |
-| Claim | id, case_id, asset_id, institution_id, workflow_version_id, authority_id, status, external_reference, version |
+| Evidence | id, case_id, source_type, document_id or source_reference, page/record_locator, observed_at, received_at, review_state, authority_context |
+| FieldProposal | id, case_id, evidence_id, field_path, encrypted_value, confidence, model/prompt_version, state, reviewer, correction_reason |
+| Institution | id, canonical_name, institution_type; no customer evidence |
+| Asset | id, case_id, subject_id, category, category_schema_version, validated_category_attributes, institution_id, encrypted_reference, evidence_status, lifecycle_status, version |
+| AssetEvidence | case_id, asset_id, evidence_id, relationship_type; cross-case FK constraints |
+| Observation | id, case_id, asset_id, amount, currency, amount_type, as_of_date, evidence_id, review_state, supersedes_id |
+| Nomination | id, case_id, asset_id, status unknown/declared/documented, encrypted_details, evidence_id, reviewed_at |
+| Reconciliation | id, case_id, candidate_asset_ids, resolution, canonical_asset_id, aliases, evidence_ids, reviewer, reason, reversal_of |
+| SourceCapability | id, source_name, allowed_methods, subject_types, scopes, validation_state, approved_contract_reference, reviewed_at, owner |
+| DiscoveryAttempt | id, case_id, source_id, plan_scope, status, consent_id, authority_id, started_at, result_evidence_ids, coverage, error_code |
 | WorkflowVersion | id, institution_id, asset_category, requirements_schema, source_url, source_reviewed_at, reviewer, enabled, content_hash |
-| ClaimRequirement | id, case_id, claim_id, requirement_key, state, evidence_ids, institution_response; distinguish optional/required |
-| ClaimPack | id, case_id, claim_id, version, manifest, content_hash, generated_at, status |
-| Approval | id, case_id, actor_id, action_type, recipient, channel, purpose, payload_hash, pack_version, authority_id, consent_id, expires_at, status |
-| ExternalAction | id, case_id, claim_id, approval_id, idempotency_key, status, connector_id, receipt_evidence_id, sent_at |
-| ClaimOutcome | id, case_id, claim_id, type, amount, currency, outcome_date, evidence_id, reviewer; append corrections rather than hiding old outcomes |
-| Task | id, case_id, related_entity, type, assignee, due_at, state, blocked_reason |
-| LegacyPlan | id, case_id, snapshot_version, checklist_state, reviewed_at, next_review_at; export tied to an exact snapshot |
-| TrustedContact | id, case_id, encrypted_contact, relationship, sharing_intent, verification_state; no automatic data access |
-| Message | id, case_id, actor, encrypted_content, attachment_refs, tool_refs, created_at |
-| AuditEvent | id, case_id, actor, action, object_type/id, reason, request_id, timestamp, redacted_metadata |
-| OutboxEvent | id, case_id, event_type, aggregate_id, version, encrypted_payload_reference, dispatch_state |
+| Claim | id, case_id, asset_id, institution_id, workflow_version_id, authority_id, status, external_reference, version |
+| ClaimRequirement | id, case_id, claim_id, requirement_key, required/optional, state, evidence_ids, institution_response |
+| ClaimPack | id, case_id, claim_id, version, immutable_manifest, content_hash, generated_at, status |
+| Approval | id, case_id, actor_id, action_type, recipient, channel, purpose, payload_hash, pack/snapshot_version, authority/consent_ids, expires_at, status |
+| ExternalAction | id, case_id, claim_id nullable, approval_id, connector_id, idempotency_key, request_hash, state, attempt_count, receipt_evidence_id |
+| ClaimOutcome | id, case_id, claim_id, type, amount/currency/amount_type, effective_date, evidence_id, reviewer, supersedes_id |
+| Task | id, case_id, related_entity, type, assignee, due_at, state, blocked_reason, completion_evidence_id |
+| LegacyPlan | id, case_id, snapshot_version, checklist_state, reviewed_at, next_review_at |
+| TrustedContact | id, case_id, encrypted_contact, relationship, intended_scope, intended_trigger, verification_state; no access role |
+| ShareGrant · F | id, case_id, recipient_id, object/action_scope, approval_id, verified_at, expires_at, revoked_at |
+| ReleaseRequest · F | id, case_id, contact_id, death/authority_evidence_ids, state, holds, reviewer, approval_id, released_at |
+| Export | id, case_id, snapshot/pack_version, object_scope, storage_reference, requestor, expiry, state |
+| Message | id, case_id, actor, encrypted_content, evidence/tool_refs, created_at; summary links back to underlying facts |
+| VoiceSession · F | id, case_id, language, consent/policy_version, recording_state, transcript_reference, retention_class |
+| SupportCase | id, case_id, type complaint/help/legal/fraud, owner, state, reason, resolution_reference |
+| RetentionRequest | id, case_id/user_scope, type, requested_at, hold_state, purge_manifest, processor_receipts, backup_expiry, state |
+| AuditEvent | id, case_id, actor, action, object_type/id, reason, request_id, timestamp, minimal redacted_metadata |
+| OutboxEvent | id, case_id, type, aggregate_id/version, payload_reference, dispatch_state |
+| IdempotencyRecord | actor/case/operation/key unique, request_hash, state, result_reference, created_at |
 
-Foreign keys include case context where appropriate to prevent cross-case asset/document/evidence references. API scoping is primary; database row-level policies provide defense in depth. Unique idempotency keys are scoped to actor/case/operation and reject reuse with a different request hash.
+Category attributes follow PRD section 6 minimum fields and versioned per-category schemas; unknowns are explicit and arbitrary unvalidated JSON is rejected. Specialized claimant/ownership situations in PRD section 11 need an approved compatible workflow or a hold/handoff.
 
-## 5. Evidence and balance invariants
+### Integrity, indexes and migrations
 
-1. Self-declared assets require a declaration; potential matches remain candidates.
-2. Document-backed requires reviewed supporting evidence. Institution-verified requires attributable institution evidence and an approved verification workflow.
-3. Confidence is a model score, not an evidence state, ownership decision or probability of legal entitlement.
-4. Preserve evidence and accepted observations; new records supersede through explicit links, not destructive overwrite.
-5. A stale source may reduce the displayed freshness/verification state; retain prior verification history.
-6. Aggregation selects one qualifying reviewed observation per holding and amount type for a stated date policy. Exclude duplicate candidates, unknown values, historical-only records and incompatible amount types. Never add across currencies without an explicit dated conversion policy; no conversion in MVP.
-7. Missing as-of dates produce unknown freshness. A policy benefit or locker entry cannot be counted as current liquid assets.
+- Composite foreign keys include case_id for all evidence/asset/document/claim relationships. Check that subject belongs to case. Resolve Case/Subject creation with a transaction and deferred FK or insert/update order.
+- Unique active membership and idempotency constraints; unique external receipt/event keys within a provider; unique pack version per claim. Do not impose global uniqueness on names or ownership references.
+- Index (case_id, status, updated_at), (case_id, asset_id, as_of_date), (assignee, state, due_at), (claim_id, version), (provider_id, external_reference) and outbox/queue dispatch state as needed. Encrypt sensitive query values and use approved scoped matching keys.
+- Preserve accepted evidence/observations and approved manifests; corrections append a superseding record. Mutable resources require If-Match/version checking; stale edits return a safe conflict.
+- Apply backward-compatible migrations before dependent workers; retain schema/model/workflow versions needed to read old records. Never migrate a potential match into verified status without evidence review.
 
-## 6. State machines
+## 4. Domain states and transition guards
 
-### Case
-
-DRAFT → ACTIVE → WAITING_ON_USER / WAITING_ON_INSTITUTION / NEEDS_REVIEW → ACTIVE → READY_TO_CLOSE → CLOSED.
-
-CLOSED may reopen with a reason and audit event. Closure requires reviewed unresolved tasks/outcomes; it never asserts that every asset has been discovered. Verification prerequisites attach to individual actions rather than falsely certifying the entire case.
-
-### Documents
-
-UPLOAD_PENDING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → REVIEW_REQUIRED → REVIEWED.
-
-Failure branches: BLOCKED (unsafe/invalid), PROCESSING_FAILED (retryable or manual), DELETE_PENDING → DELETED. Only CLEAN objects enter extraction. A failed extraction does not invalidate the original clean document.
-
-### Claims
-
-DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR_SUBMISSION → SUBMISSION_PENDING → SUBMITTED → INSTITUTION_REVIEW.
-
-INSTITUTION_REVIEW → MORE_INFORMATION_REQUIRED → DOCUMENT_COLLECTION, or SETTLED / TRANSFERRED / REJECTED / UNRESOLVED_DISPUTE.
-
-CANCELLED is explicit; rejection can reopen into review on new evidence. Terminal status requires an attributable outcome record. Submission timeouts produce SUBMISSION_UNKNOWN, not automatic failure/retry. Operators reconcile the external receipt before another submission.
-
-### Approvals and external actions
-
-Approval: PENDING → APPROVED → CONSUMED, or REJECTED / EXPIRED / INVALIDATED.
-
-External action: CREATED → POLICY_CHECKED → QUEUED → EXECUTING → SUCCEEDED / FAILED_RETRYABLE / FAILED_FINAL / OUTCOME_UNKNOWN.
-
-Any pack, recipient, declaration, purpose or authority-scope change invalidates the prior approval. Approval creation is not execution authorization forever: workers recheck current consent, authority, approval expiry and exact content immediately before acting.
-
-## 7. API contracts
-
-JSON API under /v1. Auth uses the managed identity session; browser state-changing requests need CSRF protection when cookie-based. Errors have code, safe message, request_id and field_errors. Return 403 for policy failures without leaking existence; 409 for stale versions/idempotency conflicts; 422 for invalid transitions. Paginate lists and apply per-user/case limits.
-
-| Method and route | Input / behavior | Output and control |
+| Aggregate | States / transition | Guard or evidence |
 | --- | --- | --- |
-| POST /cases | confirmed mode and subject declaration | case ID, version, next task |
-| POST /cases/{id}/messages | text, attachment IDs, client_message_id | persisted message and asynchronous response/job ID |
-| POST /cases/{id}/verification-requests | check type and scope | provider/human workflow reference; no direct verified toggle |
-| POST /cases/{id}/consents | purpose, scope, recipients, expiry, policy_version | consent record and receipt |
-| POST /cases/{id}/consents/{cid}/revoke | reason | immediate revoked state and job invalidation |
-| POST /cases/{id}/documents/upload-sessions | filename, media type, size, checksum | short-lived upload URL restricted to one object |
-| POST /cases/{id}/documents/{did}/complete | upload checksum | quarantine state; server verifies upload |
-| GET /cases/{id}/documents/{did}/access | purpose | audited, short-lived authorized download/view capability |
-| POST /cases/{id}/proposals/{pid}/review | accept/correct/reject, version, reason | reviewed proposal and linked evidence |
-| GET /cases/{id}/assets | filters and pagination | masked records, evidence states and dated amounts |
-| POST /cases/{id}/assets | declaration plus optional evidence | new self-declared or review-required asset |
-| POST /cases/{id}/asset-merges | source IDs, canonical ID, reviewed rationale, versions | audited reversible reconciliation; retain aliases |
-| POST /cases/{id}/claims | asset ID, institution and workflow version | draft claim and requirement tasks |
-| POST /cases/{id}/claims/{cid}/packs | reviewed requirement IDs and claim version | immutable pack version, manifest and hash |
-| POST /cases/{id}/approvals | exact action/pack version, recipient/channel, purpose | frozen approval preview; no sending |
-| POST /cases/{id}/approvals/{aid}/decision | approve/reject after review, step-up proof if required | signed server-side decision tied to payload hash |
-| POST /cases/{id}/claims/{cid}/submit | approval ID, pack version, idempotency key | action/job ID only if connector enabled; manual handoff otherwise |
-| POST /cases/{id}/claims/{cid}/manual-submissions | reference/date and evidence | reviewed submission record; no assertion of API submission |
-| POST /cases/{id}/claims/{cid}/outcomes | type, amounts/date and institution evidence | review-required outcome; authorized review completes transition |
-| POST /cases/{id}/legacy/exports | snapshot version and scope | authorized export job and expiry |
-| GET /cases/{id}/tasks | status and pagination | ordered tasks and blocking reasons |
-| POST /cases/{id}/deletion-requests | requested scope | tracked deletion/hold status |
+| Case | DRAFT → ACTIVE ↔ WAITING_ON_USER / WAITING_ON_INSTITUTION / NEEDS_REVIEW → READY_TO_CLOSE → CLOSED | Mode/subject confirmed; closure review summarizes remaining work; reopening requires reason |
+| Identity/authority | NOT_STARTED → PENDING → VERIFIED / REJECTED; VERIFIED → EXPIRED / REVOKED | Qualified review/provider evidence and scope; AI cannot set final verified state |
+| Document | UPLOAD_PENDING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → REVIEW_REQUIRED → REVIEWED | Only CLEAN enters extraction; original evidence retained |
+| Document exceptions | BLOCKED / PROCESSING_FAILED; DELETE_PENDING → DELETED | Unsafe files blocked; retry policy explicit; deletion cancels processing |
+| Discovery | PLANNED → BLOCKED / READY → RUNNING → RESULTS / NO_RESULTS / PARTIAL / FAILED | Current permission and enabled/manual method; results include actual coverage |
+| Asset evidence | SELF_DECLARED / POTENTIAL_MATCH → DOCUMENT_BACKED → INSTITUTION_VERIFIED | Reviewed attributable evidence; freshness downgrade preserves prior verification history |
+| Asset lifecycle | UNKNOWN / OPEN / CLOSED / TRANSMITTED / DISPUTED | Separate from evidence status; institution/user evidence according to policy |
+| Claim | DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR_SUBMISSION → SUBMISSION_PENDING → SUBMITTED → INSTITUTION_REVIEW | Each transition validates current authority, template version and evidence |
+| Claim request | INSTITUTION_REVIEW → MORE_INFORMATION_REQUIRED → DOCUMENT_COLLECTION | Preserve prior pack/receipt; material edits invalidate approval |
+| Claim outcome | INSTITUTION_REVIEW → SETTLED / TRANSFERRED / PARTIALLY_SETTLED / REJECTED / UNRESOLVED_DISPUTE; explicit CANCELLED | Accepted outcome evidence; partial remainder stays open; rejected/disputed are not success |
+| Submission uncertainty | SUBMISSION_PENDING → SUBMISSION_UNKNOWN → reconciled SUBMITTED / safe-to-retry / FAILED | Possible remote acceptance blocks blind resubmission |
+| Approval | PENDING → APPROVED → CONSUMED; or REJECTED / EXPIRED / INVALIDATED | Exact content hash, actor, recipient, purpose, scope and current prerequisites |
+| External action | CREATED → POLICY_CHECKED → QUEUED → EXECUTING → SUCCEEDED / FAILED_RETRYABLE / FAILED_FINAL / OUTCOME_UNKNOWN | Only safe transient failures retry; consumption and receipts recorded |
+| Task | OPEN → IN_PROGRESS / BLOCKED → DONE; or CANCELLED | Owner, due time, blocker and completion reason/evidence |
+| Legacy release · F | REQUESTED → EVIDENCE_REVIEW → RECIPIENT_VERIFICATION → AUTHORITY_REVIEW → READY → APPROVED → RELEASED | D-04 policy, explicit scope, no hold; any disputed prerequisite blocks release |
+| Release exceptions · F | ON_HOLD / REJECTED / WITHDRAWN / EXPIRED | Qualified resolution; death/inactivity alone cannot execute release |
 
-All mutation endpoints accept an idempotency key where retries can create side effects. Membership and consent updates use database transactions; external effects run only from durable outbox jobs after commit. Never encode financial identifiers or tokens in URLs.
+A hold is a separate policy object; it can block reads/disclosures/submissions without overwriting the underlying claim’s history. Reopening/outcome correction appends evidence and a reason. Authority review and institution entitlement remain separate even when a claim is settled.
 
-## 8. Critical execution flows
+## 5. API design
 
-### Document extraction
+Version prefix /v1. Typed JSON requests/responses; authentication through managed identity. Cookie-based writes use CSRF protection. Opaque cursors paginate lists; default limits and rate limits are configured/tested under D-07. Never put financial identifiers or credentials in URLs.
 
-1. Authorize upload and allocate a case-scoped object.
-2. Validate content, extension/type agreement, size/page limits and checksum; scan in quarantine.
-3. Move/mark CLEAN; emit an extraction job with minimal references.
-4. Worker verifies current access and sends only approved data to an approved processor.
-5. Validate model output against a strict field schema; attach page/record evidence coordinates and model/prompt versions.
-6. Present proposals and ambiguities for review. Critical identifiers, ownership and amounts require review regardless of confidence in the pilot.
-7. Accept into domain records transactionally and emit audit/outbox events. Preserve rejected proposals under the retention policy.
+Every read/write enforces object-level scope. Errors return code, safe message, request_id and safe field_errors. Invalid requests: 422; stale version/idempotency conflict: 409; authentication: 401; inaccessible resources: uniform non-enumerating 404; action forbidden within an accessible resource: 403; connector unavailable: safe blocked/dependency state. Do not disclose another case’s existence.
 
-Proposed initial upload limit: PDF/JPEG/PNG, 20 MB/file and 100 pages/PDF, configurable after representative performance and security testing. Encrypted PDFs require a separate approved handling flow; do not ask users to put passwords in chat.
-
-### Exact-action approval and submission
-
-1. Generate an immutable pack and canonical manifest of document versions, form fields and declarations.
-2. Compute a server-side cryptographic content hash including recipient, channel and purpose.
-3. Show the user the complete preview, recipient and consequences. Record the decision and any required step-up authentication.
-4. In one transaction create an external action referencing approval, current authority and consent; enforce uniqueness/idempotency.
-5. Worker revalidates policy and hash. If invalid, stop and request a fresh review.
-6. Execute only through an enabled connector. Store a receipt and update state atomically through an outbox event.
-7. If the remote system may have accepted the action but no receipt returned, mark OUTCOME_UNKNOWN and reconcile. Do not blindly resubmit.
-
-The document-led MVP prepares packs and tracks user/operator submissions. Direct submission remains disabled until a source-specific connector is approved and tested.
-
-### Legacy sharing
-
-An inventory export is a user-requested snapshot with scope and expiry. Recording trusted contacts does not issue credentials or send documents. A later post-death release workflow must independently establish death evidence, recipient identity, authority, contest/hold rules and approval before disclosure. It is outside the initial pilot.
-
-## 9. AI orchestration and tools
-
-A single case manager coordinates bounded capabilities for onboarding, extraction, discovery planning, reconciliation, legacy preparation, claims and reminders. These can be logical tools/workers; separate autonomous agents are not required.
-
-Conversation state is a derived view of persisted case facts and open tasks, not the sole source of truth. Summaries retain provenance and can be corrected. Only retrieve documents and evidence authorized for that case and purpose.
-
-Tool inputs use strict schemas. The server supplies actor/case/consent context; the model cannot select a different actor or extend scope. Classify tools as read, internal proposal, reviewed mutation or external action. External tools require the deterministic approval path above.
-
-Model output and uploaded documents are untrusted. Embedded text cannot change system rules, invoke tools, grant consent or establish legal authority. Generated checklists/forms cite their workflow version and field evidence. Unknown requirements cause a handoff rather than invented instructions. Store redacted tool traces and evaluation metadata; do not log private model reasoning.
-
-Voice is a later adapter for speech-to-text and text-to-speech with user-correctable transcripts. Voice capture/retention requires a defined policy; consequential action approval remains a reviewable structured interaction.
-
-## 10. Integration contract
-
-Each adapter exposes capabilities, required scopes, supported subject types, request schema, response/evidence schema, freshness, rate limits and reconciliation behavior. Track DISABLED / VALIDATING / SANDBOX / ENABLED / SUSPENDED state.
-
-Integration-specific living/deceased permission checks are mandatory. A consent-based financial data mechanism is not a universal deceased-estate discovery channel. UDGAM, MITRA, DigiLocker, Account Aggregator, IEPF and institution records require separate validation; no adapter is enabled solely because the name appears in the concept.
-
-Store provider credentials server-side in a secret manager. User redirect/token callbacks validate state and provider signatures. Webhooks verify signatures, timestamps and replay IDs, persist inbound event IDs uniquely, and reconcile out-of-order events with the source. Only configured approved destinations may receive documents; prevent user/model-supplied arbitrary URLs and SSRF.
-
-## 11. Security, retention and audit
-
-- TLS in transit; managed encryption keys at rest; restricted private object storage and key access.
-- MFA/step-up support for sensitive access, exports and approvals according to the approved threat model.
-- Short-lived document links, masked identifiers and session expiry; revoke derived access on membership changes.
-- No full account identifiers, document text, credentials or claim packs in telemetry, notifications or repository fixtures.
-- Audit sensitive reads, downloads, reviews, access changes, approvals and execution with actor/time/reason/request IDs. Audit events are append-only through restricted writers; protect retention and integrity independently.
-- Separate dev/staging/prod accounts, keys and storage. Use synthetic fixtures in nonproduction.
-- Approve processor data use, retention, subprocessors and hosting before real data is sent. Disable provider training/retention where contractually supported and required by policy.
-- Retention classes and durations must be approved before pilot. Deletion revokes access, cancels jobs and removes live copies, generated packs, indexes and processor copies where applicable. Backups expire under a documented schedule; legal holds are explicit and communicated.
-- Audit metadata must remain minimal and follow its own justified retention policy; do not preserve deleted raw financial content inside audit logs.
-
-## 12. Reliability and operations
-
-Proposed pilot objectives, to be validated: 99.5% monthly API availability excluding external-source outages; p95 ordinary metadata requests under 1 second; chat acknowledgement within 2 seconds with visible asynchronous progress; 20-page clean document extraction p95 under 2 minutes under agreed load. Publish final response/extraction quality separately from acknowledgement latency.
-
-Use exponential backoff with jitter for safe transient jobs, bounded attempts and a dead-letter queue with operator tasks. Treat exactly-once external execution as a goal requiring receipts and reconciliation, not a property guaranteed by a queue. Circuit-break failing connectors and show users the blocked dependency.
-
-Proposed recovery targets: RPO 24 hours and RTO 8 hours for a small pilot, subject to business approval. Encrypt backups and test restoration. Monitor job age, scan failures, review backlog, connector errors, approval invalidations, unauthorized access attempts and claim-state dwell time using redacted metrics.
-
-## 13. Verification plan and traceability
-
-| Test area | Required scenarios | PRD mapping |
+| API route | Request → result | Requirement IDs |
 | --- | --- | --- |
-| Access | Cross-case IDs/downloads/searches denied; expired membership and unassigned operators blocked | FL-03/04/18 |
-| Intake/extraction | Unsafe file blocked; hallucinated field rejected; page evidence and corrections preserved | FL-05/06 |
-| Asset evidence | Potential match never counted as confirmed; old statement not current; duplicates do not inflate totals | FL-07/08/09 |
-| Workflow | Known-asset claims skip discovery; workflow version retained; stale/unsupported template escalates | FL-01/10/12/17 |
-| Approval | Changed pack/recipient invalidates approval; revoked consent blocks queued action; duplicate submit returns same action | FL-04/13/14 |
-| Execution | Timeout after possible remote acceptance enters unknown state; receipt reconciliation prevents duplicate claim | FL-15 |
-| Closure | Rejection/dispute distinct from success; settlement requires evidence; open items reviewed before case close | FL-16 |
-| Legacy | Trusted contact cannot read documents; exported snapshot has scope/date; no automatic death-trigger disclosure | FL-11 |
-| Lifecycle | Deletion cancels jobs and removes derived copies; legal hold and backup expiry handled; restore tested | FL-19 |
-| AI resilience | Document prompt injection cannot invoke tools or access other cases; missing requirements trigger handoff | FL-06/14/17 |
+| POST /cases; GET /cases; GET/PATCH /cases/{id} | confirmed mode/subject/version → case, next tasks, permitted actions | FL-01/02/22 |
+| POST /cases/{id}/messages; GET /cases/{id}/messages | text, evidence IDs, client_message_id → persisted message and response/job ID | FL-02/38/39/40 |
+| POST /cases/{id}/verification-requests; GET status | check type/scope → provider/human review reference; no client “verified” flag | FL-03/48 |
+| POST /cases/{id}/consents; POST /consents/{cid}/revoke | purpose/data/recipient/expiry/policy version → receipt or immediate revocation | FL-04 |
+| GET/PATCH /cases/{id}/members; POST invites · F | verified scope/assignment/version → membership/invite state; no automatic access | FL-23/24/43 |
+| POST /cases/{id}/documents/upload-sessions; POST /documents/{did}/complete | name/type/size/checksum → short-lived single-object upload capability → quarantine job | FL-05/25 |
+| GET /cases/{id}/documents/{did}/access | purpose → audited short-lived authorized view/download capability | FL-18/23/45 |
+| GET /cases/{id}/field-proposals; POST /field-proposals/{pid}/review | accept/correct/reject, version, reason → reviewed field/evidence links | FL-06/25/26 |
+| POST/GET /cases/{id}/discovery-plans; POST /discovery-attempts | selected sources/manual/connector scope → coverage, prerequisites, attempts/tasks | FL-10/27 |
+| GET/POST /cases/{id}/assets; GET/PATCH /assets/{aid} | declaration/reviewed fields/version → masked holding and dated observations | FL-07/09/28/30 |
+| POST /cases/{id}/reconciliations; POST /reconciliations/{rid}/reverse | asset IDs/evidence/reason/versions → reviewed merge/reversal, retained aliases | FL-08/26 |
+| GET /cases/{id}/inventory-summary | as-of policy/category/currency → eligible totals, excluded amounts and policy/date | FL-09/29 |
+| GET/PATCH /cases/{id}/legacy; POST/PATCH /trusted-contacts | reviewed snapshot/checklist/contact intent/version → plan; no access or notification side effect | FL-11/31 |
+| POST /cases/{id}/exports; GET /exports/{eid} | object scope/snapshot/purpose → export job, expiry and authorized retrieval | FL-34/45 |
+| POST /cases/{id}/share-grants; POST revoke · F | verified recipient/scope/approval → time-bound grant | FL-24/32 |
+| POST /cases/{id}/release-requests; POST /release-requests/{rid}/review · F | evidence/recipient/review version → gated release workflow | FL-33/47 |
+| POST/GET /cases/{id}/claims; GET /claims/{cid} | known asset/institution/workflow version → claim/requirements; discovery optional | FL-01/12/15 |
+| POST /cases/{id}/claims/{cid}/packs | reviewed requirements/version → immutable manifest/pack hash | FL-13/26 |
+| POST /cases/{id}/approvals; POST /approvals/{aid}/decision | exact action/pack/recipient/purpose → frozen preview → approve/reject decision | FL-14/32/33 |
+| POST /cases/{id}/claims/{cid}/manual-submissions | submitted_at/reference/receipt evidence → reviewable manual record | FL-15/36 |
+| POST /cases/{id}/claims/{cid}/submit · F | approval/pack/version/idempotency key → external action/job ID only for enabled connector | FL-35/36 |
+| POST /cases/{id}/claims/{cid}/requests; POST outcomes; POST reopen | requirement/outcome/evidence/reason/version → reviewed transition and tasks | FL-15/16/37 |
+| GET/PATCH /cases/{id}/tasks; PATCH notification-preferences | assignee/due/state/preferences → owned tasks and reminders | FL-42/43 |
+| POST /cases/{id}/support-cases; POST /holds/{hid}/review | help/complaint/dispute evidence → restricted assignment/hold state | FL-17/47/49 |
+| POST /cases/{id}/retention-requests; GET status | export/delete scope → purge/hold/processor/backup tracking | FL-19 |
+| GET /cases/{id}/activity | allowed scope/cursor → redacted access/change timeline | FL-18/23 |
+| GET/PATCH /operations/workflow-versions; source-capabilities; model-versions | reviewer-controlled validated version/config → enable/suspend/audit | FL-43/44/46 |
+| POST /cases/{id}/voice-sessions; POST stop; POST transcript-review · F | language/recording policy/consent → session/transcript correction/text fallback | FL-20/41 |
 
-Before pilot, evaluate representative Indian financial documents, scan quality and name/date/amount ambiguity with labeled synthetic or properly consented data. Review critical-field error rates separately. Voice/language release needs its own representative evaluation and accessibility testing.
+Identity-provider session recovery/logout/contact changes are integrated through approved provider flows (FL-48), not financial-account credentials. Operations APIs expose only metadata by role; inspecting financial evidence still needs assigned-case scope. All short routes in a row use the same /v1/cases/{id} scope unless explicitly /operations.
 
-## 14. Remaining engineering decisions
+### Example contract: claim creation
 
-Select vendors/regions and identity policies; define field-level retention and sensitive-data classifications; validate supported formats; finalize schema migrations and API specifications; set freshness/verification policies; approve operations staffing; threat-model release/sharing and connector authorization. These are tracked in ROADMAP.md and must be resolved at the relevant release gate.
+    POST /v1/cases/{case_id}/claims
+    Idempotency-Key: opaque-client-generated-key
+    {"asset_id":"uuid","institution_id":"uuid","workflow_version_id":"uuid"}
+
+    201 {"claim_id":"uuid","status":"AUTHORITY_REVIEW","version":1,
+         "requirements":[],"next_actions":["complete_authority_review"]}
+
+The server selects actual requirements from a reviewed template. A nonexistent/disabled template returns a review task, not an invented institution procedure.
+
+### Example contract: exact-action approval
+
+    POST /v1/cases/{case_id}/approvals
+    {"action_type":"CLAIM_SUBMISSION","claim_id":"uuid","pack_version":3,
+     "recipient_id":"approved-institution-id","channel":"enabled-channel",
+     "purpose":"claim-assistance"}
+
+    201 {"approval_id":"uuid","status":"PENDING","payload_hash":"sha256",
+         "preview":{"documents":[],"declarations":[],"recipient":"..."},
+         "expires_at":"policy-defined-timestamp"}
+
+The client cannot supply a trusted hash or arbitrary destination. Decision requires an authenticated authorized actor and the approved sensitive-action verification. Separate action execution rechecks the exact server-generated manifest.
+
+## 6. Transaction, job and external-action contracts
+
+### Idempotency and concurrency
+
+For a side-effecting request, bind Idempotency-Key to actor + case + operation and a canonical request hash. Reuse with the same hash returns the existing result/job; reuse with different content returns 409. Persist the request and domain result in a transaction. Pack/snapshot review also checks expected version. A key is not a substitute for authorization; repeated requests still require current read/access policy.
+
+Domain writes emit outbox events in the same database transaction. A dispatcher publishes references to a durable queue. Workers claim jobs with leases, recheck permissions/holds and persist outcomes plus the next event. Duplicate delivery is expected; handlers must be idempotent. Worker restarts cannot erase accepted reviews or generate a second approval/submission.
+
+Revocation uses a policy version/epoch and cancels queued work/derived access. Just before an external call, worker checks current policy and atomically reserves the approved action. Do not hold a database transaction open across a network call. If revocation races with already-started delivery, record the actual outcome; a completed disclosure cannot be undone. The product shows this limitation honestly.
+
+Exactly-once external effects cannot be guaranteed by the internal queue. Pass a provider-supported idempotency key where available, persist receipt/event IDs, and reconcile ambiguous responses before retrying. Use exponential backoff/jitter only for failures known to be safe; bounded attempts and dead-letter tasks handle exhaustion.
+
+### Job envelope
+
+    {"job_id":"uuid","case_id":"uuid","type":"EXTRACT_DOCUMENT",
+     "aggregate_id":"uuid","expected_version":2,"policy_epoch":7,
+     "payload_reference":"private-reference","request_id":"opaque-id"}
+
+Use references, not raw statements or identifiers, in queues/logs. Workers fetch only their allowed data. Each handler declares retry class, timeout, cancellation check, idempotency behavior, resulting states and operator escalation.
+
+## 7. Critical end-to-end flows
+
+### 7.1 Document → reviewed holding (FL-05/06/07/25/26/28)
+
+1. Authorize upload, create a single-object upload session with expiry and declared media/size/checksum.
+2. Server verifies uploaded content, file signature/type, limits and checksum. Keep in quarantine until malware/content validation passes.
+3. Mark CLEAN and enqueue extraction. Invalid/unsafe files never reach the AI. Unreadable or encrypted content returns an explicit next step; no password in chat.
+4. Worker rechecks policy and approved processor; sends the minimum permitted data. Validate output against a strict field schema and allowed category/reference/value formats.
+5. Attach page/record citations, source timestamps, model/prompt version and confidence to every field proposal. No source evidence means no accepted field.
+6. Reviewer accepts/corrects/rejects critical ownership, identifier, amount/date and source associations. Low-confidence data remains unresolved. Preserve original and corrected values under retention policy.
+7. Commit reviewed evidence/holding/observations transactionally. Material edits invalidate dependent packs, approvals and stale summaries; create re-review tasks.
+
+Proposed limits are PDF/JPEG/PNG, 20 MB and 100 PDF pages per file, configurable after FL-52 workload/security approval. Limits are operational configuration, not additional asset/format scope. Processing errors preserve a clean original and provide bounded retry or human review.
+
+### 7.2 Discovery and reconciliation (FL-08/10/27/29/30)
+
+1. Plan sources from case mode, supported categories, available evidence and permitted subject type; show what is manual, unavailable or outside coverage.
+2. Each attempt snapshots source capability, scope and current authority/consent. Record RESULTS, NO_RESULTS, PARTIAL, BLOCKED or FAILED with coverage, not just a boolean success.
+3. Normalize identifiers only within the authorized case. Candidate scoring can prioritize review; it cannot verify a holding or infer an heir.
+4. Exact-reference matches still require conflict checks: institution/category/subject inconsistencies block an automatic association. Name-only matches remain potential.
+5. Reviewed reconciliation selects canonical holding and aliases while preserving all evidence. Reversal records a new decision and recomputes derived totals/pack dependencies.
+6. Refresh appends observations and evidence; it never overwrites history or turns “not returned by this source” into “asset does not exist.”
+
+Amount aggregation is deterministic. Require reviewed ownership evidence, selected amount_type, currency, qualifying as-of date/freshness and no unresolved duplicate/conflict/hold. Select one eligible observation per holding/type under D-06. Show exclusions and reasons; never combine cash value, policy benefit, locker contents or historical settlement indiscriminately. If the policy is unresolved, show individual observations and no misleading current total.
+
+### 7.3 Claim pack → manual or direct submission (FL-12–16/35–37)
+
+1. Create claim for reviewed known holding with its institution/template version. Do not require discovery if unnecessary.
+2. Validate action-specific authority and requirement statuses: required/optional, missing/proposed/accepted/rejected/needs-update. Additional case-specific requests do not silently change shared templates.
+3. Generate immutable pack from reviewed evidence. Canonical manifest includes every document/version, generated field, declaration, recipient, channel, purpose and workflow version. Hash the actual outbound representations/manifests, not merely filenames.
+4. Present full preview and unresolved warnings. Record authorized approval against exact hash and applicable identity/authority/consent/policy versions; expiry comes from approved policy.
+5. P path: provide controlled approved pack access and submission instructions; user/operator submits externally and records receipt/reference. Do not pretend the platform transmitted it.
+6. F path: create ExternalAction and outbox record only if connector is enabled. Worker rechecks scope/hold/hash/expiry before execution; changed pack/recipient/declaration or permissions invalidates approval.
+7. Record receipt and institution reference. Possible remote acceptance without receipt enters OUTCOME_UNKNOWN/SUBMISSION_UNKNOWN and creates a reconciliation task. Do not send a second claim blindly.
+8. Track additional requests, dates, responses and follow-ups. Outcomes require attributable evidence and review. PARTIALLY_SETTLED tracks settled amount and remaining amount/status separately; unknown remainder is unknown, not zero.
+9. Closure summary includes rejected/disputed/unresolved work; reopening appends reason and new evidence. Dispute holds cannot be overridden by an AI tool.
+
+### 7.4 Legacy snapshot, sharing and release (FL-11/24/31–34)
+
+P: snapshot reviewed inventory, checklist, dated observations and gaps. Contact intent is inert metadata. A user-requested export is an authorized immutable version with a short-lived download capability and audit receipt; exported copies cannot be recalled.
+
+F lifetime sharing: verify recipient, preview exact scope, approve disclosure, issue scoped/expiring ShareGrant and record access. Invite tokens are one-time, short-lived and stored hashed; token possession alone does not reveal financial records. Membership/permission revocation blocks future reads and invalidates pending exports/links where technically possible.
+
+F post-death release: create ReleaseRequest; obtain required death/identity/authority evidence; check current planner instructions, applicable holds and D-04 contest/notification procedure; qualified reviewer resolves prerequisites; authorized exact-scope approval precedes a recipient grant. No inactivity or model-inferred death trigger. A disputed recipient gets no other claimant’s information through the dispute flow. Rejection, expiry and hold release require reasons/evidence.
+
+Until D-04 is accepted, release APIs/workers remain disabled; storing release intent is not executing a release. This workflow shares information only and never transfers assets or adjudicates inheritance.
+
+### 7.5 Tasks, follow-up and operator work (FL-17/21/42–44/49)
+
+Each actionable task has entity/context, owner, due_at, state and blocker. Reminders are idempotent by task + policy/window + channel; respect preferences, time zone and cancellation/closure. External notifications are F, opt-in and minimal-content, linking to an authenticated case rather than including financial details.
+
+Operator queues are assignment-scoped: verification, field review, claim requests, unknown submissions, disputes, complaints and overdue work. Require reason/evidence for privileged review and escalation. Operators cannot use a review action to bypass external-action approval. Help/complaints share a traceable case reference with restricted support data.
+
+Automated calls/messages require an enabled source/channel, approved disclosure/identity, current permission and purpose, logged contact/outcome, opt-out behavior where relevant and an approved escalation path. Transcript text cannot by itself mark a claim settled; require reviewed outcome evidence.
+
+## 8. AI case-manager design
+
+Persist goal/mode, reviewed facts, open tasks and workflow state in domain records. Conversation summaries reference those records and source versions; they are disposable read models, not financial truth. Corrections invalidate stale summaries. Retrieval filters by case, purpose and allowed object scope before content reaches a provider.
+
+Logical capabilities: conversational intake, discovery planning, document extraction, reconciliation suggestions, legacy preparation, claims preparation and follow-up planning. Separate autonomous agent processes are unnecessary. Every tool has strict input/output schema, declared action class and mapped PRD IDs.
+
+| Tool class | Examples | Enforcement |
+| --- | --- | --- |
+| Scoped read | get_case_tasks, get_reviewed_evidence | Server-derived actor/case, allowed fields only |
+| Internal proposal | propose_asset_fields, propose_discovery_plan | Schema validation, citations, no verified state mutation |
+| Reviewed mutation | record_field_review, generate_pack | Authorized actor/workflow review and expected versions |
+| External action | submit_approved_claim, release_approved_scope | Enabled capability, exact approval and execution-time policy |
+
+Tool argument validation rejects unknown fields, cross-case references, arbitrary URLs, actor/role substitutions and unsupported state changes. Documents and model responses are untrusted; embedded instructions cannot grant consent, change system rules or invoke unrestricted tools. No raw arbitrary SQL, shell access or browser automation is exposed as a customer-facing AI financial tool.
+
+Pin prompt/model/schema versions. Log redacted tool outcomes, not private reasoning or full prompts containing financial records. Evaluate critical-field correctness, evidence fidelity, prompt-injection resilience, correct escalation and unauthorized-action blocking (FL-53). Unknown institution requirements cause human review; do not invent legal instructions.
+
+Voice/speech adapters are F: record permitted language, user-visible microphone/recording state, policy/consent, transcript edits and stopping state. Use approved processors and retention. Names/numbers/amounts must be reviewable in text; keep structured consequential previews. Model/provider failure returns a saved task state and manual/human next step, not lost work.
+
+## 9. Connector and workflow governance
+
+A connector declares source/version, allowed methods, data/subject types, purpose/scopes, response/evidence schema, freshness, rate/cost limits, credential policy, error taxonomy and receipt/reconciliation semantics. States: DISABLED → VALIDATING → SANDBOX → ENABLED; any unsafe/stale capability → SUSPENDED. A validated connector is not permission for every institution, subject type or workflow.
+
+Every source enablement needs D-03 evidence: permitted access/contract/eligible role, living/deceased rules, authority/consent mapping, sandbox results, retention, operational owner and re-review date. The PRD’s official-source links establish background purpose, not startup API rights. UDGAM/MITRA/DigiLocker/Account Aggregator/IEPF are separate candidates, not one universal connector.
+
+Use server-side secrets, scoped credentials and approved token/redirect flows. Validate callback state, webhook signatures/timestamps and replay IDs. Persist unique provider-event IDs; reconcile out-of-order updates against the source before state promotion. Never log tokens, put them in URLs or request financial passwords/OTPs in chat. Network egress and recipient allowlists prevent arbitrary destinations/SSRF.
+
+Templates contain requirement schema, source/review date, institution/asset/subject scope, reviewer, version/hash and enabled state. Suspension blocks new automatic use and creates a review task for affected in-flight work. Approved case packs retain historical versions. Material requirement changes require reviewed migration/re-approval, not a silent global replacement.
+
+## 10. Privacy, security and data lifecycle
+
+Implement FL-18/19/23/45–49 across all boundaries:
+
+- TLS; encryption at rest and for sensitive fields; managed keys with separate service permissions; no public storage.
+- Strong authentication, managed recovery, session expiry and policy-defined step-up for sensitive reads/exports/approvals. Contact changes must not bypass recipient verification.
+- Explicit case/document/action authorization, hold evaluation, signed short-lived access and immediate removal of active membership permissions.
+- No financial identifiers, document text, balances, credentials or sensitive family details in analytics, ordinary logs, queues or notification previews. Separate minimal audit metadata from raw evidence.
+- Approved provider/hosting/retention/subprocessor terms before real data processing; minimize fields and disable training/retention where required and supported by approved terms. No assumed “zero retention” without evidence.
+- Separate dev/staging/prod identities, keys and storage. Synthetic fixtures only by default; any consented evaluation dataset requires approved purpose/access/retention and cannot be placed in GitHub.
+- Audit sensitive access and changes through restricted append-only writers, protected integrity/retention and access monitoring. Actors cannot delete their own audit history to conceal actions.
+
+Deletion: authorize request → immediately revoke case/session/derived access as applicable and cancel queued work → calculate live document/pack/export/transcript/search/processor copy manifest → apply justified explicit holds → purge eligible copies and collect processor receipts → record backup expiry → complete or explain remaining hold/expiry. Restore must reapply deletion tombstones so deleted data is not made active again. Audit retains only justified minimal metadata under its own approved retention, not deleted raw financial content.
+
+Do not promise remote recall of exports or reversal of completed institutional disclosures. D-05 must set durations, hold authority and user messaging before pilot.
+
+## 11. Operations, resilience and quality budgets
+
+Observability uses request/job IDs, pseudonymous case references and coarse state/capability categories. Track API latency/error, queue age, scan/extraction failures, field-review backlog, consent/approval invalidation, connector unknown outcomes, case/claim dwell time and privacy/security alerts. Product metrics implement PRD section 15; waiting for institutions is not counted as AI processing work.
+
+Per handler: bounded concurrency, deadline, lease/heartbeat, safe retry class, dead-letter queue, cancellation/revocation checks and operator recovery. Circuit-break a failing connector; preserve case progress and show blocked dependencies. Maintain runbooks for provider outage, unauthorized access, leaked credentials, wrong evidence association, unsafe template, unknown submission, deletion failure and restoration.
+
+FL-52 suggests API p95 <1 s, acknowledgement <2 s, 20-page clean extraction p95 <2 min, 99.5% monthly internal availability and RPO 24 h/RTO 8 h. These are proposed budgets, not measured results or customer SLAs. D-07 defines concurrent cases, file sizes, model/provider load, test sample, measurement period, exclusions, support hours, cost and final targets. Measure end-to-end user-visible processing and distinguish provider outage from internal reliability. Backups are encrypted and restoration is exercised before acceptance.
+
+Accessible UI (FL-50): semantic labels/focus/error associations, keyboard and screen-reader core journeys, readable language/large text, responsive layouts, non-voice alternative, visible pending/error/retry states and save/resume. Do not retain raw documents in browser local storage/service-worker caches. Native app/offline behavior remains blocked by D-11.
+
+## 12. Verification matrix and release evidence
+
+The [acceptance plan](ACCEPTANCE.md) maps all 55 requirements individually. Every P ID must have unit/integration/end-to-end or operational acceptance evidence appropriate to the behavior. Tests focus on invariants and failure boundaries, not assertions that mirror implementation. F IDs remain disabled until their own tests/gates pass.
+
+| Scenario / invariant | Required check | PRD mapping |
+| --- | --- | --- |
+| Routing and continuity | All four entry paths; switch isolated cases; corrected facts survive resume/failure | FL-01/02/22/40 |
+| Identity/authority/access | Separate scope/expiry, cross-case IDs/search/download/export denied, reassignment and recovery cannot bypass authority | FL-03/04/23/45/48 |
+| Intake/extraction | Unsafe/unreadable/encrypted input; evidence/page citations; critical-field correction/rejection; no invented fields | FL-05/06/25/26 |
+| Inventory/discovery | No-result/partial coverage; name-only match; conflict/merge reversal; historical/duplicate/incompatible values excluded | FL-07/08/09/10/28/29 |
+| Legacy P | Missing/unknown information; contact intent grants nothing; export exact dated scope | FL-11/31/34 |
+| Claims | Known-asset path; versioned/stale requirements; pack preview; changed data invalidates approval; independent claims | FL-12/13/14/15/37 |
+| Outcomes and uncertainty | Unknown acceptance blocks retry; partial remainder tracked; rejection/dispute not success; closure/reopen evidence | FL-16/36/37 |
+| Operations | Help/complaint/dispute hold, assignment, due/preference-aware deduplicated reminders, suspended templates | FL-17/42/43/44/47/49 |
+| AI controls | Cross-case retrieval/prompt injection/role and URL substitution blocked; stale summary not authoritative; provider failure handoff | FL-38/39/40/46/53 |
+| Lifecycle | Audit sensitive reads, revoke queued access, processor/derived deletion, hold messaging, backup expiry and restore tombstones | FL-18/19/46 |
+| Quality/traceability | Accessible desktop/mobile journeys, agreed load/restore exercises, redacted metrics and complete requirement mapping | FL-50/51/52/53/54/55 |
+| F integrations/assets | Exact allowed subject/purpose, permission and receipts, each category schema and amount semantics | FL-27/30/35/36/44 |
+| F sharing/release | Invite grants nothing, verified scoped recipient, revoke, competing claimants/death evidence/hold/approval, no inactivity release | FL-24/32/33/47 |
+| F voice/follow-ups | Evaluated languages/transcript correction/microphone stop/text fallback; disclosed approved follow-ups and opt-out | FL-20/21/41/42 |
+
+Representative extraction evaluations include statement formats, scan quality, Indian names, date/amount ambiguity and duplicate/conflicting records. Critical fields are reported separately. Voice/language quality uses a representative separate evaluation. Release evidence stores expected/actual behavior, requirement IDs, dataset/environment, reviewer and defects without placing real financial records in the repo.
+
+## 13. Implementation handoff and boundaries
+
+Before a feature is built: select PRD IDs and P/F scope; resolve the blocking D decisions; specify request/event/schema version changes; document normal/error/hold/revocation behavior; identify tests and operations owner. OpenAPI schemas, migrations and runbooks refine these contracts under FL-55; they cannot add unmapped behavior.
+
+No real-data intake until D-02/D-05 controls are accepted. No live source until D-03 validation. No recipient sharing/release until D-04. No qualifying current totals without D-06 rules. No performance/SLA claim without measured D-07 acceptance. No new category/language/native client merely because an adapter or library exists.
+
+This design defines interfaces and invariants, not a claim of a working system. The [roadmap](ROADMAP.md) orders existing PRD scope and the PRD remains the authoritative decision register.
