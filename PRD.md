@@ -2,7 +2,7 @@
 
 **Find what’s yours. Make sure nothing gets left behind.**
 
-Version 0.2 · 15 October 2026 · Complete planning draft; open decisions are explicitly blocked
+Version 0.3 · 15 October 2026 · Coding baseline for the synthetic reference release; real-data/F launch gates remain explicit
 
 Product owner: founder, named owner TBD · Engineering owner: TBD · Claims operations and qualified legal/privacy reviewers: TBD
 
@@ -71,6 +71,8 @@ Pricing, billing, commissions and payment collection are undecided and are not i
 **Case:** one user goal concerning one financial subject; several cases may exist per user. **Subject:** person whose financial information is involved. **Asset:** holding or potential holding. **Evidence:** attributable document, declaration or source record. **Claim:** institution-specific recovery/transmission process for an asset; a case can have many claims. **Nominee:** recorded nomination information; not treated as a universal legal entitlement decision. **Consent:** permission for defined data, purpose and recipient. **Authority:** action/source-specific basis to act for a subject. **Approval:** authorization of one exact external action after preview. These are separate records, not interchangeable checkboxes.
 
 ## 4. Full scope and release model
+
+The implementation begins with the synthetic-only reference release in section 19 and BUILD_SPEC.md. It implements P behavior without claiming real verification, discovery, AI quality or institutional submission. P remains the first real-data pilot target; promotion requires the relevant real-data gates.
 
 P = first pilot. F = full-product scope after its release gate; not a pilot commitment. F capabilities remain in this PRD so they cannot disappear from the vision or be implemented without prerequisites. P/F timing, vendors and owners are proposals; dates are uncommitted.
 
@@ -334,6 +336,8 @@ Release evidence includes requirement IDs, environment/data set, expected/actual
 
 ## 17. Decisions that must not be guessed
 
+For coding, the reference decisions in section 19 and BUILD_SPEC.md are fixed. The D decisions below now govern real-data deployment, commercial commitments or F expansion; they do not require another planning round before B-01. Synthetic-only defaults must never be treated as legally sufficient production policy.
+
 This is the authoritative decision register. The roadmap references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
 
 | ID | Decision and accountable role | Blocks |
@@ -362,5 +366,27 @@ A change request states the problem, proposed requirement/acceptance change, aff
 | --- | --- |
 | 0.1 | Initial consolidation of the founder concept with pilot requirements and proposed technical design |
 | 0.2 | First-reader narrative; complete vision and release boundaries; 55 traceable requirements; operational/exception/sharing/quality behavior; authoritative decision register and scope-control rule |
+| 0.3 | Fixed coding baseline, typed API/relational/fixture contracts, synthetic reference policy, first-principles invariants and ordered implementation packages; live-data/F approvals remain separate |
 
 This document covers the supplied vision and explicit supporting requirements. It cannot stand in for decisions not yet made or permissions not yet obtained; those blockers are listed above.
+
+## 19. Coding baseline and first-principles invariants
+
+The next work is implementation, starting B-01 in [BUILD_SPEC.md](BUILD_SPEC.md). That handoff fixes stack, repository layout, local services, environment/secret handling, OIDC/session policy, reference data rules, screen interactions, jobs, test oracles and B-01–B-11 order. [OpenAPI](contracts/openapi.json) fixes wire schemas and operations; [SQL](contracts/schema.sql) fixes relational constraints/isolation; [fixtures](contracts/fixtures.json) fix synthetic scenarios and expected results. These refine existing FL requirements and add no real-source access or F permission.
+
+| First principle | Consequence in the product | Requirement authority |
+| --- | --- | --- |
+| A financial assertion can be incomplete or wrong | Preserve source/date/type/uncertainty; review critical fields; never infer ownership from a name or model score | FL-06–10, FL-25–30 |
+| Institutions own their records and decisions | Source-specific coverage/permissions/templates; no universal discovery or settlement promise | FL-03, FL-10, FL-12, FL-27, FL-30, FL-44 |
+| Relationship is not entitlement or permission | Identity, relationship, authority, consent and institutional outcome remain distinct | FL-03, FL-04, FL-23, FL-47 |
+| Disclosure is often irreversible | Exact approved content/recipient/purpose; explain completed-download limits; no inferred-death release | FL-14, FL-24, FL-32–34, FL-45 |
+| Networks/jobs can fail after acting | Idempotency, immutable manifests, receipts, unknown states and reconciliation; never blind retry | FL-15, FL-36, FL-51 |
+| Conversations are fallible views, not ledgers | Persist reviewed domain facts separately; summaries and tools cannot override policy | FL-02, FL-38–40 |
+| Sensitive data must have a bounded purpose/lifetime | Least privilege, minimal approved processors, audited access, retention/deletion and tombstones | FL-18, FL-19, FL-45–49 |
+| Scope must remain inspectable | Every behavior and implementation package maps to this PRD; no hidden ticket/API/tool scope | FL-55 |
+
+Reference defaults are deliberate engineering decisions under this implementation request: responsive web; Python/FastAPI/PostgreSQL; local OIDC; DB-backed workers; encrypted local storage; fixture extraction and deterministic case-manager stand-in; bank/FD and mutual-fund flows; manual claim handoff; no outbound real-source/model/notification/call integration. This lets developers code and test without cloud credentials. It does not demonstrate real AI/provider quality or a live institutional service.
+
+The reference policy uses synthetic-reviewed identity/authority and institution evidence, 30-day maximum consent, 15-minute exact approval, 30-day eligible dated observations, INR Decimal amounts and the explicit deletion/retention rules in BUILD_SPEC.md. These are **not production legal rules**. Every page/export is labeled synthetic, unknown fixture documents are refused, F is disabled, and startup rejects a real-data mode lacking accepted deployment policies.
+
+Coding acceptance is local execution of all three paths, all P scenario evidence, contract/migration/fixture agreement and a reproducible bootstrap/test sequence. Real-data launch requires the applicable D gates and qualified review; no document can substitute for those external permissions. Internal coding choices already fixed here must not be reopened merely to choose a framework or field name.
