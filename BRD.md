@@ -1,6 +1,6 @@
 # Financial Legacy — Business Requirements (BRD)
 
-Version 0.1 · 16 October 2026 · Business case and requirements; no live service or commercial commitment
+Version 0.2 · 16 October 2026 · Business case and requirements; no live service or commercial commitment
 
 **Find what’s yours. Make sure nothing gets left behind.**
 
@@ -15,6 +15,25 @@ Financial Legacy proposes one persistent assistant and case record to coordinate
 The first principles are simple: an asset must be found before it can be organized; discovery does not establish entitlement; institutions control their own records and decisions; users need accountable help through unfinished work. Therefore the business sells or provides assistance and record/workflow quality, not guaranteed discovery, inheritance decisions or guaranteed recovery.
 
 ## 2. Customers and desired outcomes
+
+**Initial target audience: mainly millennials among high-net-worth individuals (HNIs), ultra-high-net-worth individuals (UHNIs), and non-resident Indians (NRIs), focused on their Indian financial assets.** This is founder-selected targeting; customer demand, willingness to pay and service economics still need validation.
+
+These are overlapping dimensions: HNI/UHNI describe wealth segments, NRI describes residency, and millennial describes a generation. An NRI may also be HNI or UHNI; being NRI does not imply being wealthy. No wealth threshold or birth-year cutoff is an eligibility rule, and onboarding should not require net-worth disclosure merely to qualify a marketing lead.
+
+| Initial audience / situation | Core job | Product implication |
+| --- | --- | --- |
+| Millennial HNI with scattered personal holdings | Understand what exists and prepare a usable family record | Evidence-led inventory, nomination/document gaps, dated legacy preparation and clear next steps |
+| Millennial UHNI with complex personal records | Coordinate supported holdings despite multiple institutions or advisers | Traceable sources, careful reconciliation and explicit coverage gaps; no whole-estate, trust, business-ownership or foreign-asset promise |
+| Millennial NRI managing Indian holdings or a family claim from abroad | Organize records remotely and understand institution-specific next steps | Explain supported document/authority requirements and handoffs; overseas assets, repatriation and tax advice remain outside scope |
+| Millennial family organizer helping parents or handling a death | Reduce uncertainty for the family | Separate the organizer, asset owner, claimant and payer; family relationship or payment never grants record access |
+
+**Proposed entry use case to validate:** organize one's own Indian holdings and prepare a family-ready financial record. This provides value before a death and supplies the evidence foundation for later claims. Discovery and known-asset claims remain independent paths; this prioritization does not remove either service. Wealth alone is insufficient qualification: prioritize a concrete unresolved record, preparation or claim need within supported scope.
+
+Older adults and other family members remain important owners, claimants and beneficiaries. Millennial-led acquisition does not remove accessible text, future multilingual voice or support for parents. For living parents, their consent and valid action-specific authority are required; family collaboration is a later gated capability, not an implied first-release permission.
+
+**NRI boundary:** marketing to NRIs does not enable every nonresident case. Admit a real case only after its residency, institution, account/document situation and permitted process are supported; otherwise place the affected action on hold and explain the handoff. NRI, OCI and PIO labels must not be treated as interchangeable legal eligibility. The [RBI nonresident-account FAQ](https://www.rbi.org.in/commonman/Upload/English/FAQs/PDFs/Accountresidents16012025.pdf) distinguishes account schemes and eligibility; [CAMS transmission guidance](https://www.camsonline.com/Investors/Service-requests/Transmission/Transmission) requires the applicable request and supporting documents. These establish workflow dependencies, not our access rights.
+
+**Validate before a real pilot:** compare need and willingness to pay across resident HNI, resident UHNI and NRI prospects while recording overlaps; test actual document availability, remote completion, trust objections, existing adviser involvement, operator effort and acquisition cost. Select supported institutions and NRI situations under PRD D-01/D-02/D-05/D-08. Country priorities, segment thresholds, pricing, payer and distribution partnerships remain undecided. Do not infer demand from wealth or diaspora population counts.
 
 | Customer / beneficiary | Need | Outcome we aim to deliver |
 | --- | --- | --- |
