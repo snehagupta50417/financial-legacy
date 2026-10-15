@@ -29,9 +29,9 @@ Example: a statement is evidence. The account is a holding. Its ₹42,000 balanc
 
 ## How to read this document
 
-Read sections 1–5 for the product and user journeys. Expand the detailed requirements when you need a specific behavior, and use sections 17–19 for release decisions and coding boundaries. This PRD owns scope; [BUILD_SPEC.md](BUILD_SPEC.md) contains the implementation and test instructions.
+Read sections 1–5 for the product and user journeys. Expand the detailed requirements when you need a specific behavior, and use sections 17–19 for release decisions and coding boundaries. This PRD owns scope; [LLD.md](LLD.md) contains the implementation and test instructions.
 
-**Scope authority:** Every feature, screen, API, agent tool, integration, background job, operational capability and material behavior change must trace to a requirement in this PRD. Neither the build guide nor a ticket can introduce product scope. If a behavior is missing, amend this PRD and obtain product-owner acceptance before implementing it. An unresolved decision is a blocker for the affected capability, not permission to invent an answer. Implementation details may be chosen within an existing requirement when they do not change user behavior, data use, permissions, supported sources or service commitments.
+**Scope authority:** Every feature, screen, API, agent tool, integration, background job, operational capability and material behavior change must trace to a requirement in this PRD. Neither the LLD nor a ticket can introduce product scope. If a behavior is missing, amend this PRD and obtain product-owner acceptance before implementing it. An unresolved decision is a blocker for the affected capability, not permission to invent an answer. Implementation details may be chosen within an existing requirement when they do not change user behavior, data use, permissions, supported sources or service commitments.
 
 This revision preserves the founder’s three use cases and complete asset coverage, consolidates repeated source text and supplies explicit design proposals where the original brief stopped during feasibility. It is a specification, not a claim that the application or integrations exist. New product choices remain proposals until accepted; verified source descriptions do not establish our right to integrate.
 
@@ -93,7 +93,7 @@ Pricing, billing, commissions and payment collection are undecided and are not i
 
 ## 4. Full scope and release model
 
-The implementation begins with the synthetic-only reference release in section 19 and BUILD_SPEC.md. It implements P behavior without claiming real verification, discovery, AI quality or institutional submission. P remains the first real-data pilot target; promotion requires the relevant real-data gates.
+The implementation begins with the synthetic-only reference release in section 19 and LLD.md. It implements P behavior without claiming real verification, discovery, AI quality or institutional submission. P remains the first real-data pilot target; promotion requires the relevant real-data gates.
 
 P = first pilot. F = full-product scope after its release gate; not a pilot commitment. F capabilities remain in this PRD so they cannot disappear from the vision or be implemented without prerequisites. P/F timing, vendors and owners are proposals; dates are uncommitted.
 
@@ -321,7 +321,7 @@ Retention periods, identity strength, authority evidence and legal requirements 
 | FL-52 · P | Approved performance, capacity and recovery budgets | Suggested budgets: p95 ordinary API <1 s, chat acknowledgement <2 s, 20-page clean-document extraction <2 min; 99.5% monthly internal API availability; RPO 24 h/RTO 8 h. Workload/exclusions/cost and final targets require D-07 acceptance before pilot; these are not external SLAs |
 | FL-53 · P | Evaluate extraction, AI decisions and workflow quality on representative cases | Critical identifiers/amounts/ownership reviewed independently; adversarial tests block unauthorized disclosure, false verification and tool misuse; language/voice has a separate gate |
 | FL-54 · P | Collect minimal operational/product metrics with explicit definitions | Pseudonymous events, no document text/account identifiers/balances in analytics; segment waiting time and assisted/manual work honestly |
-| FL-55 · P | Trace every deliverable and change to the PRD | Every feature/ticket/API/job/tool/test maps to IDs; undefined behavior blocks work; PRD amendment precedes new scope; build guide/contracts updated in the same change |
+| FL-55 · P | Trace every deliverable and change to the PRD | Every feature/ticket/API/job/tool/test maps to IDs; undefined behavior blocks work; PRD amendment precedes new scope; LLD/contracts updated in the same change |
 
 No benchmark is met merely because it is written here. Engineering, operations and product owners must agree a workload and record measured evidence before accepting FL-52/53. Production credentials and customer records must not enter GitHub or synthetic development fixtures.
 
@@ -352,7 +352,7 @@ Numerical business targets and pricing are open under D-01/D-08. Do not fabricat
 
 ## 16. Release acceptance and traceability
 
-The first pilot covers every P requirement. F requirements cannot be silently enabled; they need their listed gate and inclusion in a release scope. [BUILD_SPEC.md](BUILD_SPEC.md) sequences implementation and records the technical and test rules; it cannot expand scope.
+The first pilot covers every P requirement. F requirements cannot be silently enabled; they need their listed gate and inclusion in a release scope. [LLD.md](LLD.md) sequences implementation and records the technical and test rules; it cannot expand scope.
 
 Mandatory end-to-end scenarios:
 
@@ -369,9 +369,9 @@ Release evidence includes requirement IDs, environment/data set, expected/actual
 
 ## 17. Decisions that must not be guessed
 
-For coding, the reference decisions in section 19 and BUILD_SPEC.md are fixed. The D decisions below now govern real-data deployment, commercial commitments or F expansion; they do not require another planning round before B-01. Synthetic-only defaults must never be treated as legally sufficient production policy.
+For coding, the reference decisions in section 19 and LLD.md are fixed. The D decisions below now govern real-data deployment, commercial commitments or F expansion; they do not require another planning round before B-01. Synthetic-only defaults must never be treated as legally sufficient production policy.
 
-This is the authoritative decision register. The build guide references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
+This is the authoritative decision register. The LLD references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
 
 | ID | Decision and accountable role | Blocks |
 | --- | --- | --- |
@@ -391,9 +391,9 @@ Unknown future ideas are not implicitly included. Add them through FL-55 once th
 
 ## 18. Scope control and revision history
 
-Before implementation, each ticket must name PRD IDs, release, user-visible behavior, permissions/data used, failure states and acceptance evidence. An implementation PR must map its APIs/jobs/tools/schema and tests to those IDs. Review rejects unmapped scope or a build-guide-only feature.
+Before implementation, each ticket must name PRD IDs, release, user-visible behavior, permissions/data used, failure states and acceptance evidence. An implementation PR must map its APIs/jobs/tools/schema and tests to those IDs. Review rejects unmapped scope or a LLD-only feature.
 
-A change request states the problem, proposed requirement/acceptance change, affected users/data/permissions, release/dependencies, migration/compatibility impact and owner. Update this PRD first, obtain owner acceptance, then update build guide, contracts and tests together. Preserve existing IDs; mark retired requirements rather than reusing numbers. A release baseline records PRD version and Git commit.
+A change request states the problem, proposed requirement/acceptance change, affected users/data/permissions, release/dependencies, migration/compatibility impact and owner. Update this PRD first, obtain owner acceptance, then update LLD, contracts and tests together. Preserve existing IDs; mark retired requirements rather than reusing numbers. A release baseline records PRD version and Git commit.
 
 | Version | Change |
 | --- | --- |
@@ -405,7 +405,7 @@ This document covers the supplied vision and explicit supporting requirements. I
 
 ## 19. Coding baseline and first-principles invariants
 
-The next work is implementation, starting B-01 in [BUILD_SPEC.md](BUILD_SPEC.md). That handoff fixes stack, repository layout, local services, environment/secret handling, OIDC/session policy, reference data rules, screen interactions, jobs, test oracles and B-01–B-11 order. [OpenAPI](contracts/openapi.json) fixes wire schemas and operations; [SQL](contracts/schema.sql) fixes relational constraints/isolation; [fixtures](contracts/fixtures.json) fix synthetic scenarios and expected results. These refine existing FL requirements and add no real-source access or F permission.
+The next work is implementation, starting B-01 in [LLD.md](LLD.md). That handoff fixes stack, repository layout, local services, environment/secret handling, OIDC/session policy, reference data rules, screen interactions, jobs, test oracles and B-01–B-11 order. [OpenAPI](contracts/openapi.json) fixes wire schemas and operations; [SQL](contracts/schema.sql) fixes relational constraints/isolation; [fixtures](contracts/fixtures.json) fix synthetic scenarios and expected results. These refine existing FL requirements and add no real-source access or F permission.
 
 | First principle | Consequence in the product | Requirement authority |
 | --- | --- | --- |
@@ -420,8 +420,8 @@ The next work is implementation, starting B-01 in [BUILD_SPEC.md](BUILD_SPEC.md)
 
 Reference defaults are deliberate engineering decisions under this implementation request: responsive web; Python/FastAPI/PostgreSQL; local OIDC; DB-backed workers; encrypted local storage; fixture extraction and deterministic case-manager stand-in; bank/FD and mutual-fund flows; manual claim handoff; no outbound real-source/model/notification/call integration. This lets developers code and test without cloud credentials. It does not demonstrate real AI/provider quality or a live institutional service.
 
-The reference policy uses synthetic-reviewed identity/authority and institution evidence, 30-day maximum consent, 15-minute exact approval, 30-day eligible dated observations, INR Decimal amounts and the explicit deletion/retention rules in BUILD_SPEC.md. These are **not production legal rules**. Every page/export is labeled synthetic, unknown fixture documents are refused, F is disabled, and startup rejects a real-data mode lacking accepted deployment policies.
+The reference policy uses synthetic-reviewed identity/authority and institution evidence, 30-day maximum consent, 15-minute exact approval, 30-day eligible dated observations, INR Decimal amounts and the explicit deletion/retention rules in LLD.md. These are **not production legal rules**. Every page/export is labeled synthetic, unknown fixture documents are refused, F is disabled, and startup rejects a real-data mode lacking accepted deployment policies.
 
 Coding acceptance is local execution of all three paths, all P scenario evidence, contract/migration/fixture agreement and a reproducible bootstrap/test sequence. Real-data launch requires the applicable D gates and qualified review; no document can substitute for those external permissions. Internal coding choices already fixed here must not be reopened merely to choose a framework or field name.
 
-Coding-readiness amendment: implement the reference release incrementally using BUILD_SPEC section 17. The first walking journey is a living owner reviewing one synthetic bank statement into a dated inventory. Legacy and claims remain required before reference-release acceptance; they are not prerequisites to that first working increment. F contracts are disabled reservations, not instructions to build their internals. No eligible observations means no available total (null); a reviewed eligible zero is explicitly 0.00. This refines FL-09/29/55 and adds no new capability.
+Coding-readiness amendment: implement the reference release incrementally using LLD section 17. The first walking journey is a living owner reviewing one synthetic bank statement into a dated inventory. Legacy and claims remain required before reference-release acceptance; they are not prerequisites to that first working increment. F contracts are disabled reservations, not instructions to build their internals. No eligible observations means no available total (null); a reviewed eligible zero is explicitly 0.00. This refines FL-09/29/55 and adds no new capability.
