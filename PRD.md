@@ -1,186 +1,366 @@
-# Product Requirements Document — Financial Legacy
+# Financial Legacy — Product Requirements
 
-Version: 0.1 | Date: 15 October 2026 | Status: Draft for founder and engineering review
+**Find what’s yours. Make sure nothing gets left behind.**
 
-Product owner: TBD | Engineering owner: TBD | Operations and legal reviewers: TBD
+Version 0.2 · 15 October 2026 · Complete planning draft; open decisions are explicitly blocked
 
-## 1. Purpose and evidence boundary
+Product owner: founder, named owner TBD · Engineering owner: TBD · Claims operations and qualified legal/privacy reviewers: TBD
 
-Financial Legacy helps individuals and authorized family members discover financial assets, organize evidence, prepare a legacy and navigate claims. It should feel like one capable assistant that remembers the case and helps complete it.
+## How to read this document
 
-This PRD consolidates the supplied concept. Proposed MVP boundaries, priorities and acceptance criteria below are design recommendations, not confirmed business commitments. Institutional access and legal requirements must be validated before a workflow is enabled. The source concept was truncated during feasibility; this document does not invent a missing conclusion.
+Read sections 1–6 for the product, sections 7–13 for behavior, and sections 14–18 for quality, delivery and decisions. This PRD defines the full product vision and the first release. The [architecture overview](ARCHITECTURE.md) explains system boundaries, the [LLD](LLD.md) specifies implementation, the [acceptance plan](ACCEPTANCE.md) maps every requirement to evidence, and the [roadmap](ROADMAP.md) sequences existing scope. [Contribution rules](CONTRIBUTING.md) govern future changes.
 
-## 2. Problem
+**Scope authority:** Every feature, screen, API, agent tool, integration, background job, operational capability and material behavior change must trace to a requirement in this PRD. Neither the LLD nor a ticket can introduce product scope. If a behavior is missing, amend this PRD and obtain product-owner acceptance before implementing it. An unresolved decision is a blocker for the affected capability, not permission to invent an answer. Implementation details may be chosen within an existing requirement when they do not change user behavior, data use, permissions, supported sources or service commitments.
 
-Financial assets accumulate across employers, cities and institutions. Lost records, old contact information and incomplete nomination details can leave individuals unaware of their holdings. After a death, families face two distinct problems: locating assets and obtaining settlement through the relevant institutions.
+This revision preserves the founder’s three use cases and complete asset coverage, consolidates repeated source text and supplies explicit design proposals where the original brief stopped during feasibility. It is a specification, not a claim that the application or integrations exist. New product choices remain proposals until accepted; verified source descriptions do not establish our right to integrate.
 
-Discovery can yield evidence of a holding without establishing a claimant’s right to receive it. Recovery can also begin with a known asset and no discovery work. The product must support these paths independently.
+## 1. Product in one minute
 
-## 3. Goals and non-goals
+Financial Legacy is an AI-native case-management platform for financial asset discovery, legacy preparation and claims assistance in India. A person explains their situation in chat or voice. A persistent AI case manager gathers the right information, organizes evidence, proposes the next permitted step, coordinates approved work and tracks the case to a documented outcome.
 
-### Goals
+The product has three independently usable paths:
 
-1. Help users build an evidence-linked financial asset inventory with explicit uncertainty.
-2. Reduce repeated information collection and make next actions understandable.
-3. Prepare a secure, maintainable legacy record with controlled sharing.
-4. Help authorized claimants assemble institution-specific claim packs and track outcomes.
-5. Keep consent, disclosures and important user decisions inspectable.
-
-### Non-goals for the MVP
-
-- Exhaustive, automatic discovery of every Indian financial asset.
-- Holding or moving customer funds, giving investment advice or determining inheritance rights.
-- Drafting legally operative wills or replacing institution/legal verification.
-- Automatic asset transfer or legacy disclosure triggered solely by an AI inference of death.
-- Scraping restricted portals, bypassing authentication or collecting third-party passwords/OTPs.
-- Direct submissions or automated calls without a permitted channel and explicit approval.
-
-## 4. Personas and jobs to be done
-
-| Persona | Situation | Desired outcome | Key concern |
-| --- | --- | --- | --- |
-| Individual asset owner | Old investments across institutions | Know what is held and what remains uncertain | Privacy and incomplete records |
-| Legacy planner | Wants family to find information later | Maintain an organized, controlled handover record | Premature or excessive disclosure |
-| Family claimant | A relative has died | Discover holdings and progress valid claims | Authority, paperwork and emotional burden |
-| Authorized case operator | Supports complex cases | Resolve evidence gaps and institution exceptions | Access limited to assigned cases |
-
-Accessibility includes large readable text, plain-language explanations, save-and-resume and a text alternative to voice. Elderly users must be able to review important actions without relying on a transient conversation.
-
-## 5. End-to-end journeys
-
-### A. Discover my assets
-
-Conversation → select self-discovery → verify identity/permissions as required → upload or declare records → extract and review → reconcile possible duplicates → build inventory → show unresolved sources and next actions.
-
-Completion: the user reviews the inventory and open investigations. The product never states that all assets were found solely because available sources were exhausted.
-
-### B. Prepare my legacy
-
-Conversation → create planner case → add/review holdings → identify missing documents and nomination information → designate trusted contacts and sharing preferences → review legacy record → export or save securely → set review reminders.
-
-Completion: a dated legacy record and checklist exist. Nomination status can be unknown; a nomination is not treated as a universal determination of beneficial entitlement. An MVP trusted contact does not automatically receive vault access.
-
-### C. Discover and claim after a death
-
-Conversation → register deceased subject → collect claimant identity and relationship → establish source-specific authority → discover assets or add a known asset → review evidence → choose relevant institution workflow → prepare claim pack → user approves any external submission → record reference and follow-ups → record final institutional outcome.
-
-Completion: each claim has settlement, transfer, rejection or an explicit unresolved-dispute outcome supported by evidence. Overall case closure requires user review of remaining open items.
-
-### D. Claim a known asset
-
-Create claimant case → add known holding and evidence → review authority → start claim checklist. Discovery remains optional and can be added later.
-
-## 6. Scope and phasing
-
-| Capability | Proposed MVP | Later / dependency |
+| Path | User’s request | Product outcome |
 | --- | --- | --- |
-| Conversational case creation | Text; saved context; resumable tasks | Evaluated multilingual voice |
-| Identity and authority | Verification workflow and human review; granular gates | Approved verification-provider integration |
-| Discovery | User declarations, uploads, guided official-source enquiries | Contracted/API integrations where permitted |
-| Asset inventory | Bank/FD and mutual fund records, evidence/status/date | Other categories after workflow validation |
-| Document intelligence | Extraction with citations and mandatory review | More formats/languages after evaluation |
-| Legacy | Record, missing-information checklist, trusted-contact intent, export | Controlled post-death release process |
-| Claims | Institution/version-specific checklist, pack preparation, manual submission and status entry | Approved direct submission and follow-up channels |
-| Notifications | In-app reminders; minimal sensitive content | Opt-in email/SMS/voice after validation |
+| Discover my assets | “I invested years ago and don’t remember where.” | A reviewed inventory, explicit possible matches and an honest list of gaps |
+| Prepare my legacy | “Make sure my children know where my investments are.” | A dated financial record, preparation checklist and controlled sharing instructions |
+| Discover or claim after a death | “My father passed away; help us find and claim his holdings.” | Authority-reviewed discovery and/or institution-specific claim cases with recorded outcomes |
 
-Identity checks are required before any action that needs them. Low-risk draft cases may be created before verification, but this must not grant source access or disclose another person’s information.
+A claimant who knows the asset can begin directly with claims. A discovery user need not buy or complete a legacy or recovery workflow. A planner can use the inventory without sharing it immediately.
 
-## 7. Functional requirements and acceptance criteria
+The assistant is the primary interaction. Structured inventory, evidence review, documents, tasks and claims views support inspection and decisions; users do not have to navigate a dashboard to start.
 
-P0 = required for pilot. P1 = follow-on capability. These priorities are proposed.
+## 2. Problem, value and boundaries
 
-| ID | Priority | Requirement | Acceptance criterion |
-| --- | --- | --- | --- |
-| FL-01 | P0 | Classify intent and create a case | User confirms self-discovery, legacy or deceased-claim mode; known-asset claims skip discovery |
-| FL-02 | P0 | Resume case context | User can leave and return to the same reviewed records, tasks and conversation; corrections do not erase history |
-| FL-03 | P0 | Verify identity and case-specific authority | Pending, verified, rejected and expired states are visible; restricted actions remain blocked until their exact prerequisite is met |
-| FL-04 | P0 | Capture consent and revoke access | Purpose, data scope, recipient, expiry and version are recorded; revocation blocks future use immediately, including queued actions |
-| FL-05 | P0 | Secure document intake | Only supported files pass validation/scanning; progress, failure and retry are visible; blocked files never reach extraction |
-| FL-06 | P0 | Extract with evidence | Every proposed field links to a document/page or source record; low-confidence/ambiguous values require review |
-| FL-07 | P0 | Maintain asset evidence states | Each holding is self-declared, potential match, document-backed or institution-verified; AI cannot promote a match to institution-verified |
-| FL-08 | P0 | Reconcile and correct | Possible duplicates can be reviewed and merged without losing evidence; conflicting ownership/amounts remain explicit |
-| FL-09 | P0 | Present dated amounts | Inventory shows currency, amount type, source and as-of date; potential matches and historical balances are excluded from current confirmed totals |
-| FL-10 | P0 | Guide discovery sources | Each enquiry identifies coverage, required authority, permitted channel and unavailable steps; no unsupported claim of complete discovery |
-| FL-11 | P0 | Prepare legacy record | User can review/export a dated inventory and missing-information checklist; trusted-contact intent grants no automatic disclosure |
-| FL-12 | P0 | Version claim procedures | Claim references an institution, asset class, workflow version and source/review date; missing or stale templates route to an operator |
-| FL-13 | P0 | Prepare claim pack | Required, optional, missing and rejected documents are distinguished; user can inspect all generated forms and correct extracted fields |
-| FL-14 | P0 | Approve exact external action | Approval names recipient/channel, documents, declarations and purpose; content changes invalidate approval; unapproved submissions cannot run |
-| FL-15 | P0 | Track claims and follow-ups | External reference, submission evidence, requests, due dates and responses persist; an uncertain submission is reconciled before retry |
-| FL-16 | P0 | Record outcome and closure | Amount/type/date and institutional evidence support settlement/transfer; rejection and legal dispute remain explicit; user reviews case closure |
-| FL-17 | P0 | Human escalation | User can request help; dispute, ambiguous authority, poor extraction and unsupported channels produce a visible handoff task |
-| FL-18 | P0 | Audit access and actions | Reads of sensitive documents, exports, approvals, sharing, changes and submissions produce actor/time/case-linked audit events |
-| FL-19 | P0 | Retention, export and deletion | User sees applicable retention policy; access is revoked on deletion request; live copies and processors follow a tracked purge policy with documented legal holds |
-| FL-20 | P1 | Multilingual voice | Evaluated speech/language quality, transcript correction and text fallback exist; voice alone does not approve a consequential disclosure |
-| FL-21 | P1 | Permitted automated follow-ups | Disclosed identity, user permission, channel rules and a complete contact log precede each supported automation |
+People accumulate accounts, deposits, investments, insurance and retirement benefits across institutions. Changes in work, location and contact details, missing records and incomplete nomination information can make these holdings difficult to find. Families then face separate discovery and recovery problems after a death.
 
-## 8. Asset coverage and source validation
+The value proposition is coordinated assistance: one case record, fewer repeated questions, traceable evidence, clear next actions and continuity through follow-ups. We do not claim that one source can find every asset or that every claim can be settled.
 
-These are candidate workflows supplied in the concept, not verified integrations or authoritative legal instructions.
+### Outcomes we own
 
-| Asset class | Candidate discovery evidence/source | Candidate claims route | Proposed phase |
-| --- | --- | --- | --- |
-| Bank accounts and FDs | Statements, bank records, eligible unclaimed-deposit enquiries including UDGAM | Institution-specific deceased-depositor procedure | MVP, guided/document-led |
-| Mutual funds | CAS, AMC/RTA records, CAMS, KFintech, MITRA enquiries | AMC/RTA transmission or redemption procedure | MVP, guided/document-led |
-| Shares/demat | CAS, broker/depository/company records | Broker/depository/company transmission | Later |
-| Unclaimed dividends/shares | Company/RTA records and IEPF process | Applicable IEPF/company verification | Later |
-| Life insurance | Policies, insurer records and unclaimed-amount facilities | Insurer death-claim procedure | Later |
-| EPF and related benefits | EPFO/member records and documents | Applicable nominee/death claim | Later |
-| NPS | CRA/pension account evidence | Applicable exit/death procedure | Later |
-| PPF/small savings | Bank/post-office records | Institution settlement procedure | Later |
-| Bank lockers | Bank relationship evidence | Institution nominee/heir access process | Later; no assumed cash value |
+- An understandable, evidence-linked inventory and visible discovery coverage.
+- Correctly assembled records and reviewed claim packs within supported workflows.
+- Explicit permissions, approvals, handoffs, reminders and outcome records.
+- Transparent distinction between platform work, user work and institutional decisions.
 
-UDGAM is scoped to eligible unclaimed deposits, not every active bank account. MITRA, DigiLocker, Account Aggregator and IEPF serve different purposes; eligibility and access must be separately validated. The ability of a user to access a portal does not imply permission for our system to automate it. Deceased-person access must not be assumed to work under living-user consent.
+### Outcomes we do not promise or perform
 
-For each source, the integration register must contain: operator, allowed purpose, coverage, eligibility, consent/authority requirements, approved channel, contractual status, data fields, rate limits, retention, failure handling, review owner and last validation date.
+- Determining legal inheritance, resolving a disputed estate, guaranteeing ownership or guaranteeing settlement.
+- Exhaustive discovery, real-time balances where unavailable, or universal financial API access.
+- Holding/transferring funds, trading, investment recommendations, tax advice or legally operative will drafting/execution.
+- Changing nominees, beneficiaries or institutional account details on the user’s behalf under this baseline. We identify gaps and guide a permitted process; executing such changes needs a PRD amendment.
+- Obtaining passwords/OTPs for third-party financial accounts, bypassing verification or restricted access, or silently scraping institutions.
+- Inferring a death from inactivity and automatically transferring assets or releasing documents.
+- Real estate, physical valuables, cryptoassets, debts, business ownership and foreign assets under this baseline. Add them explicitly through scope change if wanted.
 
-## 9. Evidence and presentation rules
+Pricing, billing, commissions and payment collection are undecided and are not implementation scope. The platform remains assistance and workflow software; its exact operating model and permitted professional-service boundaries require a decision before launch.
 
-- Evidence status describes support for a holding, not legal entitlement or guaranteed recoverability.
-- An inventory item can have several dated observations. New evidence does not overwrite the original record.
-- Document-backed means an accepted record supports the holding; an old statement does not prove the account is still active.
-- Institution-verified requires attributable institution evidence within an explicit freshness policy.
-- Show current confirmed totals only for qualifying, dated observations in the same currency; unknown and excluded amounts are listed separately.
-- Policy sum assured, cash balance, investment value and settled amount are different amount types and must not be added indiscriminately.
-- Every unsupported field is unknown, not silently inferred. Every material correction is reviewable.
+## 3. Users, roles and definitions
 
-## 10. Privacy, security and product controls
-
-Case-scoped access, strong authentication, encryption, explicit consent, minimal provider disclosure, approved retention and a complete audit trail are pilot prerequisites. Financial records and family documents must not appear in ordinary logs, analytics payloads or notification previews.
-
-Claimant identity, relationship evidence, source permission and the institution’s entitlement decision are distinct. Rejection by one institution cannot automatically decide another claim. A trusted contact has no access until a separate valid sharing/release policy is satisfied.
-
-The AI may propose questions, fields and steps. Deterministic services enforce authorization, asset-state promotion, approval validity and external execution. Uploaded instructions are untrusted evidence and cannot grant tools new permissions.
-
-## 11. Success measures
-
-Targets require a pilot baseline and owner approval; no numerical business results are claimed.
-
-| Measure | Definition | Guardrail |
+| Role | Allowed product responsibility | Boundary |
 | --- | --- | --- |
-| Time to first reviewed inventory | Median and p90 from case start to user-confirmed first inventory | Segment by path and document availability |
-| Evidence coverage | Reviewed assets with at least one usable evidence link / reviewed assets | Report evidence state and age separately |
-| Extraction quality | Field-level accuracy on labeled representative records | Report critical identifiers/amounts independently |
-| Claim-pack readiness | Packs accepted as complete at first institution review / packs reviewed | Institution requirements vary; track workflow version |
-| User effort | User-active time and clarification rounds per completed milestone | Do not count waiting for institutions as AI work |
-| Claim progress | Time in each claim state; settled/transferred/rejected/unresolved counts | Cohort by institution and asset class |
-| Safety | Unauthorized disclosure/submission and false verification incidents | Pilot launch requires zero in adversarial acceptance tests |
+| Asset owner / planner | Manage own case, evidence, permissions and legacy instructions | Cannot authorize access to unrelated people’s information |
+| Claimant | Request discovery/claims for a deceased subject | Identity, relationship and action-specific authority are separately reviewed |
+| Authorized collaborator | Help within an explicit case/document/action scope | No access merely because they are family |
+| Trusted contact | Intended future recipient or contact chosen by planner | Recording a contact creates no vault access or inheritance right |
+| Assigned case operator | Review documents, requirements and exceptions in assigned cases | Cannot override entitlement, fabricate evidence or self-approve external disclosure |
+| Workflow/integration reviewer | Maintain approved procedures and connector capabilities | Does not receive unrestricted customer-case access |
+| Restricted support/security administrator | Resolve access and operational issues with audited, limited access | No default access to all financial documents |
+| Institution / qualified external adviser | Decide institutional requirements/claims or provide professional help | External party; disclosure requires appropriate authority and approval |
 
-Product analytics use pseudonymous event IDs and coarse categories, not names, document text, account numbers or financial balances.
+**Case:** one user goal concerning one financial subject; several cases may exist per user. **Subject:** person whose financial information is involved. **Asset:** holding or potential holding. **Evidence:** attributable document, declaration or source record. **Claim:** institution-specific recovery/transmission process for an asset; a case can have many claims. **Nominee:** recorded nomination information; not treated as a universal legal entitlement decision. **Consent:** permission for defined data, purpose and recipient. **Authority:** action/source-specific basis to act for a subject. **Approval:** authorization of one exact external action after preview. These are separate records, not interchangeable checkboxes.
 
-## 12. Release acceptance
+## 4. Full scope and release model
 
-The pilot is acceptable only after the FL-01–FL-19 scenarios are demonstrated with synthetic cases; permissions and cross-case isolation tests pass; document and claim workflows have named reviewers; exports and deletion are verified; and incident, backup and restore procedures are exercised. Any live source needs its own completed integration gate.
+P = first pilot. F = full-product scope after its release gate; not a pilot commitment. F capabilities remain in this PRD so they cannot disappear from the vision or be implemented without prerequisites. P/F timing, vendors and owners are proposals; dates are uncommitted.
 
-Three end-to-end acceptance cases are mandatory: a living owner correcting an old statement, a planner with incomplete nomination information, and an authorized claimant starting directly from a known asset. Include negative cases for a potential-name match, a disputed claimant, a revoked consent and a failed/uncertain external submission.
+| Capability | P: pilot | F: full product and required gate |
+| --- | --- | --- |
+| Conversation | Text, saved case context, adaptive questions | Voice and selected Indian languages after quality/accessibility evaluation |
+| Identity/authority | Case-specific verification workflow, trained human review, restricted actions | Approved verification integrations and validated institution-specific automation |
+| Discovery | Declarations, uploaded records, guided official enquiries | Permitted API/partner retrieval and refresh per source |
+| Inventory | Bank/FD and mutual funds; evidence and dated observations | All asset classes in section 6 after separate workflow validation |
+| Legacy | Checklist, reviewed record, export, contact intent, review reminders | Scoped lifetime sharing and controlled post-death release after policy validation |
+| Claims | Reviewed templates/packs, user/operator submission, status and outcome tracking | Approved direct submission and permitted automated follow-ups |
+| Access | Case owner/claimant and assigned operator | Explicitly invited collaborators/recipients after sharing controls pass |
+| Notifications | In-app tasks and reminders | Opt-in minimal-content email/SMS/voice through approved channels |
+| Clients | Responsive web with mobile support | Native mobile app only after its UX/device-security decision; same requirements |
 
-## 13. Open product decisions
+A full-product capability is disabled until its specific access, legal, security, quality and operational gates are satisfied. A manual path must be labeled manual; a mock or prepared form cannot be presented as an institutional integration.
 
-- Initial customer segment, distribution, pricing and service/support boundaries.
-- Exact pilot institutions and supported statement/form formats.
-- Identity/authority review policy and qualified operational reviewers.
-- Supported languages and accessible voice confirmation design.
-- Trusted-contact release procedure, disputes and legal escalation.
-- Approved retention periods, provider data handling and hosting constraints.
-- Current source capabilities, regulated partner needs and permitted automation.
+## 5. Complete user journeys
 
-See [ROADMAP.md](ROADMAP.md) for gates, risk ownership and delivery sequencing, and [LLD.md](LLD.md) for the proposed implementation.
+### 5.1 Discover my own holdings
+
+1. User describes the goal and confirms the self-discovery path and financial subject.
+2. Assistant asks what is known: institutions, asset classes, old documents and relevant identifying information, collecting only what the next permitted step needs.
+3. User completes required verification and purpose-specific permissions.
+4. User uploads/declares records or authorizes an enabled source. Assistant proposes a discovery plan with coverage and user actions.
+5. Extraction produces evidence-linked fields for review. Potential matches remain separate from accepted holdings.
+6. User/operator resolves ambiguous names, references, duplicate records and conflicting observations.
+7. Inventory shows supported holdings, dated values, evidence state and unresolved investigations. User can add another source, prepare a legacy, or finish discovery.
+
+Done means a reviewed snapshot with clear coverage and open items, never “we found everything.” No results means no results from the sources actually checked, not proof that no asset exists.
+
+### 5.2 Prepare a financial legacy
+
+1. User starts a planner case or continues from an inventory.
+2. Assistant organizes holdings, document locations, institution contacts and nomination information; unknowns stay visible.
+3. Checklist identifies missing evidence, missing/uncertain nomination information, stale records and follow-up tasks. It does not certify a will or legal sufficiency.
+4. User reviews a dated legacy record, adds trusted-contact intent and defines the information they wish to share and when.
+5. Pilot permits a user-requested, scoped export and secure in-product storage. It does not automatically invite or email contacts.
+6. Full product allows a verified recipient to receive only an explicitly approved scope, with access expiry/revocation and access history. Post-death release uses the separate gated workflow in section 11.
+7. User can update records, replace contacts, revoke future sharing and review on reminders. Exports remain snapshots; previously downloaded copies cannot be remotely recalled.
+
+Done means the selected preparation checklist is reviewed, the snapshot is dated and unresolved gaps are acknowledged. Ongoing review remains possible.
+
+### 5.3 Discover and claim after a death
+
+1. Claimant identifies the deceased subject and whether assets are known. The assistant uses empathetic language and avoids repeatedly asking about the death.
+2. Identity, relationship, death evidence and source/action-specific authority are collected through approved procedures. Possible documents include death evidence, nomination records and relevant legal documents; exact requirements come from the reviewed institutional workflow, not a universal AI checklist.
+3. For unknown holdings, plan and conduct only permitted discovery. For known holdings, skip directly to the claim checklist.
+4. Create a separate claim for each institution/asset process. Show requirements, what is missing and any verification/dispute hold.
+5. Assemble a versioned pack; user inspects fields, documents, recipient, declarations and consequences. Changes require fresh approval.
+6. Submit manually in the pilot; capture the external reference and receipt. Direct submission is allowed only through an enabled full-product connector.
+7. Track institution requests, additional evidence, follow-ups and delays. Any uncertain submission is reconciled before a retry.
+8. Record settlement, transfer, rejection or unresolved dispute with evidence, dates and any amount/type. Partial settlement leaves a tracked remainder. User reviews closure and outstanding items.
+
+A match does not establish inheritance. Another claimant, disputed evidence, suspected fraud or a conflicting entitlement request triggers a hold and qualified escalation, not AI adjudication.
+
+## 6. Asset coverage and discovery sources
+
+All nine categories are in the full vision; each needs separate discovery and claims validation. The table describes candidate paths, not guaranteed access or institution-specific legal instructions.
+
+| Category | Candidate evidence/discovery | Candidate recovery path | Release |
+| --- | --- | --- | --- |
+| Bank accounts and fixed deposits | User records, bank statements, bank enquiries, eligible UDGAM searches | Relevant bank’s deceased-depositor/settlement procedure | P, document-led |
+| Mutual funds | CAS, AMC/RTA records, CAMS/KFintech, MITRA enquiries | AMC/RTA transmission/redemption procedure as applicable | P, document-led |
+| Shares and demat holdings | CAS, broker/depository/company records | Relevant broker, depository or company transmission | F |
+| Unclaimed dividends and shares | Company/RTA evidence and IEPF process | Relevant company verification and IEPF route | F |
+| Life insurance | Policy, insurer records, supported unclaimed-amount enquiry | Insurer-specific claim | F |
+| EPF and related benefits | EPFO/member evidence and employment records | Applicable death/nominee benefit procedure | F |
+| NPS | Pension/CRA records and statements | Applicable exit/death procedure | F |
+| PPF and small savings | Bank/post-office records | Relevant institution’s settlement procedure | F |
+| Bank lockers | Institution relationship/locker evidence | Relevant access process | F; no assumed contents or cash value |
+
+### Minimum category-specific inventory fields
+
+All categories retain institution, subject, masked reference, evidence state/source/date, nomination status, lifecycle status and next action. Missing data stays unknown; these fields are collected only when needed and permitted.
+
+| Category | Additional fields to support | Display constraint |
+| --- | --- | --- |
+| Bank/FD | Account/deposit type, ownership/joint-holder evidence, branch where known, deposit maturity and dated balance | Deposit principal/maturity value and cash balance are distinct |
+| Mutual funds | AMC/RTA, folio, scheme/plan/option, units and dated valuation where available | Units and valuation have separate evidence/as-of dates |
+| Shares/demat | Broker/depository/issuer, masked demat or physical folio, security identifier, quantity and valuation date | Quantity is not money; physical and demat evidence must not double-count |
+| Unclaimed dividends/shares | Company/RTA, dividend period or security quantity, transfer/reference evidence and claim stage | Dividend amount and share value are separate |
+| Life insurance | Insurer, policy type/status, policy dates, documented nominee and benefit type | Sum assured is not current investment/cash value |
+| EPF/benefits | Relevant member/employer reference, service evidence, benefit type and statement date | Balance and potential death/other benefits remain distinct |
+| NPS | CRA/PRAN reference, account/tier or scheme evidence, units/value date and exit status | Do not infer payable entitlement from a statement value |
+| PPF/small savings | Institution/branch, scheme/account type, opening/maturity dates and dated balance | Scheme-specific amounts/conditions stay attributable to source |
+| Lockers | Institution/branch, masked locker reference and holder/nomination evidence | Contents and value remain unknown unless separately evidenced; excluded from cash totals |
+
+### Source facts and access limits
+
+- RBI’s [UDGAM FAQ](https://www.rbi.org.in/commonman/Upload/English/FAQs/PDFs/FAQonUDGAMPortal.pdf) describes eligible unclaimed-deposit searches; claims are made to the respective bank. It is not discovery of every active account. The FAQ’s bank counts are dated and are not adopted as current coverage.
+- SEBI’s [12 February 2025 MITRA circular](https://www.sebi.gov.in/sebi_data/attachdocs/feb-2025/1739356741378.pdf) describes tracing inactive/unclaimed mutual fund folios, including cases not appearing in a consolidated statement. It does not grant this startup an API or claimant authority.
+- [DigiLocker’s implementation model](https://www.digilocker.gov.in/web/implementation-model) describes partner/API onboarding for supported documents. Integration, available issuers and permissions must be validated.
+- RBI’s [Account Aggregator information](https://rbikehtahai.rbi.org.in/AccountAggregatorFacility.html) describes consent-based financial information sharing. Our eligible role/partner, scope, retention and deceased-subject applicability remain unresolved.
+- The [IEPF claim FAQ](https://iepf.gov.in/IEPF/pdf/FAQsIEPF5.pdf) is a background process reference. Current forms, rules and institutional requirements must be revalidated before a live workflow; historical process dates are not service commitments.
+
+References checked 15 October 2026 for planning context. They are not a completed legal review or integration validation. Every enabled source must record coverage, supported subject types, permitted method, authority/consent requirements, data fields, freshness, costs/limits, contractual approval, retention, review date and responsible reviewer.
+
+## 7. Experience and information architecture
+
+| Surface | What a first-time user can see/do | Required non-happy states |
+| --- | --- | --- |
+| Start and case selection | Explain goal, choose/confirm path, resume or create another case | Unsupported goal; mistaken path; no cases |
+| Conversation | Ask/answer, attach evidence, see proposed next action and case context | Processing; failed response; uncertainty; human handoff |
+| Verification and permissions | Understand who/what/why, submit required evidence, review and revoke permissions | Pending; expired; rejected; disputed; missing requirement |
+| Documents and review | Upload, inspect source, accept/correct/reject extracted fields | Unsafe/unreadable file; low confidence; password-protected file; retry |
+| Discovery plan | Sources considered, checked, blocked and not covered; next user action | No result; unavailable source; insufficient authority; incomplete search |
+| Asset inventory/detail | Evidence status, institution, masked reference, dated observations, nomination and next action | Potential match; conflicting evidence; stale/missing amount; duplicates |
+| Legacy record | Checklist, contact intent, snapshot/export; gated sharing/release | Missing documents; stale record; revoked access; release/dispute hold |
+| Claim workspace | Requirements, pack preview, approval, receipt, timeline and outstanding requests | Unsupported template; uncertain submission; partial outcome; rejection/dispute |
+| Tasks and activity | Owner, due date, blocked reason, status and history | Overdue; waiting on user/institution; cancelled task |
+| Case access and privacy | Members, permission history, exports, retention/deletion request | Unverified invite; revoked member; legal hold |
+| Operator workspace | Assigned queues, evidence review, escalation and workflow/source review | No assignment; restricted scope; stale template; fraud/dispute hold |
+
+Each surface has a clear title, plain-language state, next action and route to help. No sensitive document, declaration or sharing decision is approved solely by an ambiguous chat reply. The user can inspect the structured preview and correct information before consequential actions.
+
+## 8. Functional requirements — case, authorization and documents
+
+Each row is a testable requirement. P/F release labels follow section 4. Existing FL-01–FL-21 IDs retain their original capability meaning; added IDs make the full vision explicit.
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-01 · P | Confirm self-discovery, legacy or deceased-claim intent; allow known-asset claims without discovery | Four journey entry paths work and user can correct the suggested route |
+| FL-02 · P | Persist case facts, conversation, reviewed records and tasks; show corrections/history | Returning user resumes without re-upload/re-entry; a corrected fact is not replaced by an older AI summary |
+| FL-22 · P | Support several isolated cases per user and one subject per case | Case switch clearly identifies subject; no evidence, chat or assets leak across cases; subject/mode correction rechecks permissions |
+| FL-03 · P | Track identity, relationship and institution/action-specific authority separately | Pending/verified/rejected/expired states exist; missing authority blocks only the affected restricted action; reviewer/rationale recorded |
+| FL-04 · P | Capture purpose/data/recipient/time-scoped consent and revocation | User sees a receipt; revocation blocks future retrieval and queued work; completed disclosures remain in history |
+| FL-23 · P | Enforce owner, claimant and assigned-operator access; restricted admin support | Unauthorized IDs, document downloads, exports and background jobs are denied; operator reassignment removes old access |
+| FL-24 · F | Invite verified collaborators with explicit case/document/action scope and expiry | Invite alone reveals no private data; recipient verification and owner approval precede access; revoke blocks future reads |
+| FL-05 · P | Validate and scan secure uploads; show processing and retries | Unsupported/unsafe files never enter extraction; user can distinguish upload, scan, extraction and review failures |
+| FL-06 · P | Propose extracted fields with document/page or source-record citations | All critical ownership/identifier/amount fields are reviewed; low confidence is visible; unsupported values remain unknown |
+| FL-25 · P | Handle incomplete, unreadable, encrypted and conflicting records without invention | Ask for clearer/alternative evidence or a secure approved unlock route; never request passwords in chat; retain source and correction history |
+| FL-26 · P | Let user inspect, correct or reject proposed fields and source associations | Accepted correction records actor/reason/version; dependent pack or approval is invalidated when material data changes |
+
+## 9. Functional requirements — discovery and inventory
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-10 · P | Explain a source plan based on subject, goal and available evidence; guide manual enquiries | Every step identifies coverage, permitted method, prerequisites and next owner; incomplete/no-result outcomes are not complete-discovery claims |
+| FL-27 · F | Retrieve/refresh through a source-specific approved connector | Connector remains disabled until validated; unsupported deceased access is blocked; provenance, consent/authority and attempt outcome persist |
+| FL-07 · P | Label holdings self-declared, potential match, document-backed or institution-verified | Name-only or model-confidence matches cannot become verified holdings; verified status requires reviewed attributable institution evidence |
+| FL-08 · P | Review duplicates and conflicting identities/records before reconciliation | No automatic name-only merge; reviewed merge preserves aliases/evidence and can be reversed; conflicts remain visible |
+| FL-09 · P | Show institution, category, masked reference, ownership evidence, dated amounts and next action | Source, amount type/currency/as-of date and freshness are inspectable; missing fields are unknown |
+| FL-28 · P | Keep evidence history and current/historical observations distinct | New statement does not overwrite old evidence; withdrawal, closure or superseded record does not disappear from history |
+| FL-29 · P | Aggregate only qualifying reviewed observations under an explicit policy | One selected observation per holding/type; potential matches, historical-only/stale or unknown values and duplicates are excluded; currencies and incompatible value types stay separate |
+| FL-30 · F | Support all asset categories in section 6 with category-specific fields and workflows | Each new class has an approved evidence schema, source coverage, amount semantics, claims checklist, fixtures and evaluation before enablement |
+
+Evidence labels express support for a holding; they do not certify legal entitlement, present activity or recoverability. Nomination status is unknown, user-declared or document-supported, with date/source. It never implies the platform has changed institutional nomination records.
+
+## 10. Functional requirements — legacy and controlled sharing
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-11 · P | Prepare a dated financial record and checklist from reviewed inventory | User sees missing documents, unknown nominations, stale evidence and next actions; export records snapshot/date/scope and open gaps |
+| FL-31 · P | Record trusted contacts and sharing intent; maintain planner updates/review reminders | No invite/access/disclosure occurs merely by adding a contact; changes and review dates are logged; no passwords stored |
+| FL-32 · F | Allow explicit, verified, scoped lifetime sharing | User previews exact information/recipient; approval, recipient verification, access expiry/revocation and access history pass before release |
+| FL-33 · F | Support controlled post-death release of a planner’s legacy record | Death evidence, recipient identity, case-specific authority and current instructions are reviewed; dispute/hold rules block release; no inactivity trigger or AI-only decision |
+| FL-34 · P | Support user-requested, authorized exports and explain snapshot limits | Export is scoped/audited, accessible only through short-lived controlled access; user sees that downloaded copies cannot be recalled |
+
+Post-death release is information sharing, not an asset transfer, legal will or entitlement ruling. Release evidence, recipient rights, who can approve, notification/contest steps and hold resolution must be decided in D-04 before FL-33 can ship.
+
+## 11. Functional requirements — claims and recovery
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-12 · P | Use institution/asset-specific versioned requirements and source review dates | Claim retains its template version; stale/missing/unsupported requirements trigger review, not an invented checklist |
+| FL-13 · P | Assemble a reviewable claim pack from required/optional evidence and forms | Missing/rejected documents and claimant corrections are explicit; pack lists every document/version and declaration; user can inspect before use |
+| FL-14 · P | Obtain approval for the exact external action/disclosure; prepare manual handoff in pilot | Recipient, channel, purpose, documents and declarations are previewed; changed content/scope, expiry or revoked authority invalidates approval |
+| FL-35 · F | Execute approved direct submissions through enabled channels | Current policy and exact payload rechecked at execution; idempotency and receipt captured; unsupported channels remain manual |
+| FL-15 · P | Track submission evidence, references, requests, deadlines and institution responses | Timeline distinguishes manual/automated activity and user/institution waiting time; outstanding requests create owned tasks |
+| FL-36 · P | Reconcile uncertainty and prevent duplicate external actions | Timeout after possible acceptance is unknown, not safe-to-retry; no second submission until receipt/status is reconciled |
+| FL-16 · P | Record evidenced settlement, transfer, rejection, partial outcome or unresolved dispute; review closure | Outcome has source/date/type; settled amount separated from historical value; partial remainder and unresolved claims stay tracked |
+| FL-37 · P | Support new evidence, requests and reviewed reopening | New requirement updates the relevant claim/pack without silently changing all templates; reopening preserves prior outcomes and reasons |
+| FL-17 · P | Provide human help for uncertainty, unsupported paths, complaints and disputes | User can request help; case has assignee, reason, next step and visible state; legal entitlement conflicts go to qualified external help, not an AI ruling |
+
+Joint holders, multiple nominees/claimants, minors or guardians, representatives/executors, changed names, missing identity references, nonresident/foreign documentation and contested documents require a workflow explicitly supporting that situation. Until supported authority and institutional requirements are reviewed, affected actions are blocked and handed off. The assistant must explain what is known, what is missing and who can resolve it; it must not force the case into a standard nominee flow. No other claimant’s private evidence is revealed to resolve a dispute.
+
+Each claim can progress independently. One bank rejection cannot reject an unrelated claim. Case closure requires a reviewed summary of completed claims, unresolved investigations and accepted outstanding items. The product never labels rejection, withdrawal or unresolved legal dispute as recovery success.
+
+## 12. Functional requirements — AI, voice and operations
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-38 · P | Case manager coordinates bounded discovery, extraction, reconciliation, legacy, claims and follow-up capabilities | Proposed actions use persisted facts and allowed tools; model cannot grant authority, change verified status or execute unapproved actions |
+| FL-39 · P | Explain why information is requested, cite evidence/procedures and acknowledge uncertainty | Missing/contradictory evidence leads to a question or handoff; prompt injection in a document cannot grant tool access |
+| FL-40 · P | Recover from model/source failure and maintain user control | Saved work survives; retries do not duplicate mutations; user sees manual next steps and can correct facts, cancel pending work or request help |
+| FL-20 · F | Provide selected Indian-language voice/chat assistance with transcript correction and text fallback | Supported languages and quality are disclosed; names/numbers can be corrected; structured preview is required for consequential approval |
+| FL-41 · F | Capture/use voice under a clear recording/processing policy | User knows microphone/recording state; can stop or use text; retention/provider policy approved; no covert recording |
+| FL-21 · F | Conduct permitted, disclosed and authorized institutional follow-ups | Approved channel, purpose/recipient, current permission and log exist; unsupported automated calls are blocked; ambiguous responses route to review |
+| FL-42 · P/F | Provide owned in-app tasks/reminders in P; opt-in external notifications in F | Respect channel/preferences/time zone; avoid duplicate reminders and sensitive previews; opt-out stops future optional messages |
+| FL-43 · P | Provide assigned operator queues for authority, extraction, claims, disputes and overdue tasks | Operator can see priority/blocker/owner and perform only allowed review actions; privileged overrides require rationale and audit |
+| FL-44 · P | Govern templates, sources and model/tool versions | Named reviewer approves versioned changes; stale/unsafe workflow can be suspended; in-flight cases retain history and re-review material changes |
+
+“Agents” are bounded capabilities coordinated by one case manager; independent autonomous processes are not a product requirement. AI generates proposals and manages work, while deterministic services enforce permissions and state changes. It does not become the source of financial truth.
+
+## 13. Functional requirements — privacy, safety and lifecycle
+
+| ID / release | Required behavior | Acceptance evidence |
+| --- | --- | --- |
+| FL-18 · P | Audit sensitive access, modifications, review, sharing, approval, export and execution | Actor/time/case/object/reason/request reference present; no raw secrets or unnecessary financial content in ordinary logs |
+| FL-19 · P | Publish and enforce retention, export and deletion policy | Deletion request revokes access/cancels work; live/derived/processor copies and backup expiry are tracked; justified holds have visible status |
+| FL-45 · P | Protect data with strong authentication, encryption and least privilege | Cross-case isolation, short-lived access, session expiry, restricted keys and sensitive-action verification pass security testing |
+| FL-46 · P | Limit processor/AI data to approved purpose and recipients | Provider terms, hosting/retention/subprocessors and minimal payload approved; real records never sent to an unapproved tool or development environment |
+| FL-47 · P | Handle fraud, competing claimants and disputed evidence with a controlled hold | Restricted action stops; record who/what is disputed without exposing other claimants’ data; authorized reviewer/escalation resolves hold |
+| FL-48 · P | Support account/session recovery, contact corrections and revocation safely | Recovery/change cannot bypass case authority; prior access removed as needed; sensitive changes logged and user-informed |
+| FL-49 · P | Run a privacy-aware support/complaint process | Track ticket/case owner, response state and escalation; no document disclosure through ordinary support messages |
+
+Retention periods, identity strength, authority evidence and legal requirements are approved policy decisions, not universal fixed rules guessed by AI. A document-backed asset remains separate from claimant entitlement. Consent cannot authorize actions a person has no authority to permit.
+
+## 14. Quality, accessibility and service requirements
+
+| ID / release | Required behavior | Pilot acceptance / unresolved target |
+| --- | --- | --- |
+| FL-50 · P | Accessible responsive web, readable language, keyboard/screen-reader support, large-text layouts and resumable tasks | Core journeys work on agreed desktop/mobile sizes; labels, focus, errors and accessible non-voice path tested; target WCAG 2.2 AA, final audit required |
+| FL-51 · P | Durable processing with visible progress, bounded retries and reconciliation | Restart/retry tests preserve cases/evidence and do not duplicate submissions; outage shows what is saved/blocked and next step |
+| FL-52 · P | Approved performance, capacity and recovery budgets | Suggested budgets: p95 ordinary API <1 s, chat acknowledgement <2 s, 20-page clean-document extraction <2 min; 99.5% monthly internal API availability; RPO 24 h/RTO 8 h. Workload/exclusions/cost and final targets require D-07 acceptance before pilot; these are not external SLAs |
+| FL-53 · P | Evaluate extraction, AI decisions and workflow quality on representative cases | Critical identifiers/amounts/ownership reviewed independently; adversarial tests block unauthorized disclosure, false verification and tool misuse; language/voice has a separate gate |
+| FL-54 · P | Collect minimal operational/product metrics with explicit definitions | Pseudonymous events, no document text/account identifiers/balances in analytics; segment waiting time and assisted/manual work honestly |
+| FL-55 · P | Trace every deliverable and change to the PRD | Every feature/ticket/API/job/tool/test maps to IDs; undefined behavior blocks work; PRD amendment precedes new scope; LLD/roadmap updated in the same change |
+
+No benchmark is met merely because it is written here. Engineering, operations and product owners must agree a workload and record measured evidence before accepting FL-52/53. Production credentials and customer records must not enter GitHub or synthetic development fixtures.
+
+## 15. Business and measurement
+
+### Product hypothesis
+
+People will value a trusted case manager that reduces effort and uncertainty across fragmented asset and claims workflows. The first pilot should test usefulness, trust, operational effort and permitted source access before a broad automation claim or commercial promise.
+
+### Measurement definitions
+
+| Measure | Definition | Interpretation rule |
+| --- | --- | --- |
+| Activation | Cases reaching first reviewed useful artifact / eligible started cases | Report by path; define artifact as inventory, legacy record or claim checklist |
+| Time to first reviewed artifact | Median/p90 from case start to review | Separate user-active time from institution/verification waiting |
+| Evidence coverage | Reviewed assets with usable evidence / reviewed assets | Segment by status, age and asset class; not “all assets found” |
+| Extraction quality | Correct fields / labeled fields on evaluation set | Report critical identifiers, ownership, amount/date separately |
+| Claim-pack readiness | Packs institution accepts as complete at first review / reviewed packs | Segment by institution and template version |
+| Claim outcome | Counts and time in state for settled/transferred/partial/rejected/unresolved | Report cohorts; no rejected/disputed case counted as recovery |
+| User/operator effort | Active time and clarification/rework per milestone | Automation claims include human assistance honestly |
+| Trust/safety | Unauthorized disclosures/submissions, false verification and complaints | Zero unauthorized actions in release acceptance tests; incidents block rollout until resolved |
+| Sustainable service | Support and processing cost per reviewed artifact/case | Pricing and unit economics need founder decision; not a billing feature |
+
+Numerical business targets and pricing are open under D-01/D-08. Do not fabricate market size, recovery rates, savings or revenue forecasts.
+
+## 16. Release acceptance and traceability
+
+The first pilot covers every P requirement. F requirements cannot be silently enabled; they need their listed gate and inclusion in a release scope. [LLD.md](LLD.md) maps modules/APIs/data/tests to these IDs. [ROADMAP.md](ROADMAP.md) may change sequencing but cannot expand scope.
+
+Mandatory end-to-end scenarios:
+
+1. Living owner uploads an old bank statement, corrects extraction, resolves a duplicate and sees a historical amount excluded from a current total.
+2. Planner builds a legacy record with unknown nominations, adds contact intent, exports a dated snapshot and receives no accidental sharing.
+3. Authorized claimant starts with a known mutual fund holding, skips discovery, reviews a pack, records a manual receipt and tracks an institution request/outcome.
+4. Unknown-asset claimant gets a no-result/partial discovery plan without an assurance that no assets exist.
+5. Unverified/competing claimant, revoked consent, cross-case document ID and prompt-injected upload cannot disclose information or execute an action.
+6. Changed claim pack invalidates approval; possible-acceptance timeout triggers unknown/reconciliation; partial settlement leaves an outstanding balance/task.
+7. Unsafe/unreadable file, stale workflow and failed model/source each produce a usable next step or handoff.
+8. Deletion removes access and queued work, tracks derived copies/holds/backups; restore/recovery and incident procedures are exercised.
+
+Release evidence includes requirement IDs, environment/data set, expected/actual outcome, reviewer and unresolved defects. No unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defect is acceptable. F additionally tests collaborators/lifetime sharing, release disputes, each language/voice mode, each asset class and each connector within its exact enabled scope.
+
+## 17. Decisions that must not be guessed
+
+This is the authoritative decision register. The roadmap references these IDs. Product-owner acceptance must update the affected requirements, not just a ticket.
+
+| ID | Decision and accountable role | Blocks |
+| --- | --- | --- |
+| D-01 | Founder: pilot persona/institutions/formats, service boundaries and success targets | Pilot scope and customer promise |
+| D-02 | Product + qualified reviewers: identity/relationship/authority evidence, review roles, expiry and sensitive-action strength | Restricted access and deceased workflows |
+| D-03 | Integration + qualified reviewers: permitted roles/partners/contracts, exact API/channel and subject eligibility per source | Any live connector or automated follow-up |
+| D-04 | Product + qualified reviewers: lifetime/post-death sharing, recipient verification, contest/notice/hold/release authority and contact changes | FL-24/32/33 and family disclosure |
+| D-05 | Privacy/security: retention classes, processor/hosting terms, deletion/holds/backup expiry and approved provider data use | Real-data intake and lifecycle |
+| D-06 | Product + operations: evidence freshness, verification rules, aggregate eligibility and per-category amount semantics | Trusted inventory display and new classes |
+| D-07 | Engineering + operations: workload/capacity/cost, service targets, restore plan, support hours and case limits | Pilot readiness and any SLA |
+| D-08 | Founder: pricing/distribution/professional-service model and whether billing is desired | Commercial promise; billing requires explicit PRD amendment |
+| D-09 | Product + AI: launch languages, voice recording/consent policy and evaluated quality thresholds | FL-20/41 |
+| D-10 | Operations: institution procedures, template owners/review cadence, legal/fraud escalation and complaint handling | Claims pilot and ongoing quality |
+| D-11 | Product + engineering: native mobile need, device storage/session/accessibility/security requirements | Native mobile; responsive web remains P |
+
+Unknown future ideas are not implicitly included. Add them through FL-55 once their behavior, evidence, risks, dependencies and acceptance are defined.
+
+## 18. Scope control and revision history
+
+Before implementation, each ticket must name PRD IDs, release, user-visible behavior, permissions/data used, failure states and acceptance evidence. An implementation PR must map its APIs/jobs/tools/schema and tests to those IDs. Review rejects unmapped scope or an LLD/roadmap-only feature.
+
+A change request states the problem, proposed requirement/acceptance change, affected users/data/permissions, release/dependencies, migration/compatibility impact and owner. Update this PRD first, obtain owner acceptance, then update LLD, roadmap and tests together. Preserve existing IDs; mark retired requirements rather than reusing numbers. A release baseline records PRD version and Git commit.
+
+| Version | Change |
+| --- | --- |
+| 0.1 | Initial consolidation of the founder concept with pilot requirements and proposed technical design |
+| 0.2 | First-reader narrative; complete vision and release boundaries; 55 traceable requirements; operational/exception/sharing/quality behavior; authoritative decision register and scope-control rule |
+
+This document covers the supplied vision and explicit supporting requirements. It cannot stand in for decisions not yet made or permissions not yet obtained; those blockers are listed above.
