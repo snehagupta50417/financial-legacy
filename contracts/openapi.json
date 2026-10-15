@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Legacy Reference API",
     "version": "0.3.0",
-    "description": "Coding contract for PRD v0.3. Synthetic-only reference release; F operations remain disabled. This is not a deployed API. Coding-readiness amendment: Inventory distinguishes unavailable values from evidenced zero; operation policies refine role guards. See BUILD_SPEC section 17."
+    "description": "Coding contract for PRD v0.3. Synthetic-only reference release; F operations remain disabled. This is not a deployed API. Coding-readiness amendment: Inventory distinguishes unavailable values from evidenced zero; operation policies refine role guards. See LLD section 17."
   },
   "servers": [
     {
