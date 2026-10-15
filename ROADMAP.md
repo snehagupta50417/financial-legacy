@@ -1,123 +1,83 @@
-# Delivery Plan, Validation Gates and Decision Log
+# Financial Legacy — Delivery and Release Plan
 
-Version: 0.1 | Date: 15 October 2026 | Status: Proposed sequencing; dates and owners unassigned
+Version 0.2 · 15 October 2026 · Proposed sequence; owners/dates not yet assigned
 
-This plan connects the [PRD](PRD.md) to the [technical design](LLD.md). No calendar commitments or production access are implied.
+## 1. Authority and release labels
 
-## 1. Delivery milestones
+[PRD v0.2](PRD.md) defines all product scope and the authoritative D-01–D-11 decision register. [LLD v0.2](LLD.md) maps the implementation to its 55 requirements. This roadmap sequences that scope; it cannot add features, sources, data uses or service promises.
 
-| Milestone | Deliverables | Dependencies | Exit evidence |
+P = proposed first pilot. F = full-product requirement, gated until its prerequisites pass. Every milestone below must name its PRD requirement IDs and evidence. Changes in release timing update the PRD release baseline before implementation; a roadmap note alone cannot authorize scope.
+
+## 2. Delivery sequence
+
+| Milestone | Deliverables already specified in PRD | Requirement coverage | Exit evidence / dependencies |
 | --- | --- | --- | --- |
-| M0 — Validate pilot | Select segment and bank/FD + mutual fund scope; map institution workflows; validate source permissions; approve identity/authority and retention policies | Founder, qualified legal/compliance reviewer and operations owner | Signed scope/role boundaries, source register and pilot go/no-go |
-| M1 — Case and evidence foundation | Authentication, case membership, consent, uploads/quarantine, audit, tasks and synthetic fixtures | M0 data-handling and provider decisions | Cross-case isolation, upload security, revoke-access and deletion demonstrations |
-| M2 — Reviewed inventory | Text case manager, cited extraction, field review, asset evidence states, duplicate/conflict review and dated amounts | M1; labeled representative evaluation set | Discovery journey and evidence/amount acceptance tests pass |
-| M3 — Legacy preparation | Dated legacy record, missing-information checklist, contact intent and controlled export | M2; sharing/export policy | Planner can review/export; trusted contact receives no automatic access |
-| M4 — Assisted claims | Versioned institution checklists, authority review, pack review, manual submission evidence, follow-ups and outcomes | M1/M2; approved workflow templates and operator process | Known-asset claimant journey, rejection/dispute and uncertain-submission cases pass |
-| M5 — Limited pilot | Monitored cases with trained operators, support boundaries, incident response, backup restore and evaluation | M1–M4; all release gates | Named owners accept evidence; live data only within approved scope |
-| M6 — Expansion | Evaluated multilingual voice, additional asset classes, validated connectors and permitted automated follow-ups | Pilot evidence, permissions and source-specific gates | Each capability passes its own quality, safety and operational review |
+| M0 — Agree baseline | Confirm pilot persona/institutions/formats, service boundaries, identities/authority, processing/retention and claims procedures | FL-03, FL-04, FL-12, FL-44, FL-45, FL-46, FL-55 | Resolve affected D-01/02/05/10 decisions; named owners; accepted PRD baseline |
+| M1 — Secure case foundation | Managed sign-in/recovery, case/subject separation, membership/assignment, consent/holds, audit, uploads and tasks | FL-01, FL-02, FL-03, FL-04, FL-05, FL-18, FL-22, FL-23, FL-25, FL-42, FL-43, FL-45, FL-47, FL-48 | Cross-case and revoked-access tests; quarantine; durable state; privacy-approved providers |
+| M2 — Reviewed inventory | Text case manager, cited extraction/correction, guided discovery, reconciliation, evidence/amount semantics and explicit coverage | FL-06, FL-07, FL-08, FL-09, FL-10, FL-26, FL-28, FL-29, FL-38, FL-39, FL-40 | Representative quality results; D-06 policies; living-owner/no-result/duplicate journeys pass |
+| M3 — Legacy preparation | Checklist, dated record, trusted-contact intent, reviewed exports and review reminders | FL-11, FL-31, FL-34, FL-42 | Planner journey; no accidental contact disclosure; scoped export and stale-record behavior |
+| M4 — Assisted claims and operations | Versioned checklists/packs, exact review, manual receipts, follow-ups, requests/outcomes/reopening, complaint/help handling | FL-12, FL-13, FL-14, FL-15, FL-16, FL-17, FL-36, FL-37, FL-43, FL-44, FL-47, FL-49 | D-02/10; known-asset path; stale-template, partial-settlement, dispute and unknown-submission cases |
+| M5 — Pilot readiness | Retention/deletion, redacted measurement, accessibility, resilience, backup/restore, incident/support and complete traceability | FL-18, FL-19, FL-40, FL-45, FL-46, FL-48, FL-49, FL-50, FL-51, FL-52, FL-53, FL-54, FL-55 plus all P rows | D-05/07 accepted; all P acceptance evidence reviewed; no unresolved critical integrity/access defect |
+| M6 — Controlled expansion | Collaborators, lifetime/post-death sharing, voice/languages, additional classes, enabled connectors/direct submissions and permitted follow-ups | FL-20, FL-21, FL-24, FL-27, FL-30, FL-32, FL-33, FL-35, FL-41, FL-42 plus shared P controls | Separate F capability gates below; no blanket launch through a single “AI enabled” toggle |
 
-M3 and M4 can follow the shared inventory foundation as separate product tracks. Pilot rollout is gated by completeness of the selected track, not by the existence of all future capabilities.
+M3/M4 can be separate tracks after the shared foundation. M5 is a launch gate, not permission to defer foundational privacy/deletion/security design until late delivery. New F work can proceed only against accepted PRD scope and resolved dependencies.
 
-## 2. Feasibility assessment
+## 3. Capability feasibility and expansion gates
 
-These are planning assessments, not verified product availability or legal conclusions.
-
-| Capability | Assessment | Required evidence before launch |
+| Capability | Planning assessment | Gate required before enablement |
 | --- | --- | --- |
-| Text onboarding and resumable case manager | Technically implementable | Intent/routing evaluations and accessible task review |
-| Document upload/extraction | Technically implementable with review | Approved processor/data policy, file security, field accuracy and citations |
-| Consolidated inventory and deduplication | Implementable for supplied/authorized evidence | Ownership uncertainty, historical balance and duplicate tests |
-| Legacy checklist and record | Implementable within defined informational scope | Export/sharing controls and review of product wording |
-| Claims checklist and pack preparation | Feasible with validated institution templates and human support | Current requirements, qualified reviewers and exception handling |
-| Universal automated asset discovery | Not a supported promise | Source-by-source coverage and permissions; no assumed universal access |
-| Programmatic official-source enquiries | Conditional | Documented permitted API/partner/channel access and supported subject types |
-| Account Aggregator / regulated partner route | Conditional | Eligibility, approved role/partner arrangement, scope and consent validation |
-| Deceased-person source access | Conditional and institution-specific | Valid authority process; do not reuse a living-person consent assumption |
-| Direct claim submission and follow-ups | Conditional | Approved channel, exact-action approvals, receipt/retry tests and operational ownership |
-| Multilingual voice | Technically plausible; unvalidated | Language/speech accuracy, correction flow, accessibility and consent policy |
-| Automatic post-death information release | Outside MVP | Identity/death/authority verification, dispute and hold process, approved disclosure policy |
+| Text, case records, uploads, reviewed inventory, tasks and exports | Technically implementable; no working system yet | Identity/privacy policy, security, evaluation and accepted P evidence |
+| Institution-specific assisted claims | Conditional on accurate procedures and staffed review | Named template reviewer, dated source, supported institution/subject and escalation |
+| Each additional asset class · FL-30 | Included in full vision; source/claims differences remain | Evidence fields, amount semantics, permission model, requirements, fixtures and quality evidence for that class |
+| Live source retrieval · FL-27 | Access/partner and eligibility dependent | D-03 per source; sandbox and purpose/authority/retention/coverage validation |
+| Direct submission · FL-35 | Channel and institution dependent | D-03; exact approval, receipt, revocation, idempotency and uncertain-outcome reconciliation |
+| Collaboration/lifetime sharing · FL-24, FL-32 | Requires explicit recipient-access policy | D-04; recipient verification, scope/expiry, revocation and leak/isolation tests |
+| Post-death release · FL-33 | Explicitly gated; not part of pilot | D-04; death/authority evidence, contest/hold/reviewer process, exact release approval; no inferred-death automation |
+| Voice/languages · FL-20, FL-41 | Technically plausible; quality/privacy unvalidated | D-09; supported-language evaluation, recording policy, transcript correction, text fallback and structured approvals |
+| Automated follow-ups/external reminders · FL-21, FL-42 | Permission/channel dependent | D-03/09 where relevant; disclosure, opt-in/preferences, safe content, logs and human fallback |
+| Native mobile client | Decision needed; responsive mobile web already P | D-11 in PRD with device/session/storage/security/accessibility acceptance before work |
 
-## 3. Source and workflow validation register
+Background references and source limits are maintained in PRD section 6. No API access, regulated role, contractual permission or coverage is confirmed by these documents. A mock adapter or generated form is not completion of a live integration.
 
-Create one reviewed entry per institution/source before enabling it. All candidates below begin UNVALIDATED; none has confirmed API access in this repository.
+## 4. Source and template validation checklist
 
-| Candidate | Intended use | Questions to resolve |
+For each source/institution, the responsible integration/operations reviewer records: official reference and review date; allowed methods; supported asset/subject types; coverage and known gaps; identity/authority/consent needs; eligible role/partner and contract; data schema and freshness; costs/limits; processor/retention terms; credentials and channel policy; receipt/error/reconciliation semantics; sandbox tests; approved enabled scope; owner and next review date.
+
+For each template: institution/category/subject scope, required/optional documents, form/declaration versions, current source, qualified reviewer, review cadence, exception path and suspension process. Separate shared requirements from case-specific additional requests. Material changes affecting an in-flight pack require review and fresh approval.
+
+All candidates begin disabled/unvalidated. User access to an official portal does not imply platform automation rights. Deceased-subject applicability is validated independently of living-user consent.
+
+## 5. Pilot release evidence
+
+| Review | Required evidence | Accountable role |
 | --- | --- | --- |
-| Bank records / UDGAM | Bank/FD evidence and eligible unclaimed-deposit enquiries | Coverage, permitted access, identity/authority, result freshness and bank follow-up |
-| CAS / AMC / CAMS / KFintech / MITRA | Mutual fund holdings and inactive/unclaimed folio enquiries | Formats, eligible users, permitted automation, ownership evidence and transmission process |
-| DigiLocker | Supported authorized document retrieval | Approved integration, issuers, permission scope, deceased-case applicability and retention |
-| Account Aggregator ecosystem | Consent-based financial records where eligible | Permitted participant/partner role, data availability, purpose and subject eligibility |
-| IEPF / companies / RTAs | Candidate unclaimed dividends/shares workflow | Applicable asset/state, process requirements, verification and permitted submission |
-| Insurers / EPFO / NPS CRA / post offices / brokers | Future coverage | Institution-specific discovery, claimant authority, forms, status channels and exceptions |
+| Product completeness | Every P requirement and PRD section 16 scenario mapped; no unexplained feature or missing behavior | Founder/product owner |
+| Authority/operating model | D-02/10 policies, reviewed claim procedures, professional-service and escalation boundaries | Qualified reviewer + operations |
+| Privacy/security | D-05 data map/providers/retention/holds; isolation, revoke, prompt-injection and disclosure tests | Security/privacy owner |
+| Engineering | Reviewed schema/API/job contracts, migrations, concurrency/idempotency, failure recovery and traceability | Engineering owner |
+| Quality/accessibility | Critical-field extraction results, first-reader UI, keyboard/screen-reader/mobile paths and failure states | Product/AI/quality owners |
+| Operations | Named operators, assigned queues, complaints, case limits/support hours, suspended-workflow process | Operations owner |
+| Reliability | D-07 workload/budget acceptance, measured performance, restoration, deletion tombstones and runbooks | Engineering + operations |
 
-Required register fields: owner; official documentation/contract reference; reviewed date; supported use case and subject type; allowed data/purpose; channel; identity/authority/consent requirements; data fields; costs/rate limits; retention; failure/reconciliation process; sandbox evidence; reviewer; enabled scope; next review date.
+Evidence records requirement ID, scenario, environment/dataset, expected/actual outcome, reviewer, defects and decision. Zero unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defects. F enablement also requires its own row in section 3; passing the pilot does not implicitly approve expansion.
 
-Workflow templates must have a source, owner, version, review date and review cadence. A changed or disputed requirement suspends automatic use until reviewed. MVP operators can record an institution’s case-specific additional request without silently rewriting the shared template.
+## 6. Risks and implementation triggers
 
-## 4. Release gates
-
-| Gate | Evidence required | Proposed accountable role |
+| Risk | Required response | PRD authority |
 | --- | --- | --- |
-| Product scope | Pilot segment, supported assets, service boundaries, truthful claims and acceptance scenarios | Founder/product owner |
-| Legal/operating model | Qualified review of authority, nomination/entitlement wording, claims assistance boundaries, source permissions and disclosure procedures | Legal/compliance reviewer |
-| Data protection | Data map, consent model, hosting/providers, retention/deletion and incident process | Security/privacy owner |
-| Engineering | Reviewed schema/API design, migrations, isolation, approval/idempotency, failure recovery and restoration | Engineering owner |
-| Document quality | Representative extraction evaluation with critical-field results and manual-review capacity | Document/operations owner |
-| Institution workflow | Current template/source evidence, case-specific escalation and operator training | Claims operations owner |
-| External connector | Approved access and purpose, credentials handling, consent/authority rules, receipt/retry and revocation tests | Integration owner + reviewer |
-| Pilot operations | Named support owner, response expectations, case limits, complaints/escalation and monitoring | Operations owner |
+| False ownership/duplicate/stale balance | Keep potential status, review reconciliation, date/type/freshness and aggregate exclusions | FL-07, FL-08, FL-09, FL-26, FL-28, FL-29; D-06 |
+| Wrong claimant/contact or disputed evidence | Scope authority, verify recipient, hold affected action, qualified escalation | FL-03, FL-23, FL-24, FL-32, FL-33, FL-47; D-02/04 |
+| Stale institution procedure | Suspend automatic use, version/review, preserve case history and re-approve changed packs | FL-12, FL-13, FL-14, FL-37, FL-44; D-10 |
+| Unauthorized or unavailable source | Disable connector, explain coverage/manual step; no bypass or complete-discovery promise | FL-10, FL-27, FL-35, FL-44; D-03 |
+| Unknown external acceptance/duplicate action | Unknown state, receipts, idempotency and reconciliation before retry | FL-15, FL-35, FL-36 |
+| Model/extraction/voice error | Cite/review critical fields, text correction, failure handoff and evaluation gate | FL-06, FL-20, FL-25, FL-26, FL-38, FL-39, FL-40, FL-41, FL-53 |
+| Data exposure/excessive retention | Minimize processors/logs, scope access, track purge/holds/backup expiry and incident response | FL-18, FL-19, FL-45, FL-46, FL-48, FL-49; D-05 |
+| Scope drift | Block unmapped work; amend PRD before implementation | FL-55 |
 
-## 5. Risk register
+## 7. Work item and change checklist
 
-| Risk | Consequence | Mitigation / trigger | Owner role |
-| --- | --- | --- | --- |
-| False asset match or merge | Wrong ownership claim or inflated inventory | Evidence states, explicit review, no name-only confirmation, reversible merge | Product/engineering |
-| Incorrect or stale balance | Misleading financial picture | Dated typed observations; exclude historical/ambiguous amounts from current totals | Product |
-| Unauthorized claimant/contact access | Disclosure of family financial information | Separate identity/authority/entitlement, case scope, manual escalation, no automatic release | Security/operations |
-| Incorrect institutional requirements | Rejected or delayed claim | Source-reviewed versioned templates; suspend stale automation | Claims operations |
-| Unsupported integration access | Failed or impermissible discovery/submission | Source gate, disabled-by-default adapters and manual guidance | Integration owner |
-| Duplicate/uncertain external submission | Conflicting claims or repeated disclosures | Idempotency, receipt storage, unknown state and reconciliation before retry | Engineering |
-| Malicious uploaded instructions | Tool misuse or data leakage | Treat documents as untrusted; strict schemas and deterministic permissions | AI/security |
-| Extraction/language error | Incorrect identifiers, values or declarations | Field citations, mandatory critical-field review and representative evaluation | AI/operations |
-| Institution delays or legal dispute | Long-running unresolved cases | Transparent waiting states, follow-up tasks and qualified handoff; no settlement guarantee | Operations |
-| Excessive retention/provider exposure | Privacy harm | Minimal processing, approved terms, tracked deletion and restricted logs | Privacy owner |
+A work item is ready when it lists PRD IDs, P/F label, accepted decisions, user behavior, data/permission scope, API/event/schema impact, error/hold/revocation behavior, acceptance evidence and owner.
 
-## 6. Proposed architecture decisions
+A work item is done when its normal and negative cases pass, evidence and operations are reviewed, no hidden product behavior was added, and PRD/LLD/roadmap remain consistent. A release records the PRD version and Git commit. Preserve requirement IDs and update them explicitly; retired IDs are not reused.
 
-These are proposals recorded for review, not accepted implementation decisions.
-
-| ID | Proposal | Rationale | Revisit when |
-| --- | --- | --- | --- |
-| ADR-001 | Modular backend plus durable workers | Fewer deployment boundaries and consistent domain transactions | Independent scaling/ownership justifies services |
-| ADR-002 | Evidence-first inventory with immutable observations | Traceable ownership/amounts and corrections | Evidence model changes, never by dropping provenance |
-| ADR-003 | Server-side policy and exact-payload approval | AI cannot confer authority or submit changed content | New channel or action risk requires stronger verification |
-| ADR-004 | Document-led pilot; manual institution submissions | Deliver useful work before API partnerships | Specific connector passes source and release gates |
-| ADR-005 | Trusted-contact intent without automatic release | Avoid premature disclosure and unclear authority | Approved release/dispute process exists |
-| ADR-006 | Provider-neutral conversation/extraction adapters | Evaluate quality and data handling before commitment | Vendor-specific functionality creates a justified dependency |
-
-Acceptance of an ADR must add an owner, decision date, alternatives considered and consequences. Do not silently treat a proposal as a signed decision.
-
-## 7. Open decision backlog
-
-| ID | Decision | Blocks |
-| --- | --- | --- |
-| D-01 | Pilot persona, exact institutions and supported formats | Scope, evaluations and operations staffing |
-| D-02 | Identity/authority review policy and qualified reviewers | Source access and all deceased-person workflows |
-| D-03 | Hosting region, identity/model/OCR/storage vendors and processing terms | Real data intake |
-| D-04 | Retention classes, purge timelines, backup expiry and legal holds | Pilot launch |
-| D-05 | Integration access/partnership and business operating model | Live connectors and external submissions |
-| D-06 | Freshness policy, verification evidence and aggregate presentation | Inventory trust and user-facing balances |
-| D-07 | Pricing, support limits and legal escalation partner | Pilot proposition and commercial launch |
-| D-08 | Language priorities and voice confirmation evaluation | Voice expansion |
-| D-09 | Family disclosure/release and dispute process | Post-death sharing beyond MVP |
-| D-10 | Final service objectives, infrastructure budget and capacity limits | Pilot operations commitments |
-
-## 8. Definition of ready and done
-
-A feature is ready when its PRD IDs, user journey, data inputs, policy checks, failure states and acceptance evidence are defined, with required external permissions resolved.
-
-A feature is done when the intended behavior and negative cases pass, provenance and authorization are verified, operational/error states are usable, documentation reflects the implementation and any required reviewer has accepted the evidence. A mock connector, a prepared form or a generated checklist is not proof of a live institutional integration or successful claim.
-
-## 9. Documentation maintenance
-
-This is a documentation-only repository at v0.1. Keep PRD.md as the product contract, LLD.md as the proposed/implemented technical design and this file as delivery/decision history. Future implementation should reference FL requirement IDs, update decision status explicitly and record source validation dates. Use synthetic examples; keep real financial and identity evidence outside GitHub.
+The authoritative unresolved decisions are [PRD section 17](PRD.md#17-decisions-that-must-not-be-guessed). Dates, budgets, commercial terms and owners remain uncommitted until accepted there. No work is authorized solely by an entry in this roadmap.
