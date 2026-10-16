@@ -363,8 +363,11 @@ For each confirmed holding, code — not the AI — chooses the path:
 | --- | --- |
 | `nominee` | A nominee is recorded and alive |
 | `joint` | A surviving joint holder exists |
-| `simplified` | No nominee; bank deposit within the bank's simplified-settlement threshold (per current RBI directions; threshold values held in versioned config and checked against the source before use) |
-| `succession` | Above threshold, disputed, or required by the institution |
+| `quick` | Mutual funds only: no nominee, up to ₹10,000 per fund house, claimant is an immediate relative (SEBI circular of 23 Jul 2026) |
+| `simplified` | No nominee and within the simplified threshold: bank deposits up to ₹15 lakh at commercial banks or ₹5 lakh at co-operative banks (RBI Directions 2025, banks may set higher); mutual funds up to ₹10 lakh (₹30 lakh demat) |
+| `succession` | Above threshold, disputed, or required by the institution (for mutual funds, probate is no longer mandatory) |
+
+Thresholds, timelines (banks: 15 days, compensation at least Bank Rate + 4%; mutual funds: 21 days) and their sources live in versioned procedure configuration, not in code — see [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3 for the current rules and citations. Insurance timelines are not yet verified from a primary source.
 
 The AI only writes the plain-language explanation of the chosen path.
 
@@ -539,7 +542,7 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 2. Real authentication.
 3. Malware scanning and encrypted original storage.
 4. Approved AI and speech provider terms (data residency, retention, no training).
-5. Threat model and DPDP privacy assessment (PRD §11.2).
+5. Threat model and DPDP privacy assessment reviewed — drafts in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) and [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
 
 ---
 
@@ -609,7 +612,7 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | Route | Vitest calling route handlers with a temporary SQLite DB and the fixture AI provider | 404 for foreign IDs; 403 below gate; 423 frozen; no asset data below G3; no full identifiers below G4; duplicate-deceased freeze; upload rejection by type and size |
 | End-to-end | Playwright | All three journeys on demo data, including failure paths (wrong date of death → review; frozen case; missing document; rejected claim) |
 | Live AI | Vitest, only with `LIVE_AI=1` | Gemini text and JSON calls still work (never in normal CI) |
-| AI evaluation | Labelled set of synthetic Indian bank statements, CAS, policy bonds, death certificates — including adversarial documents | Critical-field accuracy reported separately; any false "verified", gate bypass or wrong disclosure fails the release (FL-53) |
+| AI evaluation | Labelled set of synthetic Indian bank statements, CAS, policy bonds, death certificates — including adversarial documents ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Critical-field accuracy reported separately; any false "verified", gate bypass or wrong disclosure fails the release (FL-53) |
 | Accessibility | Playwright + axe | WCAG 2.2 AA checks on core screens (FL-50) |
 
 **CI (to add):** GitHub Actions on every PR — install, type-check (`tsc --noEmit`), lint, unit + route tests, build. End-to-end on main.

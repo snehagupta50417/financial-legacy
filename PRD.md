@@ -507,7 +507,7 @@ One **AI case manager** runs each case. It uses specialised capabilities as tool
 | FL-38 | MVP | One case manager coordinates discovery, document, matching, legacy, claim and follow-up tools from the saved case facts. | Every tool call is checked against the user's authority and approvals by the backend, not by the AI. |
 | FL-39 | MVP | The assistant explains why it needs information, cites the documents or procedures it relies on, and says when it is unsure. | Missing or conflicting evidence leads to a question or a handoff, not a guess. Instructions hidden inside an uploaded document can never trigger a tool or change permissions. |
 | FL-40 | MVP | If the AI or a source fails, no work is lost. | The user can retry, correct, cancel or get human help, and always sees the next usable step. |
-| FL-53 | MVP | Evaluate document reading and assistant behaviour on a labelled set of realistic and adversarial sample documents, before each release. | Accuracy is reported separately for critical fields. Any false "verified", unauthorised tool use or wrong disclosure fails the release. |
+| FL-53 | MVP | Evaluate document reading and assistant behaviour on a labelled set of realistic and adversarial sample documents, before each release ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)). | Accuracy is reported separately for critical fields. Any false "verified", unauthorised tool use or wrong disclosure fails the release. |
 
 ### 10.3 Voice requirements
 
@@ -543,7 +543,7 @@ Non-functional requirements describe *how well* the product must behave. For a p
 | FL-18 | MVP | Keep an **audit trail** of every sensitive read, change, review, export, approval and outside action: who, which case, what, when, why, and the request it belonged to. | The user can see their case's activity. Audit records can't be altered, and ordinary logs never contain secrets or document contents. |
 | FL-46 | MVP | Send only the minimum necessary data to approved processors, AI services and recipients, under accepted hosting, retention and sub-processor terms. | No real records are used in unapproved tools or in development environments. |
 
-**Threats we design against** (to be expanded in a separate threat model — owner: privacy/security lead under D-05; required before the Pilot, §15.2): someone pretending to be an heir; a family member seeing more than they're entitled to; a staff member browsing cases; a malicious document trying to instruct the AI; a leaked download link; account takeover.
+**Threats we design against** (detailed in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md); owner: privacy/security lead under D-05; reviewed before the Pilot, §15.2): someone pretending to be an heir; a family member seeing more than they're entitled to; a staff member browsing cases; a malicious document trying to instruct the AI; a leaked download link; account takeover.
 
 ### 11.2 Privacy and data protection
 
@@ -560,6 +560,8 @@ Privacy rules that apply everywhere:
 - **User rights:** people can see their data, correct it, withdraw consent and request deletion, and there is a named grievance contact.
 - **Breach response:** a written plan for detecting, containing and notifying data breaches before the Pilot.
 - **No data selling, no advertising use** of financial information.
+
+The full assessment — data inventory, legal basis, processors, retention, rights and questions for counsel — is in [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
 
 ### 11.3 Reliability
 
@@ -724,7 +726,7 @@ Exact fields and formats are defined in the Prisma schema (`frontend/prisma/sche
 | AI misreads a critical value | Wrong claim, wrong advice | Mandatory human review of critical fields; evaluation gates (FL-06, FL-53) |
 | Institution procedures change | Claims rejected | Versioned procedures with source dates and review cadence (FL-12, FL-44) |
 | Regulated access (AA, DigiLocker) is not granted | Discovery stays manual | MVP designed to work without them |
-| Data breach | Severe harm to users and the company | Security and privacy requirements (§11); threat model before the Pilot |
+| Data breach | Severe harm to users and the company | Security and privacy requirements (§11); [threat model](docs/THREAT_MODEL.md) reviewed before the Pilot |
 | Family disputes | Product caught in the middle | Holds and handoff to qualified help; AI never decides entitlement (FL-17, FL-47) |
 
 ---
@@ -797,7 +799,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | **Folio** | An account number at a mutual fund house |
 | **Legal heir** | A person entitled to inherit under the applicable succession law |
 | **Legal heir certificate / succession certificate** | Official documents establishing who the heirs are or who may collect debts and securities; required by some institutions when there is no nominee |
-| **Nominee** | The person named to receive an asset when the holder dies. Being a nominee is not always the same as being the legal owner |
+| **Nominee** | The person named to receive an asset when the holder dies. Being a nominee is not always the same as being the legal owner — for mutual funds, for example, the nominee receives the units as trustee for the legal heirs |
 | **Probate** | A court's confirmation of a will |
 | **Transmission** | Transferring a deceased holder's investments to the nominee or heir |
 | **Evidence status** | Self-declared (the user told us) · Potential match (a search suggested it) · Document-backed (a document supports it) · Institution-verified (the institution confirmed it) |
@@ -830,4 +832,5 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - [DESIGN.md](DESIGN.md) — screens and interaction
 - [LLD.md](LLD.md) — architecture, implementation and tests
 - `frontend/prisma/schema.prisma` and Zod types — exact data formats ([contracts/](contracts/openapi.json) is superseded)
-- Official sources: see the research table in §8.2
+- Official sources: see the research table in §8.2 and the source-by-source matrix in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md)
+- Pre-Pilot documents: [threat model](docs/THREAT_MODEL.md) · [privacy assessment](docs/PRIVACY_ASSESSMENT.md) · [AI evaluation plan](docs/AI_EVALUATION.md)
