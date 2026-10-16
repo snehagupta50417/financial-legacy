@@ -4,10 +4,11 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.3 (draft for review) |
+| **Version** | 0.3.1 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) (behaviour and scope) → [LLD.md](LLD.md) (data, permissions, workflow) → this document (presentation and interaction). Design never adds features or bypasses a permission. |
 | **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a single-page Next.js app). Where the app differs today, this document says so. |
+| **Status** | Built today: landing, intake chat, case workspace with six tabs, trust-gate panel, masked and locked states, document upload and extraction. Not built: voice, claims screens, legacy record and export, discovery plan, activity and privacy screens. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 
 ---
 
@@ -94,7 +95,7 @@ A stepper shows the gates the case needs, each with its current state and latest
 | --- | --- | --- |
 | **Identity** (G1) | Verify with DigiLocker, or passport + selfie if abroad *(both "Simulated" in v0)* | "Identity confirmed" with method and date |
 | **Death** (G2) | Fetch the death record, or scan the certificate | If details differ: a **"You entered / Record says"** table and "Sent for review" — never an automatic rejection |
-| **Relationship** (G3) | Upload own document naming the deceased, or a legal-heir certificate; for a living parent, the parent's consent | "Discovery unlocked" |
+| **Relationship or role** (G3) | Show how they're connected: own document naming the deceased, legal-heir certificate, nominee or joint-holder record, or executor named in a will; for a living parent, the parent's consent | "Discovery unlocked" |
 | **Entitlement** (G4, per asset) | On a masked asset card: **Prove entitlement** (nominee / joint holder / heir certificate) | Full details and the claim pack for that asset |
 
 States and copy:
@@ -106,14 +107,16 @@ States and copy:
 
 ---
 
-## 5. The pilot journey, screen by screen
+## 5. Journeys, screen by screen
+
+### 5.1 Pilot journey — find and claim after a death
 
 The pilot focuses on bereaved families ([PRD Journey C](PRD.md#53-journey-c--find-and-claim-after-a-death)). This is the first journey to make complete.
 
 | Screen | What the person sees | Main action → result |
 | --- | --- | --- |
 | **Start** | "Tell us what happened, in your own words" — Speak or Type | Describe the situation → the assistant confirms the goal and whose assets these are; the person can correct it |
-| **Known assets?** | "Do you already know which accounts or policies to claim?" | Yes → straight to Claims (no discovery). Not sure → discovery after the gates |
+| **Known assets?** | "Do you already know which accounts or policies to claim?" | Yes → discovery is skipped; after the gates, go straight to Claims. Not sure → discovery after the gates. **The gates are never skipped.** |
 | **Gates** | Identity → Death → Relationship stepper (§4) | Each step saved; mismatches go to review |
 | **Documents** | Upload with stages: received → checking → reading → ready for review | Unsupported or unreadable file → clear reason and retry, never a fake success |
 | **Field review** | Document page beside proposed fields, each citing its page | Accept / Correct / Reject each critical field |
@@ -121,6 +124,32 @@ The pilot focuses on bereaved families ([PRD Journey C](PRD.md#53-journey-c--fin
 | **Inventory** | Holdings by evidence status; potential matches separate; dated values | Open a holding to see evidence and next step |
 | **Claims** | One card per asset: path (nominee / joint / simplified / succession), procedure, missing items, owner | Prove entitlement → build pack → review → approve → download |
 | **Tracking** | Timeline per claim; tasks showing who it's waiting on | Record receipt, institution requests, outcome |
+
+### 5.2 Discover my own assets ([PRD Journey A](PRD.md#51-journey-a--discover-my-own-assets))
+
+| Screen | What the person sees | Main action → result |
+| --- | --- | --- |
+| **Start** | "What do you remember?" — Speak or Type | Assistant confirms this is about their own assets |
+| **Identity** (G1) | One identity step only — no death or relationship gates | Their own records are shown in full |
+| **Documents** and **Field review** | Same as §5.1 | Reviewed holdings |
+| **Discovery plan** | Official searches that fit what they remember, with coverage | Open portal → log outcome |
+| **Inventory** | Confirmed holdings, potential matches and open leads, kept separate | "Nothing found" says which sources were checked |
+
+### 5.3 Plan my legacy ([PRD Journey B](PRD.md#52-journey-b--plan-my-legacy))
+
+| Screen | What the person sees | Main action → result |
+| --- | --- | --- |
+| **Start** | "What would you like your family to know?" | Start fresh, or reuse an inventory from Journey A |
+| **Identity** (G1) | One identity step | — |
+| **Build the record** | Inventory with evidence status | Add by upload or by telling the assistant |
+| **Gaps checklist** | Missing nominees, outdated nominees, missing documents, stale records | Each gap opens plain steps to fix it with the institution |
+| **Trusted contacts** | "Contact intent — no access granted" | Record who should be told; nothing is sent |
+| **Snapshot** | Dated record with known gaps | Approve → optional export (short-lived link) |
+| **Reminders** | Next review date | Change or dismiss reminders |
+
+A helper (e.g. a son for a parent) sees the same screens only after the parent's recorded consent, limited to its scope.
+
+### 5.4 Shared layouts
 
 **Field review layout:** desktop two columns (document left; fields with source and controls right). Mobile stacks them, with a source reference beside each field and an easy way back to the page. Drag-and-drop is never the only way to upload.
 
@@ -233,5 +262,7 @@ References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://ww
 - Makes the bereaved-family pilot journey the first journey, adds insurance claims, and replaces AI will drafting with "Notes for your lawyer".
 - Adds design notes for Later capabilities and fixes section numbering.
 - Removes references to the superseded LLD v0.4 sample data.
+
+- **0.3.1:** status row added; G3 accepts any evidenced claimant role; "known assets" skips discovery, never the gates; screen flows added for Journeys A and B.
 
 Open design decision: which visual theme is standard (§3.1).
