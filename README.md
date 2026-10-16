@@ -27,7 +27,7 @@ These paths work independently. A family that knows the asset can skip discovery
 
 **Talk to AI → verify identity and authority → discover through permitted sources → consolidate and review → prepare a legacy or claim → track completion.**
 
-The AI manages work, not just answers. Its capabilities cover conversation, discovery planning, document reading, matching and duplicate review, legacy preparation, claims and follow-ups. Structured screens let people inspect evidence and approve important actions. Multilingual voice is part of the full vision, especially for older adults and people who prefer Indian languages; text remains available.
+The AI manages work, not just answers. Its capabilities cover conversation, discovery planning, document reading, matching and duplicate review, legacy preparation, claims and follow-ups. Structured screens let people inspect evidence and approve important actions. Voice is part of the first version: speak to the assistant, review or correct what it heard, and hear its reply. Chat remains available alongside it. Initial languages and speech processing need selection and testing before release.
 
 ## Coverage
 
@@ -41,6 +41,6 @@ Users review the exact content, recipient and purpose before a consequential han
 
 ## Where we start
 
-First, build and test the three paths with **generated sample records**, starting with bank/FD and mutual-fund workflows. The assistant and extractor initially use labeled stand-ins. Real data, external AI, live connectors, voice, family release and automated institutional actions need their specified permissions, policies and quality gates. No application or live integration is operating yet.
+First, build and test the three paths with **generated sample records**, starting with bank/FD and mutual-fund workflows. The assistant and extractor initially use labeled stand-ins. Voice input/output must work in this first version; speech-provider, language, privacy and quality decisions are first-release dependencies. Real data, external financial AI processing, live connectors, family release and automated institutional actions need their specified permissions, policies and quality gates. No application or live integration is operating yet.
 
 **[BRD.md](BRD.md)** defines the business case, customers, operating outcomes and commercial assumptions. **[PRD.md](PRD.md)** defines product scope and research. **[LLD.md](LLD.md)** defines architecture, implementation and tests. **[DESIGN.md](DESIGN.md)** defines screens, visual style, navigation and interaction states. This README remains the one-pager. The [contracts](contracts/openapi.json) are supporting engineering files.
