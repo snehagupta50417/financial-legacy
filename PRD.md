@@ -766,7 +766,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 
 | ID | Decision | Owner |
 | --- | --- | --- |
-| D-01 | **Pilot focus:** the product serves everyone (§4). Which users, institutions and success targets do we start the Pilot with? Which NRI situations are supported? | Founder |
+| D-01 | **Pilot focus:** the product serves everyone (§4). **Decided:** the Pilot starts with bereaved families (Journey C) — see [BRD §4.3](BRD.md#43-why-bereaved-families-first). Still open: Pilot institutions, channels, success targets, and which NRI situations are supported. | Founder |
 | D-02 | Identity, relationship and authority: what evidence is required, for which roles and actions, and for how long it is valid | Product + qualified legal reviewers |
 | D-03 | Source and channel access: our eligible role, partners and contracts; which sources apply to living vs deceased subjects | Integrations + qualified reviewers |
 | D-04 | Collaboration, family sharing and release after death: recipient verification, notices, disputes and holds | Product + qualified reviewers |
