@@ -10,7 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfidenceMeter, EvidenceBox, CATEGORY_ICON, CATEGORY_LABEL, VerificationBadge } from "./ui-bits";
 import { toast } from "@/hooks/use-toast";
-import { CircleCheckBig, CircleX, RotateCcw, Plus, BookCheck } from "lucide-react";
+import { CircleCheckBig, CircleX, RotateCcw, Plus, BookCheck, KeyRound, Lock, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SimulatedNote } from "./gate-panel";
+
+const ENTITLEMENT_METHODS = [
+  { value: "nominee", label: "I am the registered nominee" },
+  { value: "joint_holder", label: "I am a joint holder" },
+  { value: "legal_heir_certificate", label: "I hold a legal-heir certificate" },
+  { value: "succession_certificate", label: "I hold a succession certificate" },
+];
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -28,6 +37,24 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
   const [newInstitution, setNewInstitution] = useState("");
   const [newCategory, setNewCategory] = useState("bank_deposit");
   const [newRef, setNewRef] = useState("");
+  const [entitleFor, setEntitleFor] = useState<string | null>(null);
+  const [entitleMethod, setEntitleMethod] = useState("nominee");
+  const [entitling, setEntitling] = useState(false);
+
+  async function proveEntitlement() {
+    if (!entitleFor) return;
+    setEntitling(true);
+    try {
+      await api.post(`/api/assets/${entitleFor}/entitlement`, { method: entitleMethod });
+      toast({ title: "Entitlement confirmed", description: "Full details for this asset are now visible to you." });
+      setEntitleFor(null);
+      await reload();
+    } catch (e) {
+      toast({ title: "Could not confirm entitlement", description: e instanceof Error ? e.message : "Try again", variant: "destructive" });
+    } finally {
+      setEntitling(false);
+    }
+  }
 
   const shown = useMemo(() => {
     const active = ws.assets.filter((a) => a.discoveryStatus !== "dismissed");
@@ -138,6 +165,7 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
                         <span>{CATEGORY_LABEL[a.category] ?? a.category}</span>
                         {a.maskedRef && <><span>·</span><span className="font-mono text-[11.5px]">{a.maskedRef}</span></>}
+                        {a.valueBand && <><span>·</span><span>{a.valueBand}</span></>}
                         {a.holderName && <><span>·</span><span>{a.holderName}</span></>}
                       </div>
                     </div>
@@ -145,6 +173,11 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
                   <VerificationBadge asset={a} />
                 </div>
 
+                {a.masked && (
+                  <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <Lock className="h-3 w-3" /> Masked — full details after you prove you may claim this asset
+                  </div>
+                )}
                 {a.evidence && <EvidenceBox label="Evidence (why the AI thinks this exists)">{a.evidence}</EvidenceBox>}
                 {srcDoc && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
@@ -157,7 +190,12 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     AI confidence <ConfidenceMeter value={a.confidence} />
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    {a.masked && a.discoveryStatus !== "dismissed" && (
+                      <Button size="sm" variant="outline" disabled={busyId === a.id} onClick={() => setEntitleFor(a.id)} className="h-8 border-navy/25 text-[12px] text-navy hover:bg-teal-soft">
+                        <KeyRound className="mr-1 h-3.5 w-3.5" /> Prove entitlement
+                      </Button>
+                    )}
                     {a.discoveryStatus !== "confirmed" && (
                       <Button size="sm" disabled={busyId === a.id} onClick={() => act(a.id, "confirm")} className="h-8 bg-teal-brand text-[12px] text-white hover:bg-[#0c6a69]">
                         <CircleCheckBig className="mr-1 h-3.5 w-3.5" /> Confirm
@@ -205,6 +243,29 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
           </div>
         </div>
       )}
+      <Dialog open={!!entitleFor} onOpenChange={(v) => !v && setEntitleFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display text-navy">Prove you may claim this asset</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            Full account details and the claim pack unlock per asset, once the institution&apos;s records show you are entitled to it.
+          </p>
+          <Select value={entitleMethod} onValueChange={setEntitleMethod}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ENTITLEMENT_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <SimulatedNote>Simulated check of the institution&apos;s nomination / joint-holder record (v0 mock).</SimulatedNote>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEntitleFor(null)}>Cancel</Button>
+            <Button onClick={proveEntitlement} disabled={entitling} className="bg-navy text-white hover:bg-navy-deep">
+              {entitling && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
