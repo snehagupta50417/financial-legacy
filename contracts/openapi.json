@@ -7414,9 +7414,9 @@
           "FL-20",
           "FL-41"
         ],
-        "x-release-scope": "F",
-        "x-enabled-reference": false,
-        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
+        "x-release-scope": "P",
+        "x-enabled-reference": true,
+        "x-policy": "Authenticate; enforce actor/case scope, explicit voice consent, accepted language/provider policy, state/version and idempotency. First-release requirement; D-09 must finalize speech adapter and media transport before implementation. No real financial records in reference mode; voice cannot approve financial disclosures or establish identity.",
         "parameters": [
           {
             "name": "case_id",
@@ -7497,9 +7497,9 @@
         "x-prd-ids": [
           "FL-41"
         ],
-        "x-release-scope": "F",
-        "x-enabled-reference": false,
-        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
+        "x-release-scope": "P",
+        "x-enabled-reference": true,
+        "x-policy": "Authenticate; enforce actor/case scope, explicit voice consent, accepted language/provider policy, state/version and idempotency. First-release requirement; D-09 must finalize speech adapter and media transport before implementation. No real financial records in reference mode; voice cannot approve financial disclosures or establish identity.",
         "parameters": [
           {
             "name": "case_id",
@@ -7593,9 +7593,9 @@
           "FL-20",
           "FL-41"
         ],
-        "x-release-scope": "F",
-        "x-enabled-reference": false,
-        "x-policy": "Authenticate and check accessible case, then return CAPABILITY_DISABLED (409) in reference mode; no jobs, grants, writes or external effects",
+        "x-release-scope": "P",
+        "x-enabled-reference": true,
+        "x-policy": "Authenticate; enforce actor/case scope, explicit voice consent, accepted language/provider policy, state/version and idempotency. First-release requirement; D-09 must finalize speech adapter and media transport before implementation. No real financial records in reference mode; voice cannot approve financial disclosures or establish identity.",
         "parameters": [
           {
             "name": "case_id",
