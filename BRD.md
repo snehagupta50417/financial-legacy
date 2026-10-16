@@ -29,7 +29,7 @@ These are overlapping dimensions: HNI/UHNI describe wealth segments, NRI describ
 
 **Proposed entry use case to validate:** organize one's own Indian holdings and prepare a family-ready financial record. This provides value before a death and supplies the evidence foundation for later claims. Discovery and known-asset claims remain independent paths; this prioritization does not remove either service. Wealth alone is insufficient qualification: prioritize a concrete unresolved record, preparation or claim need within supported scope.
 
-Older adults and other family members remain important owners, claimants and beneficiaries. Millennial-led acquisition does not remove accessible text, future multilingual voice or support for parents. For living parents, their consent and valid action-specific authority are required; family collaboration is a later gated capability, not an implied first-release permission.
+Older adults and other family members remain important owners, claimants and beneficiaries. Millennial-led acquisition does not remove accessible text, first-release voice or support for parents. For living parents, their consent and valid action-specific authority are required; family collaboration is a later gated capability, not an implied first-release permission.
 
 **NRI boundary:** marketing to NRIs does not enable every nonresident case. Admit a real case only after its residency, institution, account/document situation and permitted process are supported; otherwise place the affected action on hold and explain the handoff. NRI, OCI and PIO labels must not be treated as interchangeable legal eligibility. The [RBI nonresident-account FAQ](https://www.rbi.org.in/commonman/Upload/English/FAQs/PDFs/Accountresidents16012025.pdf) distinguishes account schemes and eligibility; [CAMS transmission guidance](https://www.camsonline.com/Investors/Service-requests/Transmission/Transmission) requires the applicable request and supporting documents. These establish workflow dependencies, not our access rights.
 
@@ -41,7 +41,7 @@ Older adults and other family members remain important owners, claimants and ben
 | Individual planning for family | Make financial information easier to find and use later | Dated legacy record, missing-information checklist and controlled sharing instructions |
 | Family member after a death | Discover and/or claim a relative’s holdings | Authority-reviewed case, institution-specific requirements/packs, tracked follow-ups and evidenced outcomes |
 
-These services work independently. A claimant who knows the asset skips discovery. Older adults and Indian-language users are important intended beneficiaries; multilingual voice is part of the full vision, with text access retained. A listed family contact is not automatically a customer with record access.
+These services work independently. A claimant who knows the asset skips discovery. Older adults and Indian-language users are important intended beneficiaries; voice is part of the first release, with evaluated launch languages and text access retained. A listed family contact is not automatically a customer with record access.
 
 **Beneficiary, user and payer may differ.** The payer, acquisition channel and willingness to pay are unvalidated; no bank, insurer, employer or distribution partner is assumed to be contracted.
 
@@ -49,9 +49,9 @@ These services work independently. A claimant who knows the asset skips discover
 
 | Stage | What is included | Evidence needed to advance |
 | --- | --- | --- |
-| Synthetic reference build | All three paths with generated records; bank/FD and mutual-fund workflows; labeled assistant/extraction stand-ins; simulated manual claim receipts/outcomes | Reproducible implementation and the PRD/LLD normal, failure, permission and lifecycle checks |
+| Synthetic reference build | All three paths with generated records; bank/FD and mutual-fund workflows; working voice input and spoken replies alongside text; labeled case-manager/extraction stand-ins; simulated manual claim receipts/outcomes | Reproducible implementation and the PRD/LLD normal, failure, permission and lifecycle checks |
 | Controlled real-data pilot | Only accepted first-pilot scope, supported institutions/situations and permitted methods | Named accountable owners, reviewed procedures, accepted authority/privacy/operating policies and measured quality/capacity |
-| Full vision | All nine asset groups; selected voice/languages; verified family sharing/release; approved retrieval, direct submission and follow-up | Separate permission, policy, security, quality and operational evidence for each capability |
+| Full vision | All nine asset groups; additional evaluated languages; verified family sharing/release; approved retrieval, direct submission and follow-up | Separate permission, policy, security, quality and operational evidence for each capability |
 
 The nine asset groups are bank accounts/FDs, mutual funds, shares/demat, unclaimed dividends/shares, life insurance, EPF benefits, NPS, PPF/small savings and bank lockers. Listing a category does not establish discovery coverage or integration rights.
 
@@ -67,7 +67,7 @@ These requirements summarize business outcomes already supported by the PRD. The
 | BR-02 | Produce understandable records without overstating certainty | Evidence, dates, possible matches, duplicate/conflict review and search gaps are visible; totals follow policy. FL-06–10/25–30 |
 | BR-03 | Help people prepare for family without accidental disclosure | Reviewed dated record, checklist and approved export; contacts grant no access; later sharing/release passes its gate. FL-11/24/31–34 |
 | BR-04 | Carry supported claims through a documented result | Correct institution procedure, reviewed pack/approval, receipt/unknown-state tracking, requests and partial/unresolved outcomes. FL-12–17/35–37 |
-| BR-05 | Maintain continuity and make the next step clear | Saved context, owned tasks, useful assistant behavior, correction/failure/help paths; voice is separately evaluated. FL-02/20/38–43 |
+| BR-05 | Maintain continuity and make the next step clear | Saved context, owned tasks, useful assistant behavior, correction/failure/help paths; voice is included and evaluated in the first release. FL-02/20/38–43 |
 | BR-06 | Protect people’s records and permission to act | Separate identity/relationship/authority/consent; restricted access, audit, controlled processors, holds, recovery and deletion. FL-03/04/18/19/23/24/45–49 |
 | BR-07 | Deliver a usable, reliable and measurable service | Accessibility, recovery, capacity/quality results and privacy-safe operational measures; no false SLA or automation claim. FL-50–54 |
 | BR-08 | Expand only within accepted scope and validated procedures | Reviewed source/template/tool versions, capability gates and requirement-linked changes. FL-44/55 |
