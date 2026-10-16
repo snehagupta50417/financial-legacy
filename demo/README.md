@@ -1,5 +1,7 @@
 # FinLegacy AI — hackathon demo
 
+> **This is a hackathon demo, not the product.** It was built before the current documents and does not follow them: it shows seven journeys (the [PRD](../PRD.md) has three), a dashboard-style UI (the PRD is assistant-first), the working name "FinLegacy AI", and an opening figure ("₹78,000+ crore unclaimed") that does not match the cited figures in [BRD §3](../BRD.md#3-market-opportunity). Everything in it is hardcoded and simulated. The product is built in [`frontend/`](../frontend/).
+
 Front-end-only demo of the FinLegacy agent across 7 life journeys. All data is hardcoded; nothing is parsed, sent or paid.
 
 ```bash

@@ -5,11 +5,11 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.6.1 (draft for review) |
+| **Version** | 0.6.2 (draft for review) |
 | **Status** | Complete draft, awaiting product-owner review |
 | **Source of truth** | [ONE_PAGER.md](ONE_PAGER.md). Where this PRD and the one-pager disagree, the one-pager wins and this PRD is corrected. |
-| **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · [contracts/](contracts/openapi.json) — exact data formats |
-| **Product status** | Not built. No live integrations. Nothing in this document is a claim that a capability already works. |
+| **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · exact data formats: the Prisma schema and Zod types in [`frontend/`](frontend/) (LLD §5) |
+| **Product status** | Partly built, on synthetic data only, with no live integrations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp) for what exists. Nothing in this document claims a capability already works. |
 
 ---
 
@@ -38,7 +38,7 @@
 - **Sections 1–8** say *what* we are building and *why*. Anyone in the company should be able to read them.
 - **Sections 9–12** are the detailed requirements. Each has an ID such as **FL-07**. Every screen, API, test and design decision should trace back to one of these IDs.
 - **Sections 13–17** say how we will know it works, what could go wrong, and what is still undecided.
-- Release tags: **MVP** = the first version we build and test; **Pilot** = the first version used with real people and real data; **Later** = the full vision, switched off until its own checks pass.
+- Requirement release tags: **MVP** = built and tested first on sample data, then used in the Pilot; **Later** = the full vision, switched off until its own checks pass; **MVP → Later** = a basic version now, extended later. The **Pilot** is a stage (the MVP used with real people and real data, §15.2), not a separate tag.
 
 ---
 
@@ -116,11 +116,11 @@ We do not replace banks, regulators or courts. We become **the intelligent coord
 
 | # | Goal | How we will know (see §13 for definitions) |
 | --- | --- | --- |
-| G1 | A person can describe their situation in their own words (voice or chat) and be put on the right path without filling in a long generic form. | Share of started cases that reach the correct journey without the user having to restart. |
-| G2 | Every asset we show is backed by evidence and labelled honestly. | 100% of shown assets carry a status (self-declared / potential match / document-backed / institution-verified) and a source. Zero cases of a possible match shown as confirmed. |
-| G3 | A user gets a **useful result quickly**: a reviewed inventory, a legacy checklist, or a ready-to-review claim pack. | Share of cases reaching a first useful result, and median time to get there. |
-| G4 | Claims for the three MVP asset types are prepared correctly the first time. | Share of claim packs that the institution accepts without asking for missing documents. |
-| G5 | Users trust the product with sensitive information. | Users approve every important action; zero unauthorised disclosures; trust measured in research. |
+| GO-1 | A person can describe their situation in their own words (voice or chat) and be put on the right path without filling in a long generic form. | Share of started cases that reach the correct journey without the user having to restart. |
+| GO-2 | Every asset we show is backed by evidence and labelled honestly. | 100% of shown assets carry a status (self-declared / potential match / document-backed / institution-verified) and a source. Zero cases of a possible match shown as confirmed. |
+| GO-3 | A user gets a **useful result quickly**: a reviewed inventory, a legacy checklist, or a ready-to-review claim pack. | Share of cases reaching a first useful result, and median time to get there. |
+| GO-4 | Claims for the three MVP asset types are prepared correctly the first time. | Share of claim packs that the institution accepts without asking for missing documents. |
+| GO-5 | Users trust the product with sensitive information. | Users approve every important action; zero unauthorised disclosures; trust measured in research. |
 
 ### 3.3 Non-goals — what we will not do
 
@@ -169,6 +169,7 @@ A **role** is what someone is allowed to do in a particular case. The same perso
 | **Trusted contact** | Someone a planner names for the future. | **Nothing**, until a separate, verified sharing or release step happens. Being named is not access. |
 | **Operator** | Our trained staff who review difficult cases. | Only the cases assigned to them, with every action recorded. |
 | **Support** | Our help-desk staff. | Help with the product; no general access to financial documents. |
+| **Professional** *(Later)* | A lawyer, CA or other permitted adviser the family brings in for a complex case. | Only the case items the family explicitly shares with them, for a set time. Until this role exists, complex cases are handed off outside the product (FL-17). |
 
 ### 4.3 What every user needs, whatever their journey
 
@@ -343,6 +344,7 @@ These are potential parts of permitted workflows, **not** proof that we have API
 | **DigiLocker** | Authorised sharing of official documents through approved integrations | Available to us before we become an approved partner |
 | **Account Aggregator** | Consent-based sharing of financial information in a regulated framework | A route for claims, or confirmed for deceased persons' data; our eligible role needs validation |
 | **IEPF** | Claiming certain unpaid dividends and shares transferred to the fund | Part of the MVP — it covers shares and dividends, a Later release |
+| **Government common portal** (unclaimedassetsportal.in, launched May 2026) | One landing page linking the official unclaimed-asset searches | A search in its own right; capabilities to be reviewed before relying on it |
 
 <details>
 <summary><strong>Official-source research and product implications — checked 16 October 2026</strong></summary>
@@ -382,7 +384,7 @@ These findings describe the sources inspected, not approved access or a complete
 | **Sharing a legacy record** | Export of an approved snapshot only | Same | Verified sharing during life; release after death under an agreed policy |
 | **AI** | Google Gemini on **synthetic data only**, plus a deterministic journey engine; a fixture provider for tests | Approved AI provider configuration, evaluated for quality and privacy, on real data | Same, more languages and document types |
 
-The MVP's sample data and stand-in AI test the **workflow**; they do not prove real-world AI accuracy or live service. Moving from MVP to Pilot, and switching on any "Later" capability, each requires its own checks (§15, §16).
+The MVP's sample data and Gemini-on-synthetic-data test the **workflow**; they do not prove real-world AI accuracy or live service. Moving from MVP to Pilot, and switching on any "Later" capability, each requires its own checks (§15, §16).
 
 ---
 
@@ -435,7 +437,7 @@ Each requirement has:
 | FL-09 | MVP | For each holding show: institution, asset type, masked account/policy/folio number, evidence, dated amount (with what the amount means), nominee information and next action. | Anything we don't know is shown as unknown, not blank or zero. |
 | FL-28 | MVP | Keep history: add new dated observations rather than overwriting old ones. | A closed account, a transmission, or absence from a later statement never erases earlier evidence. |
 | FL-29 | MVP | Calculate totals honestly. Count one reviewed, dated amount per holding; exclude potential matches, duplicates, conflicts, holdings on hold and undated values; keep currencies separate. | If no amount qualifies, the total says "unknown", not ₹0. A total is labelled "reviewed value from dated sources", never "your current wealth". |
-| FL-30 | Later | Before switching on any asset type beyond the MVP three, define its fields and amount meanings, sources, authority rules, claim procedure, sample cases and evaluation. | Each of the nine asset types in §8.1 has passed this before it is enabled. |
+| FL-30 | Later | Before switching on any asset type beyond the MVP three, define its fields and amount meanings, sources, authority rules, claim procedure, sample cases and evaluation. | Each of the six Later asset types in §8.1 has passed this before it is enabled. |
 
 **Amounts mean different things for different assets.** An FD's principal is not its maturity value; fund units are not their valuation; an insurance sum assured is not a cash value. The product never adds unlike amounts together. Exact fields are defined in [contracts/](contracts/openapi.json).
 
@@ -541,7 +543,7 @@ Non-functional requirements describe *how well* the product must behave. For a p
 | FL-18 | MVP | Keep an **audit trail** of every sensitive read, change, review, export, approval and outside action: who, which case, what, when, why, and the request it belonged to. | The user can see their case's activity. Audit records can't be altered, and ordinary logs never contain secrets or document contents. |
 | FL-46 | MVP | Send only the minimum necessary data to approved processors, AI services and recipients, under accepted hosting, retention and sub-processor terms. | No real records are used in unapproved tools or in development environments. |
 
-**Threats we design against** (to be expanded in a separate threat model): someone pretending to be an heir; a family member seeing more than they're entitled to; a staff member browsing cases; a malicious document trying to instruct the AI; a leaked download link; account takeover.
+**Threats we design against** (to be expanded in a separate threat model — owner: privacy/security lead under D-05; required before the Pilot, §15.2): someone pretending to be an heir; a family member seeing more than they're entitled to; a staff member browsing cases; a malicious document trying to instruct the AI; a leaked download link; account takeover.
 
 ### 11.2 Privacy and data protection
 
@@ -569,7 +571,7 @@ Privacy rules that apply everywhere:
 
 | ID | Release | Requirement | Done when |
 | --- | --- | --- | --- |
-| FL-52 | MVP | Measure response time, capacity, cost per case and recovery time against the reference workload in [LLD.md](LLD.md). | Production targets are agreed before the Pilot (decision D-07). Targets written in documents are not treated as measured results or as promises to customers. |
+| FL-52 | MVP | Measure response time, capacity, cost per case and recovery time against the reference workload in [LLD §17.4](LLD.md#174-reference-workload). | Production targets are agreed before the Pilot (decision D-07). Targets written in documents are not treated as measured results or as promises to customers. |
 
 Working targets for the MVP (to be confirmed under D-07): the assistant starts replying within about 2 seconds; a typical statement is read within about 30 seconds, with progress shown; the product stays usable on a mid-range phone on a 4G connection.
 
@@ -611,7 +613,7 @@ Inclusion also means: plain language throughout (§10.4), patient pacing for gri
 | **Snapshot** | A frozen, dated copy of a reviewed legacy record | Kamala's record, 17 Oct 2026 |
 | **Audit event** | A record of who did what, when and why | Rohit exported the case brief |
 
-Exact fields and formats are defined in [contracts/openapi.json](contracts/openapi.json) and [contracts/schema.sql](contracts/schema.sql).
+Exact fields and formats are defined in the Prisma schema (`frontend/prisma/schema.prisma`) and the Zod types used by the API ([LLD §5](LLD.md#5-data-model)). The older files in `contracts/` are superseded.
 
 ### 12.2 How we treat data
 
@@ -627,10 +629,10 @@ Exact fields and formats are defined in [contracts/openapi.json](contracts/opena
 
 | Integration | Used for | MVP status |
 | --- | --- | --- |
-| Document upload and reading | Extracting facts from user documents | Built in (stand-in extraction with sample data in the reference build) |
+| Document upload and reading | Extracting facts from user documents | Built (Gemini extraction on synthetic documents; fixture provider for tests and for running without a cloud key) |
 | AI provider (Google Gemini) | Conversation, extraction, drafting | Used on synthetic data only in the MVP; approved terms (data residency, retention, no training) required before real data in the Pilot |
 | Speech provider | Voice input and output | Required for MVP; provider decision D-09 |
-| RBI UDGAM, SEBI MITRA, insurer unclaimed searches | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
+| RBI UDGAM, SEBI MITRA / MFCentral, insurer unclaimed searches, government common portal | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
 | DigiLocker | Fetching official documents | Later — requires partner approval |
 | Account Aggregator | Fetching financial data with consent | Later — requires an eligible regulated role |
 | Institution claim channels | Submitting claims | Later — MVP is manual submission |
@@ -658,6 +660,8 @@ Exact fields and formats are defined in [contracts/openapi.json](contracts/opena
 | Evidence coverage | Holdings with document-backed or verified status ÷ all holdings shown | How much of the inventory is solid? |
 | First-time claim-pack completeness | Packs accepted by the institution without a missing-document request ÷ packs submitted, by institution | Are we preparing claims correctly? |
 | Claim outcomes | Settled / transferred / partly settled / rejected / disputed, and time in each state | What actually happens to claims? |
+| Discovery success | Cases where discovery found at least one holding the user did not already know about ÷ cases that ran discovery, by source | Does discovery find anything new? |
+| Manual intervention rate | Cases or steps needing operator action ÷ all cases or steps, by reason | How much human work does each case need? |
 | Rework | Corrections by users and operators per case | Where is the product getting things wrong? |
 | Trust | Research-based trust score; complaint rate | Do people feel safe? |
 | Cost per useful result | Processing and support cost ÷ useful results | Is the service sustainable? |
@@ -720,7 +724,7 @@ Exact fields and formats are defined in [contracts/openapi.json](contracts/opena
 | AI misreads a critical value | Wrong claim, wrong advice | Mandatory human review of critical fields; evaluation gates (FL-06, FL-53) |
 | Institution procedures change | Claims rejected | Versioned procedures with source dates and review cadence (FL-12, FL-44) |
 | Regulated access (AA, DigiLocker) is not granted | Discovery stays manual | MVP designed to work without them |
-| Data breach | Severe harm to users and the company | Security and privacy requirements (§11), separate threat model |
+| Data breach | Severe harm to users and the company | Security and privacy requirements (§11); threat model before the Pilot |
 | Family disputes | Product caught in the middle | Holds and handoff to qualified help; AI never decides entitlement (FL-17, FL-47) |
 
 ---
@@ -729,7 +733,7 @@ Exact fields and formats are defined in [contracts/openapi.json](contracts/opena
 
 ### 15.1 MVP (reference build) — complete when
 
-- A developer can start the product locally and run all three journeys with sample data, without cloud credentials.
+- A developer can start the product locally and run all three journeys with sample data, without cloud credentials, by using the fixture AI provider (LLD §13.1). With a Gemini key, the same journeys run on real AI over synthetic data.
 - Saved work can be resumed.
 - These paths are tested, both success and failure: corrected extracted fields; duplicates, old and unknown values; discovery with no results; trusted contacts that send nothing; scoped exports; known-asset claims; a changed pack invalidating its approval; an unknown submission result and a partial outcome; cross-case, revoked and expired access; unsafe documents; suspended procedures; background-job failure; deletion, holds and restored backups.
 - Voice works for real on sample scripts in every journey.
@@ -757,7 +761,7 @@ For each institution or discovery system: which assets it covers; what is needed
 
 | ID | Release | Requirement | Done when |
 | --- | --- | --- | --- |
-| FL-55 | MVP | Link every feature, screen, API, background job, AI tool, data change and test to the requirement IDs in this document. | New product behaviour needs a PRD change first; the LLD, contracts and tests are updated in the same change, and IDs are preserved. |
+| FL-55 | MVP | Link every feature, screen, API, background job, AI tool, data change and test to the requirement IDs in this document. | New product behaviour needs a PRD change first; the LLD, the data schema and tests are updated in the same change, and IDs are preserved. |
 
 ---
 
@@ -797,25 +801,27 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | **Probate** | A court's confirmation of a will |
 | **Transmission** | Transferring a deceased holder's investments to the nominee or heir |
 | **Evidence status** | Self-declared (the user told us) · Potential match (a search suggested it) · Document-backed (a document supports it) · Institution-verified (the institution confirmed it) |
-| **Reference build** | The MVP running on generated sample data and stand-in AI, used to prove the workflow |
+| **Reference build** | The MVP running on generated sample data, with Gemini (or the fixture provider) on synthetic documents only, used to prove the workflow |
+| **Trust gates (G0–G4)** | The steps that unlock a case: G0 account · G1 identity · G2 death evidence · G3 relationship or claimant role (or a living person's consent) · G4 entitlement for a specific asset. How the PRD's identity, relationship and authority rules (FL-03) are built — see LLD §7 |
 
 ### 17.2 Change control
 
 - The **one-pager** is the source of truth for vision and scope. If this PRD drifts from it, this PRD is corrected.
 - **New product behaviour** — new features, new data use, new access or new promises — requires a change to this PRD first, approved by the product owner.
-- Every change to requirements updates [LLD.md](LLD.md), [contracts/](contracts/openapi.json) and tests in the same change.
+- Every change to requirements updates [LLD.md](LLD.md), the data schema and tests in the same change.
 - Requirement IDs are permanent; retired IDs are never reused.
 - Implementation choices inside an accepted requirement do not need a PRD change.
 
-### 17.3 Changes in this version (0.6)
+### 17.3 Changes in versions 0.6 – 0.6.2
 
 - Rewritten from first principles in plain language, with [ONE_PAGER.md](ONE_PAGER.md) as the source of truth.
-- **Audience:** the product serves everyone with Indian financial assets; the earlier "mainly HNI/UHNI/NRI millennials" focus becomes a Pilot go-to-market choice (D-01).
+- **Audience:** the product serves everyone with Indian financial assets; the earlier "mainly HNI/UHNI/NRI millennials" focus becomes a later segment; the Pilot starts with bereaved families (D-01, BRD §4).
 - **MVP assets:** life insurance added alongside bank/FD and mutual funds.
 - Added: personas, product principles, non-functional requirements, data model overview, success metrics with guardrails, risks and assumptions, launch criteria.
 - All 55 original requirement IDs (FL-01 to FL-55) and decisions D-01 to D-11 are preserved. v0.6.1 adds FL-56 (Verify console, Later) and records that the MVP uses Gemini on synthetic data, matching [LLD.md](LLD.md) v0.5.
+- **0.6.2:** goals renamed GO-1–GO-5 so they are not confused with trust gates G0–G4; trust gates added to the glossary; Professional role (Later) added; government common portal added to official sources; IEPF confirmed as Later; discovery-success and manual-intervention metrics added; exact data formats now point to the Prisma schema; reference build may run on the fixture AI provider without a cloud key; release-tag wording clarified.
 
-**Alignment:** README, BRD v0.3, LLD v0.5 and DESIGN v0.3 are aligned with this version; [contracts/](contracts/openapi.json) are superseded (LLD §23).
+**Alignment:** README, BRD v0.3.1, LLD v0.5.1 and DESIGN v0.3.1 are aligned with this version; [contracts/](contracts/openapi.json) are superseded (LLD §23).
 
 ### 17.4 References
 
@@ -823,5 +829,5 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - [BRD.md](BRD.md) — business case, customers and economics
 - [DESIGN.md](DESIGN.md) — screens and interaction
 - [LLD.md](LLD.md) — architecture, implementation and tests
-- [contracts/](contracts/openapi.json) — API, database and sample data
+- `frontend/prisma/schema.prisma` and Zod types — exact data formats ([contracts/](contracts/openapi.json) is superseded)
 - Official sources: see the research table in §8.2

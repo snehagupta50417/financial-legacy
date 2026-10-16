@@ -1,5 +1,7 @@
 # Worklog
 
+> **Out of date.** These entries describe the original prototype (built with `z-ai-web-dev-sdk`). The code now uses Gemini and `src/server/`. Current implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md) and the design in [`../LLD.md`](../LLD.md).
+
 ---
 Task ID: 1
 Agent: Super Z (main agent)
