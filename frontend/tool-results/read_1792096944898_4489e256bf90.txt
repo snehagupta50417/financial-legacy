@@ -1,0 +1,775 @@
+     1→     1→For the hackathon, FinLegacy AI should feel like an AI agent that actually moves a financial-legacy case forward, not a chatbot or a dashboard with dummy buttons.
+     2→     2→
+     3→     3→The Base44 website should demonstrate a complete journey: understand a user's situation, identify possible assets, analyse uploaded documents, find the relevant official portals, prepare a personalised checklist, assist with permitted form fields, and track progress until the claim is resolved.
+     4→     4→
+     5→     5→The key is to make the prototype functional with real public URLs and genuine API integrations wherever available, while clearly distinguishing live integrations from simulated bank data or actions that require the user's consent, authentication, or legal approval.
+     6→     6→
+     7→     7→Here is a copy-paste master prompt for Base44. It covers the AI-native experience, user-persona journeys, real integrations, official Indian financial portals, backend logic, and a compelling hackathon demo.
+     8→     8→
+     9→     9→# BASE44 MASTER BUILD PROMPT — FINLEGACY AI
+    10→    10→
+    11→    11→## 1. PRODUCT VISION
+    12→    12→
+    13→    13→Build a production-style, AI-native BFSI web application called **FinLegacy AI**.
+    14→    14→
+    15→    15→**Tagline:** The AI Agent That Turns Financial Legacy Into Action.
+    16→    16→
+    17→    17→FinLegacy AI helps individuals and families discover potential forgotten financial assets, organise financial records, navigate deceased-family-member claims, prepare inheritance documentation, plan wills, and track the process of recovering or transferring assets.
+    18→    18→
+    19→    19→This must NOT be a generic chatbot, a static dashboard, a financial information website, or a collection of disconnected forms.
+    20→    20→
+    21→    21→Build an **AI agent-powered financial legacy journey engine** that understands each user's situation and takes them from uncertainty to a clear, personalised, actionable next step.
+    22→    22→
+    23→    23→The initial market is India, with a future-ready architecture for international financial institutions and cross-border inheritance.
+    24→    24→
+    25→    25→The application must be functional enough to demonstrate end-to-end journeys during a live hackathon.
+    26→    26→
+    27→    27→## 2. CORE PRODUCT PRINCIPLE: ONE CONVERSATION, ONE PERSONALIZED JOURNEY
+    28→    28→
+    29→    29→On first login, show a conversational interface:
+    30→    30→
+    31→    31→**“Let's help you find, protect, or recover your family's financial legacy. What's your situation?”**
+    32→    32→
+    33→    33→Allow users to explain their situation naturally.
+    34→    34→
+    35→    35→Example inputs:
+    36→    36→
+    37→    37→- “My father passed away, and I don't know which banks he used.”
+    38→    38→- “I found an old LIC policy belonging to my mother.”
+    39→    39→- “My husband passed away, and I am the nominee on some investments.”
+    40→    40→- “We found an old mutual fund statement but don't know if the investment still exists.”
+    41→    41→- “I want to create a will and organise all my financial assets.”
+    42→    42→- “My insurance claim was rejected.”
+    43→    43→- “I live abroad, but my parents have assets in India.”
+    44→    44→- “I am helping my elderly mother organise her finances.”
+    45→    45→
+    46→    46→The AI must classify the user's situation, identify relevant missing information, ask only necessary follow-up questions, and dynamically construct a journey.
+    47→    47→
+    48→    48→Do not show every user the same dashboard or every possible workflow.
+    49→    49→
+    50→    50→The AI should understand context across conversations and update the existing journey instead of restarting it.
+    51→    51→
+    52→    52→## 3. AI-NATIVE AGENT ARCHITECTURE
+    53→    53→
+    54→    54→Build the application around a central Journey Orchestrator with the following capabilities.
+    55→    55→
+    56→    56→### A. Situation Understanding Agent
+    57→    57→
+    58→    58→- Interpret natural-language requests.
+    59→    59→- Identify the user's persona, objective, urgency, and relevant financial asset categories.
+    60→    60→- Distinguish a living account holder from a nominee, legal heir, executor, caregiver, or representative.
+    61→    61→- Determine whether the case involves discovery, documentation, claims, estate planning, or a dispute.
+    62→    62→- Ask focused clarifying questions.
+    63→    63→- Record confirmed facts separately from assumptions.
+    64→    64→
+    65→    65→### B. Document Intelligence Agent
+    66→    66→
+    67→    67→Create a working document upload interface supporting PDFs and images.
+    68→    68→
+    69→    69→The agent should:
+    70→    70→
+    71→    71→- Extract text from uploaded statements, policy documents, bank letters, claim receipts, wills, and death certificates.
+    72→    72→- Identify possible institution names, account references, policy numbers, folio numbers, dates, asset types, and claim identifiers.
+    73→    73→- Detect duplicate records and conflicting information.
+    74→    74→- Create structured asset records from extracted information.
+    75→    75→- Identify missing or unreadable fields.
+    76→    76→- Display the relevant source document and extracted evidence beside each finding.
+    77→    77→- Ask the user to verify important extracted information before saving it as confirmed.
+    78→    78→
+    79→    79→Use actual document parsing or OCR and a configured LLM where available. Do not pretend that an uploaded document was analysed if extraction failed.
+    80→    80→
+    81→    81→Do not infer that an asset exists merely because a bank or insurer is mentioned in a document.
+    82→    82→
+    83→    83→### C. Journey Planning Agent
+    84→    84→
+    85→    85→Generate a personalised sequence of tasks for each case.
+    86→    86→
+    87→    87→Each task must contain:
+    88→    88→
+    89→    89→- Action title and explanation.
+    90→    90→- Why this action is necessary.
+    91→    91→- Responsible institution or person.
+    92→    92→- Required documents.
+    93→    93→- Information that is missing.
+    94→    94→- Official destination URL where applicable.
+    95→    95→- Prerequisites and dependencies.
+    96→    96→- Status: Not started, Ready, In progress, Waiting for institution, Needs expert, Completed.
+    97→    97→- User confirmation and evidence requirements.
+    98→    98→- Next recommended action.
+    99→    99→
+   100→   100→The agent should recalculate the next best action when the user uploads documents, confirms information, changes their circumstances, or completes a task.
+   101→   101→
+   102→   102→### D. Official Portal Navigation Agent
+   103→   103→
+   104→   104→Maintain a verified directory of official government and financial-institution portals.
+   105→   105→
+   106→   106→For every supported action:
+   107→   107→
+   108→   108→1. Identify the relevant official destination.
+   109→   109→2. Explain what the user needs to do there.
+   110→   110→3. Prepare the checklist and supported information fields.
+   111→   111→4. Allow the user to open the official portal.
+   112→   112→5. Preserve the FinLegacy journey so the user can return and continue.
+   113→   113→6. Allow the user to upload receipts or correspondence after completing the external action.
+   114→   114→7. Update progress based on user-provided evidence or a genuine authorised integration.
+   115→   115→
+   116→   116→Do not claim that FinLegacy has submitted a claim, checked a bank database, verified ownership, or obtained a payment unless a real integration or verified user-provided evidence supports that statement.
+   117→   117→
+   118→   118→### E. Follow-up and Resolution Agent
+   119→   119→
+   120→   120→- Read uploaded rejection letters and claim correspondence.
+   121→   121→- Identify the stated reason for rejection.
+   122→   122→- Compare it with relevant official instructions retrieved from trusted sources.
+   123→   123→- Generate a draft response or document checklist.
+   124→   124→- Create reminders and follow-up drafts.
+   125→   125→- Recommend a qualified professional for disputed inheritance, contested wills, or complex succession matters.
+   126→   126→- Maintain a complete case timeline and action history.
+   127→   127→
+   128→   128→The agent may prepare and recommend actions but must obtain explicit user approval before external submissions, communications, or sensitive data sharing.
+   129→   129→
+   130→   130→## 4. REAL OFFICIAL INTEGRATIONS AND PUBLIC URLS
+   131→   131→
+   132→   132→Create a dedicated “Official Resources” service with verified URLs, source descriptions, last-checked dates, and supported action types.
+   133→   133→
+   134→   134→Use these real public destinations:
+   135→   135→
+   136→   136→### Banking and deposits
+   137→   137→
+   138→   138→**RBI UDGAM — Unclaimed Deposits Gateway to Access Information**
+   139→   139→
+   140→   140→[https://udgam.rbi.org.in/unclaimed-deposits/#/login](https://udgam.rbi.org.in/unclaimed-deposits/#/login)
+   141→   141→
+   142→   142→Purpose: Search for eligible unclaimed deposits through the RBI portal, then follow the relevant bank's claim process.
+   143→   143→
+   144→   144→### Insurance
+   145→   145→
+   146→   146→**IRDAI Bima Bharosa — Unclaimed Amount Query**
+   147→   147→
+   148→   148→[https://bimabharosa.irdai.gov.in/Home/UnclaimedAmountsQuery](https://bimabharosa.irdai.gov.in/Home/UnclaimedAmountsQuery)
+   149→   149→
+   150→   150→Purpose: Help users prepare an insurance unclaimed-amount query using the information and consent required by the official portal.
+   151→   151→
+   152→   152→**IRDAI Bima Bharosa — Grievance Portal**
+   153→   153→
+   154→   154→[https://bimabharosa.irdai.gov.in/](https://bimabharosa.irdai.gov.in/)
+   155→   155→
+   156→   156→Purpose: Guide users through insurer grievance escalation when appropriate.
+   157→   157→
+   158→   158→### Mutual funds
+   159→   159→
+   160→   160→**SEBI**
+   161→   161→
+   162→   162→[https://www.sebi.gov.in/](https://www.sebi.gov.in/)
+   163→   163→
+   164→   164→Purpose: Provide the official regulatory information and verified access route for MITRA, the Mutual Fund Investment Tracing and Retrieval Assistant, used to trace inactive and unclaimed mutual fund folios.
+   165→   165→
+   166→   166→Find and verify the current official MITRA destination before presenting a direct link. Do not invent an endpoint.
+   167→   167→
+   168→   168→### Shares and dividends
+   169→   169→
+   170→   170→**Ministry of Corporate Affairs / Investor Education and Protection Fund**
+   171→   171→
+   172→   172→[https://www.iepf.gov.in/](https://www.iepf.gov.in/)
+   173→   173→
+   174→   174→Purpose: Guide users through relevant unclaimed shares and dividend recovery procedures.
+   175→   175→
+   176→   176→### Additional official resources
+   177→   177→
+   178→   178→**Reserve Bank of India:** [https://www.rbi.org.in/](https://www.rbi.org.in/)
+   179→   179→
+   180→   180→**Securities and Exchange Board of India:** [https://www.sebi.gov.in/](https://www.sebi.gov.in/)
+   181→   181→
+   182→   182→**Income Tax Department:** [https://www.incometax.gov.in/](https://www.incometax.gov.in/)
+   183→   183→
+   184→   184→**National Portal of India:** [https://www.india.gov.in/](https://www.india.gov.in/)
+   185→   185→
+   186→   186→Use official websites as the source of truth. Do not fabricate an API endpoint, direct application form, portal URL, institutional affiliation, or government partnership.
+   187→   187→
+   188→   188→### Integration implementation requirements
+   189→   189→
+   190→   190→Build a reusable integration registry with fields such as:
+   191→   191→
+   192→   192→- Provider name.
+   193→   193→- Asset category.
+   194→   194→- Official base URL.
+   195→   195→- Verified destination URL.
+   196→   196→- Integration type: Public API, Authenticated API, Official website navigation, or Manual workflow.
+   197→   197→- Availability status.
+   198→   198→- Required permissions.
+   199→   199→- Last verification timestamp.
+   200→   200→- Error and fallback behaviour.
+   201→   201→
+   202→   202→Use a genuine public API only when the provider actually exposes one and its terms permit the intended usage.
+   203→   203→
+   204→   204→Where an official portal requires interactive login, CAPTCHA, OTP, identity verification, or a manual submission, direct the user to that portal. Do not attempt to bypass its controls.
+   205→   205→
+   206→   206→If no public API exists, build a useful guided workflow rather than displaying a fake live integration.
+   207→   207→
+   208→   208→## 5. REAL BACKEND AND DATABASE
+   209→   209→
+   210→   210→Implement actual persistence using Base44's available backend and database capabilities.
+   211→   211→
+   212→   212→Create these entities with appropriate user-level access controls.
+   213→   213→
+   214→   214→### UserProfile
+   215→   215→
+   216→   216→- User ID.
+   217→   217→- Preferred name.
+   218→   218→- Country and state.
+   219→   219→- Preferred language.
+   220→   220→- Relationship to the asset holder.
+   221→   221→- Accessibility preferences.
+   222→   222→- Consent settings.
+   223→   223→
+   224→   224→### LegacyCase
+   225→   225→
+   226→   226→- Case ID.
+   227→   227→- Owner ID.
+   228→   228→- Case type.
+   229→   229→- Asset holder relationship.
+   230→   230→- Living/deceased status.
+   231→   231→- Jurisdiction.
+   232→   232→- Case summary.
+   233→   233→- Current journey stage.
+   234→   234→- Overall progress.
+   235→   235→- Next best action.
+   236→   236→- Created and updated timestamps.
+   237→   237→
+   238→   238→### AssetRecord
+   239→   239→
+   240→   240→- Asset ID.
+   241→   241→- Case ID.
+   242→   242→- Asset category.
+   243→   243→- Institution.
+   244→   244→- Masked reference.
+   245→   245→- Source document.
+   246→   246→- Evidence excerpt.
+   247→   247→- Discovery status.
+   248→   248→- Verification status.
+   249→   249→- Confidence score.
+   250→   250→- User-confirmed status.
+   251→   251→
+   252→   252→### DocumentRecord
+   253→   253→
+   254→   254→- Document ID.
+   255→   255→- Case ID.
+   256→   256→- Document category.
+   257→   257→- Storage reference.
+   258→   258→- Extraction status.
+   259→   259→- Extracted structured fields.
+   260→   260→- User verification status.
+   261→   261→- Upload timestamp.
+   262→   262→
+   263→   263→### JourneyTask
+   264→   264→
+   265→   265→- Task ID.
+   266→   266→- Case ID.
+   267→   267→- Title and instructions.
+   268→   268→- Responsible institution.
+   269→   269→- Official destination.
+   270→   270→- Required documents.
+   271→   271→- Dependencies.
+   272→   272→- Status.
+   273→   273→- Due date, if applicable.
+   274→   274→- Completion evidence.
+   275→   275→- Completion timestamp.
+   276→   276→
+   277→   277→### InstitutionDirectory
+   278→   278→
+   279→   279→- Institution name.
+   280→   280→- Asset category.
+   281→   281→- Official website.
+   282→   282→- Verified claim URL.
+   283→   283→- Supported process.
+   284→   284→- API availability.
+   285→   285→- Verification timestamp.
+   286→   286→
+   287→   287→### CaseEvent
+   288→   288→
+   289→   289→- Case ID.
+   290→   290→- Event type.
+   291→   291→- Event description.
+   292→   292→- Timestamp.
+   293→   293→- Actor.
+   294→   294→- Related task or document.
+   295→   295→- Evidence reference.
+   296→   296→
+   297→   297→### ConsentRecord
+   298→   298→
+   299→   299→- User ID.
+   300→   300→- Consent purpose.
+   301→   301→- Data category.
+   302→   302→- Authorised access scope.
+   303→   303→- Granted or revoked status.
+   304→   304→- Timestamp.
+   305→   305→
+   306→   306→Use relationships between records rather than hard-coded demo data.
+   307→   307→
+   308→   308→Implement authentication, record ownership checks, secure file access, input validation, and server-side permission checks. A user must not be able to retrieve another family's records by changing an ID in a request.
+   309→   309→
+   310→   310→Keep API keys and model credentials in server-side secrets. Never expose secrets in frontend code.
+   311→   311→
+   312→   312→Use synthetic data for demonstration. Do not request actual PAN, Aadhaar, bank credentials, OTPs, or full financial account numbers merely to make the demo look realistic.
+   313→   313→
+   314→   314→## 6. REAL API AND AI INTEGRATION LAYER
+   315→   315→
+   316→   316→Configure the application to use the LLM integration supported by Base44 for:
+   317→   317→
+   318→   318→- Intent classification.
+   319→   319→- Structured information extraction.
+   320→   320→- Follow-up question generation.
+   321→   321→- Journey planning.
+   322→   322→- Document summarisation.
+   323→   323→- Evidence-grounded drafting.
+   324→   324→- Next-action recommendations.
+   325→   325→
+   326→   326→Use structured outputs and validate the response before executing any application action.
+   327→   327→
+   328→   328→Build backend functions for:
+   329→   329→
+   330→   330→- `classifyLegacyCase`
+   331→   331→- `extractDocumentData`
+   332→   332→- `generatePersonalizedJourney`
+   333→   333→- `findOfficialResource`
+   334→   334→- `generateClaimChecklist`
+   335→   335→- `draftInstitutionFollowUp`
+   336→   336→- `updateJourneyProgress`
+   337→   337→- `createCaseTimelineEvent`
+   338→   338→
+   339→   339→Adapt function names and implementation to Base44's supported runtime.
+   340→   340→
+   341→   341→These must be real functions wired to the interface, not decorative names.
+   342→   342→
+   343→   343→Where a real API is available, implement its documented authentication, request and response handling, timeouts, error handling, and consent requirements.
+   344→   344→
+   345→   345→Where credentials or external API access are unavailable, show a clear “Guided official-portal workflow” status. Do not label simulated responses as live API results.
+   346→   346→
+   347→   347→## 7. SEVEN PERSONALIZED JOURNEYS
+   348→   348→
+   349→   349→Build all seven journeys as configurable scenarios using a shared engine, not seven separately hard-coded dashboards.
+   350→   350→
+   351→   351→### Journey 1: Living individual
+   352→   352→
+   353→   353→Situation: The user has forgotten an old FD, bank account, insurance policy, or mutual fund.
+   354→   354→
+   355→   355→Actions:
+   356→   356→
+   357→   357→- Upload available financial records.
+   358→   358→- Extract possible institution and asset references.
+   359→   359→- Group and deduplicate potential assets.
+   360→   360→- Recommend the appropriate official portal.
+   361→   361→- Prepare institution-specific checklists.
+   362→   362→- Track verification and recovery steps.
+   363→   363→
+   364→   364→### Journey 2: Family after a death
+   365→   365→
+   366→   366→Situation: A parent or spouse has died, and the family does not know the full financial footprint.
+   367→   367→
+   368→   368→Actions:
+   369→   369→
+   370→   370→- Establish the relationship and authority to act.
+   371→   371→- Record whether a death certificate is available.
+   372→   372→- Upload available statements and policy documents.
+   373→   373→- Identify potential institutions and asset references.
+   374→   374→- Create a separate workflow for each institution.
+   375→   375→- Prepare a consolidated checklist.
+   376→   376→- Flag missing records and legal complications.
+   377→   377→
+   378→   378→### Journey 3: Nominee or legal heir
+   379→   379→
+   380→   380→Situation: The user is a nominee, legal heir, or authorised representative.
+   381→   381→
+   382→   382→Actions:
+   383→   383→
+   384→   384→- Identify the asset holder and relationship.
+   385→   385→- Ask whether a nominee, will, or other succession document exists.
+   386→   386→- Generate institution-specific documentation requirements.
+   387→   387→- Prepare supported form fields for user review.
+   388→   388→- Track claim references and correspondence.
+   389→   389→- Escalate uncertain legal entitlement questions.
+   390→   390→
+   391→   391→Never assume that nomination automatically resolves every question of beneficial ownership or succession.
+   392→   392→
+   393→   393→### Journey 4: Will and estate planning
+   394→   394→
+   395→   395→Situation: The user wants to create a will or has found a physical will.
+   396→   396→
+   397→   397→Actions:
+   398→   398→
+   399→   399→- Inventory assets and liabilities.
+   400→   400→- Record intended beneficiaries and wishes.
+   401→   401→- Identify an executor if applicable.
+   402→   402→- Organise supporting records.
+   403→   403→- Generate a draft using an approved template.
+   404→   404→- Provide applicable execution guidance and legal-review recommendations.
+   405→   405→
+   406→   406→Do not claim that a generated will is legally valid or executed. Preserve originals and route complex questions to qualified legal professionals.
+   407→   407→
+   408→   408→### Journey 5: Rejected or delayed claim
+   409→   409→
+   410→   410→Situation: A claim was rejected, or the institution has not responded.
+   411→   411→
+   412→   412→Actions:
+   413→   413→
+   414→   414→- Upload the rejection letter, acknowledgement, and correspondence.
+   415→   415→- Extract the stated reason and timeline.
+   416→   416→- Identify missing information or supporting documents.
+   417→   417→- Retrieve applicable official instructions where possible.
+   418→   418→- Draft a user-reviewable follow-up.
+   419→   419→- Recommend the appropriate official grievance channel.
+   420→   420→- Track the case without claiming an unverified resolution.
+   421→   421→
+   422→   422→### Journey 6: Elderly relative or caregiver
+   423→   423→
+   424→   424→Situation: The user is helping an elderly parent or spouse organise financial records.
+   425→   425→
+   426→   426→Actions:
+   427→   427→
+   428→   428→- Establish consent and legal authority.
+   429→   429→- Collect only permitted information.
+   430→   430→- Create a secure asset inventory.
+   431→   431→- Generate missing-document tasks.
+   432→   432→- Maintain an activity and consent history.
+   433→   433→- Support revocation of access.
+   434→   434→
+   435→   435→### Journey 7: NRI and cross-border families
+   436→   436→
+   437→   437→Situation: The family lives abroad or has assets in multiple jurisdictions.
+   438→   438→
+   439→   439→Actions:
+   440→   440→
+   441→   441→- Identify relevant countries and institutions.
+   442→   442→- Separate the journey by jurisdiction.
+   443→   443→- Generate country-specific document checklists.
+   444→   444→- Flag possible translation, notarisation, legalisation, and representative requirements.
+   445→   445→- Link only to verified official destinations.
+   446→   446→- Refer complex tax, inheritance, or legal issues to appropriately qualified experts.
+   447→   447→
+   448→   448→## 8. THE HACKATHON DEMO MUST BE INTERACTIVE
+   449→   449→
+   450→   450→Include a clearly labelled “Explore with Demo Data” mode.
+   451→   451→
+   452→   452→Provide three preloaded synthetic scenarios:
+   453→   453→
+   454→   454→**Demo A: Recover a parent's forgotten assets**
+   455→   455→
+   456→   456→A fictional parent has an old bank statement, a life insurance reference, and a mutual fund statement.
+   457→   457→
+   458→   458→The AI extracts the references, displays evidence, creates a potential asset inventory, and generates the relevant official-portal actions.
+   459→   459→
+   460→   460→**Demo B: Resolve a rejected insurance claim**
+   461→   461→
+   462→   462→A fictional insurance claim has a rejection letter stating that a supporting document is missing.
+   463→   463→
+   464→   464→The AI identifies the reason, produces a missing-document checklist, drafts a follow-up, and links to the insurer's official channel or the appropriate grievance process.
+   465→   465→
+   466→   466→**Demo C: Organise an estate**
+   467→   467→
+   468→   468→A fictional user has several assets, a physical will, and incomplete beneficiary records.
+   469→   469→
+   470→   470→The AI creates an estate inventory, identifies missing information, generates a preparation checklist, and flags matters requiring legal review.
+   471→   471→
+   472→   472→Every demo must be clickable and persist progress during the session.
+   473→   473→
+   474→   474→Clearly label all synthetic records as demo data. Never imply that the scenarios represent actual customers or real recoveries.
+   475→   475→
+   476→   476→## 9. MAIN USER INTERFACE
+   477→   477→
+   478→   478→Create a polished, responsive, premium BFSI interface.
+   479→   479→
+   480→   480→Visual direction:
+   481→   481→
+   482→   482→- Deep navy, off-white, muted teal, and subtle gold accents.
+   483→   483→- Modern editorial typography.
+   484→   484→- Clean layouts and generous spacing.
+   485→   485→- Trustworthy, calm, empathetic tone.
+   486→   486→- Accessible contrast and keyboard navigation.
+   487→   487→- Desktop and mobile support.
+   488→   488→
+   489→   489→Build these pages:
+   490→   490→
+   491→   491→### Landing page
+   492→   492→
+   493→   493→Headline: “Your family's financial legacy, finally within reach.”
+   494→   494→
+   495→   495→Subheadline: “Discover potential forgotten assets, organise documents, and turn complicated claims into clear next steps.”
+   496→   496→
+   497→   497→Primary CTA: “Start My Journey”
+   498→   498→
+   499→   499→Secondary CTA: “Explore Demo”
+   500→   500→
+   501→   501→Show a visual journey from scattered records to a consolidated asset inventory and actionable claim tracker.
+   502→   502→
+   503→   503→### AI intake page
+   504→   504→
+   505→   505→Conversational interface with:
+   506→   506→
+   507→   507→- Natural-language text input.
+   508→   508→- Suggested example prompts.
+   509→   509→- Dynamic follow-up questions.
+   510→   510→- Consent and privacy explanations.
+   511→   511→- Visible progress as the agent understands the situation.
+   512→   512→
+   513→   513→### Case workspace
+   514→   514→
+   515→   515→Show:
+   516→   516→
+   517→   517→- Case summary.
+   518→   518→- Potential assets and their verification status.
+   519→   519→- Missing information.
+   520→   520→- Documents.
+   521→   521→- Personalised tasks.
+   522→   522→- Next best action.
+   523→   523→- Official institution links.
+   524→   524→- Case timeline.
+   525→   525→
+   526→   526→### Asset inventory
+   527→   527→
+   528→   528→Allow the user to add, edit, verify, categorise, and remove records.
+   529→   529→
+   530→   530→Include filters for bank deposits, insurance, mutual funds, shares, other investments, and unknown assets.
+   531→   531→
+   532→   532→Distinguish confirmed assets from possible asset clues.
+   533→   533→
+   534→   534→### Document centre
+   535→   535→
+   536→   536→Support file upload, processing status, extracted evidence, field correction, and secure document management.
+   537→   537→
+   538→   538→### Journey tracker
+   539→   539→
+   540→   540→Display actionable tasks, dependencies, status, reminders, official links, and completion evidence.
+   541→   541→
+   542→   542→### Official resources centre
+   543→   543→
+   544→   544→Show verified official destinations, why they are relevant, the next step, and the current integration type.
+   545→   545→
+   546→   546→### Estate planning
+   547→   547→
+   548→   548→Provide an asset inventory, beneficiary planning, will preparation, executor details, and legal-review status.
+   549→   549→
+   550→   550→### Expert escalation
+   551→   551→
+   552→   552→Allow users to identify the type of expert needed, prepare a case summary, and draft an enquiry. Do not fabricate available professionals, appointments, or partnerships.
+   553→   553→
+   554→   554→## 10. AI EXPERIENCE REQUIREMENTS
+   555→   555→
+   556→   556→The AI must be proactive without being reckless.
+   557→   557→
+   558→   558→For every recommendation, display:
+   559→   559→
+   560→   560→- What the agent found.
+   561→   561→- Evidence supporting the finding.
+   562→   562→- What remains uncertain.
+   563→   563→- Why the next action is recommended.
+   564→   564→- What the user must do.
+   565→   565→- Which official institution is responsible.
+   566→   566→- Whether the action is AI-assisted, user-confirmed, or verified by a real integration.
+   567→   567→
+   568→   568→Allow users to ask follow-up questions without losing the existing journey.
+   569→   569→
+   570→   570→When new documents arrive, update the relevant case and explain what changed.
+   571→   571→
+   572→   572→Prevent unsupported legal or financial conclusions. The AI must not invent assets, balances, claim eligibility, payment dates, legal rights, or institution responses.
+   573→   573→
+   574→   574→## 11. SECURITY, PRIVACY AND CONSENT
+   575→   575→
+   576→   576→This application deals with sensitive family and financial information.
+   577→   577→
+   578→   578→Implement:
+   579→   579→
+   580→   580→- Explicit, purpose-specific consent.
+   581→   581→- Least-privilege data access.
+   582→   582→- Secure document storage.
+   583→   583→- Server-side access control.
+   584→   584→- Masked financial references.
+   585→   585→- Consent revocation.
+   586→   586→- Audit history.
+   587→   587→- Clear data deletion controls.
+   588→   588→- No unnecessary collection of identity information.
+   589→   589→- No real banking credentials or OTP collection.
+   590→   590→- No public exposure of uploaded documents.
+   591→   591→
+   592→   592→Do not send sensitive documents to an external AI provider unless the integration, permissions, and applicable data-handling requirements have been configured appropriately.
+   593→   593→
+   594→   594→Require user review before sharing information externally or submitting any claim.
+   595→   595→
+   596→   596→## 12. MOAT AND DIFFERENTIATION
+   597→   597→
+   598→   598→Make the following visible in a concise “Why FinLegacy?” section.
+   599→   599→
+   600→   600→**1. Personalised Journey Engine:** A configurable engine that adapts to different family situations and financial institutions.
+   601→   601→
+   602→   602→**2. Document Intelligence:** Converts fragmented statements and correspondence into structured, evidence-linked records.
+   603→   603→
+   604→   604→**3. Action-Oriented AI:** Moves beyond generic answers to create checklists, draft documents, route users to official processes, and track completion.
+   605→   605→
+   606→   606→**4. Cross-Institution Orchestration:** Brings separate asset-discovery and claim workflows into one case workspace.
+   607→   607→
+   608→   608→**5. Trust and Traceability:** Separates verified facts, user-provided information, and AI-generated hypotheses.
+   609→   609→
+   610→   610→**6. Learning Workflow Architecture:** Uses user-approved corrections and workflow outcomes to improve scenario configuration, subject to privacy and consent requirements.
+   611→   611→
+   612→   612→Do not claim exclusive access to government databases or proprietary integrations that do not exist.
+   613→   613→
+   614→   614→## 13. ACCEPTANCE CRITERIA
+   615→   615→
+   616→   616→The website is only complete when:
+   617→   617→
+   618→   618→1. A user can start a new case using natural language.
+   619→   619→2. The AI identifies the scenario and generates a relevant journey.
+   620→   620→3. A user can upload a document and see real extraction results or a clear processing error.
+   621→   621→4. Extracted information can be reviewed and corrected.
+   622→   622→5. The asset inventory is persisted in the database.
+   623→   623→6. The journey engine creates and updates tasks.
+   624→   624→7. Official links open the correct destinations.
+   625→   625→8. Users can mark external actions as completed and attach evidence.
+   626→   626→9. Case progress persists after refreshing or signing back in.
+   627→   627→10. Demo scenarios work end-to-end without external credentials.
+   628→   628→11. The system clearly differentiates live API integrations from guided workflows.
+   629→   629→12. User access controls prevent unauthorised access to other users' cases.
+   630→   630→13. The interface is usable on a mobile phone.
+   631→   631→14. The application handles API failures without losing case data.
+   632→   632→15. No fake claim submissions, balances, API responses, partnerships, or recovery results are displayed as real.
+   633→   633→
+   634→   634→## 14. IMPLEMENTATION PRIORITY
+   635→   635→
+   636→   636→Build in this order:
+   637→   637→
+   638→   638→**Phase 1 — Working MVP**
+   639→   639→
+   640→   640→- Authentication.
+   641→   641→- AI intake.
+   642→   642→- Scenario classification.
+   643→   643→- Persistent case database.
+   644→   644→- Dynamic journey generation.
+   645→   645→- Official resource registry.
+   646→   646→- Task tracker.
+   647→   647→- Three synthetic demo journeys.
+   648→   648→
+   649→   649→**Phase 2 — AI document workflow**
+   650→   650→
+   651→   651→- Upload and extraction.
+   652→   652→- Evidence-linked asset inventory.
+   653→   653→- Missing-document analysis.
+   654→   654→- AI-generated checklists and correspondence.
+   655→   655→
+   656→   656→**Phase 3 — Integration readiness**
+   657→   657→
+   658→   658→- Server-side API connectors where genuinely available.
+   659→   659→- Integration status and failure handling.
+   660→   660→- Consent and audit controls.
+   661→   661→- Verified official-resource updates.
+   662→   662→
+   663→   663→**Phase 4 — Polish**
+   664→   664→
+   665→   665→- Premium UI.
+   666→   666→- Mobile responsiveness.
+   667→   667→- Demo reset.
+   668→   668→- Sample data.
+   669→   669→- Hackathon presentation flow.
+   670→   670→
+   671→   671→Start by implementing the working application, not merely returning a product specification or static mockup.
+   672→   672→
+   673→   673→Inspect Base44's actual available capabilities before choosing APIs, authentication methods, or backend functions. If a dependency requires credentials, clearly identify the required secret and implement a graceful fallback.
+   674→   674→
+   675→   675→**Final objective:** Demonstrate that FinLegacy AI is an AI-native action platform that transforms fragmented family financial information into an evidence-backed, personalised, trackable path toward financial-legacy resolution.
+   676→   676→
+   677→   677→## Real integrations to prioritise in your demo
+   678→   678→
+   679→   679→These are useful because they correspond to real public services rather than invented endpoints.
+   680→   680→
+   681→   681→[RBI Launches Centralised Web Portal UDGAM Portal To Track Unclaimed Deposits Here Is How To Use It](https://images.openai.com/static-rsc-4/IzckVQP8JCtvBCJuXCgWSh56FSpT3yr893tQUkvpcSBPXvrkJx4OJVd6ZRGYv80_Loy7jQDC9kwbP0zZo8DSuCs4eiwO7544aJyIS3q0YAobLFAqzFbqAXqpZx_wft3mWk1elLaVpD_TKFOtNcJPazXmjFq7eoCstHaQ8BKYHSA?purpose=inline)
+   682→   682→
+   683→   683→1\. RBI UDGAM — bank deposits
+   684→   684→
+   685→   685→Official portal
+   686→   686→
+   687→   687→The agent prepares the search checklist and routes the user to the RBI portal. It should not claim to search the underlying bank records directly without a supported integration.
+   688→   688→
+   689→   689→[Open RBI UDGAM](https://udgam.rbi.org.in/unclaimed-deposits/#/login)
+   690→   690→
+   691→   691→Source: RBI's UDGAM information and FAQs.&#x20;
+   692→   692→
+   693→   693→[image](https://www.google.com/s2/favicons?domain=https://www.rbi.org.in\&sz=32)
+   694→   694→
+   695→   695→Reserve Bank of India
+   696→   696→
+   697→   697→+1
+   698→   698→
+   699→   699→
+   700→   700→
+   701→   701→[...](https://images.openai.com/static-rsc-4/2wzE24yCyR_e8udk5DyKRUWzxgwgSDrQX4T9P5WIn4NIIa2tQkiKP7CxDhcLpqN4zUTSjbP4keyQuHZk_1HKD1VO6aSvOrTu3SO6n-IX6-mBwnkdxt2qWMCEYh7UA4woFIOx39jFXNvf_t5PsBZGbx64LQQIV3bnY8uF8H_MNUU?purpose=inline)
+   702→   702→
+   703→   703→2\. IRDAI Bima Bharosa — insurance
+   704→   704→
+   705→   705→Official portal
+   706→   706→
+   707→   707→The official unclaimed-amount form supports insurance-related queries. FinLegacy can help prepare the information and guide users through the consent and submission steps.
+   708→   708→
+   709→   709→[Open unclaimed-amount query](https://bimabharosa.irdai.gov.in/Home/UnclaimedAmountsQuery)
+   710→   710→
+   711→   711→Source: IRDAI's official form.&#x20;
+   712→   712→
+   713→   713→[image](https://www.google.com/s2/favicons?domain=https://bimabharosa.irdai.gov.in\&sz=32)
+   714→   714→
+   715→   715→IRDAI
+   716→   716→
+   717→   717→+1
+   718→   718→
+   719→   719→
+   720→   720→
+   721→   721→[Lost track of old mutual fund investments? Sebi’s ‘Mitra’ is here to help.](https://images.openai.com/static-rsc-4/RU2d_fcITB53SIsbRn4kAJ-MD69oKEwmKUwYpe_o6tFqyj5cQ9l6FDGDfLkPJgKIJ11_k6cZwfUc-4NiKm8KsilrSlqLZlpNjp0Lak4tfxl4Q2bnx2RkF2-d30G2GQxcENReuM9Rfoyh92NRiob3iCsO-Fkv7W3pv16QBk9RcZg?purpose=inline)
+   722→   722→
+   723→   723→3\. SEBI MITRA — forgotten mutual funds
+   724→   724→
+   725→   725→Verify destination
+   726→   726→
+   727→   727→Use SEBI's official information to locate the current MITRA access point. Don't invent an API or assume a public search endpoint is available.
+   728→   728→
+   729→   729→[Open SEBI website](https://www.sebi.gov.in/)
+   730→   730→
+   731→   731→Source: SEBI's MITRA circular.&#x20;
+   732→   732→
+   733→   733→[image](https://www.google.com/s2/favicons?domain=https://www.sebi.gov.in\&sz=32)
+   734→   734→
+   735→   735→Securities and Exchange Board of India
+   736→   736→
+   737→   737→+1
+   738→   738→
+   739→   739→
+   740→   740→
+   741→   741→[More approachable, claimant-friendly: IEPFA reaches out to investors | Economy & Policy News - Business Standard](https://images.openai.com/static-rsc-4/pE6HGVVLRD8Q1UovGukoa038W0mzlbxXUjfDQ_Vs_BHgGP6WR_zadQzfJaELn_i3I8G2jekRN_m3t_GNxpPY71Mp6ygofUrViWBllu7nzdR5Bbb-UPu71-DMPl0T9E0SPwYLLQUCUyj0yxkeDsO-IxqqjdKbdTx0m_DmeXTfZ_g?purpose=inline)
+   742→   742→
+   743→   743→4\. IEPF — shares and dividends
+   744→   744→
+   745→   745→Create a guided workflow for identifying potentially relevant unclaimed shares or dividends and preparing supporting documents.
+   746→   746→
+   747→   747→[Open IEPF official website](https://www.iepf.gov.in/)
+   748→   748→
+   749→   749→## How to make the hackathon demo stand out
+   750→   750→
+   751→   751→My recommendation is to demo one end-to-end case extremely well, rather than trying to demonstrate every persona equally.
+   752→   752→
+   753→   753→Step 1 — Start with a real human problem
+   754→   754→
+   755→   755→Enter: “My father passed away. I found an old bank statement and insurance policy, but I don't know what he owned or how to claim it.”
+   756→   756→
+   757→   757→Step 2 — Show AI document intelligence
+   758→   758→
+   759→   759→Upload synthetic documents. Show extracted institution names, possible asset references, evidence excerpts, confidence, and user verification.
+   760→   760→
+   761→   761→Step 3 — Show the journey engine
+   762→   762→
+   763→   763→The agent generates separate workflows for each institution, identifies missing documents, and prioritises the next best action.
+   764→   764→
+   765→   765→Step 4 — Take a real action
+   766→   766→
+   767→   767→Open RBI UDGAM or the relevant official insurance portal from within the task. Explain exactly what the user must do there.
+   768→   768→
+   769→   769→Step 5 — Return and resume
+   770→   770→
+   771→   771→Mark the external step as completed, upload a fictional acknowledgement, and show the case timeline and next action updating automatically.
+   772→   772→
+   773→   773→The strongest differentiator: the AI doesn't just tell someone where to look. It turns scattered records into an evidence-backed plan, coordinates multiple workflows, and helps the family continue until each case reaches a documented outcome.
+   774→   774→
+   775→   775→One important technical constraint: the public portals above are real, but that does not mean their underlying search systems expose APIs. Build the live AI and database functionality first, then add direct institutional API integrations only where access is actually available.
