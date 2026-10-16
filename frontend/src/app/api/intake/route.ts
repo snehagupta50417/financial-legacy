@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession, unauthorized } from "@/lib/session";
-import { completeJson, completeWithHistory } from "@/lib/ai";
+import { completeJson, completeWithHistory } from "@/server/ai";
+import { aiRateLimit } from "@/server/core/rate-limit";
 import { buildJourney, recalcProgress } from "@/lib/journey-engine";
 import { logEvent, officialLinkFor } from "@/lib/case-service";
 import {
@@ -61,8 +62,8 @@ function inferInstitutionCategory(name: string, fallback: string): string {
 function fallbackClassification(message: string): ClassifiedSituation {
   const m = message.toLowerCase();
   const deceased = /\b(died|passed away|death|deceased|no more|demise|funeral)\b/.test(m);
-  const rejected = /\b(reject|denied|not responded|no response|stalled|delayed)\b/.test(m);
-  const will = /\b(will|estate plan|beneficiar|executor|inherit plan)\b/.test(m);
+  const rejected = /\b(reject\w*|denied|not responded|no response|stall\w*|delay\w*)\b/.test(m);
+  const will = /\b(will|estate plan\w*|beneficiar\w*|executor|inherit plan)\b/.test(m);
   const nominee = /\b(nominee|legal heir|succession)\b/.test(m);
   const nri = /\b(nri|abroad|foreign|usa|uk|dubai|singapore|cross.border)\b/.test(m);
   const caregiver = /\b(elderly|caregiver|helping my (mother|father|parent)|senior)\b/.test(m);
@@ -102,6 +103,8 @@ function fallbackClassification(message: string): ClassifiedSituation {
 export async function POST(req: NextRequest) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
+  const limited = aiRateLimit(session.id);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const message: string = body?.message?.trim();
   const caseId: string | undefined = body?.caseId;

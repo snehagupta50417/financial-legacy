@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession, unauthorized } from "@/lib/session";
-import { complete } from "@/lib/ai";
+import { complete } from "@/server/ai";
+import { aiRateLimit } from "@/server/core/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
+  const limited = aiRateLimit(session.id);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const caseId = String(body?.caseId ?? "");
   const question = String(body?.question ?? "").trim();
