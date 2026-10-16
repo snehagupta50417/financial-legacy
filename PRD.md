@@ -5,7 +5,7 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.6 (draft for review) |
+| **Version** | 0.6.1 (draft for review) |
 | **Status** | Complete draft, awaiting product-owner review |
 | **Source of truth** | [ONE_PAGER.md](ONE_PAGER.md). Where this PRD and the one-pager disagree, the one-pager wins and this PRD is corrected. |
 | **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · [contracts/](contracts/openapi.json) — exact data formats |
@@ -380,7 +380,7 @@ These findings describe the sources inspected, not approved access or a complete
 | **Claims** | Prepared packs; **user submits manually**; tracked in-app | Same, with operator review | Direct submission where permitted channels exist |
 | **Follow-ups** | In-app tasks and reminders | Same, plus email/SMS with opt-in | Permitted automated follow-ups (incl. voice) |
 | **Sharing a legacy record** | Export of an approved snapshot only | Same | Verified sharing during life; release after death under an agreed policy |
-| **AI** | Stand-in rules and sample extraction to test the workflow | Approved AI provider, evaluated for quality and privacy | Same, more languages and document types |
+| **AI** | Google Gemini on **synthetic data only**, plus a deterministic journey engine; a fixture provider for tests | Approved AI provider configuration, evaluated for quality and privacy, on real data | Same, more languages and document types |
 
 The MVP's sample data and stand-in AI test the **workflow**; they do not prove real-world AI accuracy or live service. Moving from MVP to Pilot, and switching on any "Later" capability, each requires its own checks (§15, §16).
 
@@ -476,6 +476,7 @@ A case can be closed only with a reviewed summary and the user's acknowledgement
 | FL-44 | MVP | Version and review institution procedures, source descriptions, AI models and tools. | Unsafe or out-of-date procedures can be suspended without losing in-flight cases; a material change triggers review. |
 | FL-47 | MVP | Put specific actions **on hold** for suspected fraud, competing claimants or disputed evidence. | Only the affected actions stop; other claimants' data stays protected; lifting a hold needs authorised, evidence-based review. |
 | FL-49 | MVP | Track help requests and complaints with an owner, status, escalation and resolution. | Ordinary support messages never contain financial documents. |
+| FL-56 | Later | A **Verify console** for banks and insurers to review death claims: cross-document consistency, authenticity signals, duplicate claims across claimants and completeness, with an explainable risk level and approve / request documents / escalate actions. | Risk levels are computed by code from recorded checks, never by the AI; authenticity findings are shown as signals, not proof; every decision is logged. Tied to the "software for institutions" revenue hypothesis (BRD §7). |
 
 ---
 
@@ -627,7 +628,7 @@ Exact fields and formats are defined in [contracts/openapi.json](contracts/opena
 | Integration | Used for | MVP status |
 | --- | --- | --- |
 | Document upload and reading | Extracting facts from user documents | Built in (stand-in extraction with sample data in the reference build) |
-| AI provider | Conversation, extraction, drafting | Stand-in in the reference build; approved provider required for Pilot |
+| AI provider (Google Gemini) | Conversation, extraction, drafting | Used on synthetic data only in the MVP; approved terms (data residency, retention, no training) required before real data in the Pilot |
 | Speech provider | Voice input and output | Required for MVP; provider decision D-09 |
 | RBI UDGAM, SEBI MITRA, insurer unclaimed searches | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
 | DigiLocker | Fetching official documents | Later — requires partner approval |
@@ -812,9 +813,9 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - **Audience:** the product serves everyone with Indian financial assets; the earlier "mainly HNI/UHNI/NRI millennials" focus becomes a Pilot go-to-market choice (D-01).
 - **MVP assets:** life insurance added alongside bank/FD and mutual funds.
 - Added: personas, product principles, non-functional requirements, data model overview, success metrics with guardrails, risks and assumptions, launch criteria.
-- All 55 requirement IDs (FL-01 to FL-55) and decisions D-01 to D-11 are preserved.
+- All 55 original requirement IDs (FL-01 to FL-55) and decisions D-01 to D-11 are preserved. v0.6.1 adds FL-56 (Verify console, Later) and records that the MVP uses Gemini on synthetic data, matching [LLD.md](LLD.md) v0.5.
 
-**Knock-on updates still needed:** [BRD.md](BRD.md) §2 and [README.md](README.md) (audience); [LLD.md](LLD.md), [DESIGN.md](DESIGN.md) and [contracts/](contracts/openapi.json) (insurance in the MVP).
+**Knock-on updates still needed:** [README.md](README.md) (audience) and [DESIGN.md](DESIGN.md) (insurance in the MVP). BRD v0.3 and LLD v0.5 are aligned; [contracts/](contracts/openapi.json) are superseded (LLD §23).
 
 ### 17.4 References
 

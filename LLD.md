@@ -1,463 +1,694 @@
 # Financial Legacy — Low-Level Design (LLD)
 
-Version 0.4 · 16 October 2026 · Implementation baseline for the reference release
+*How the product is built.*
 
-
-## 1. Start here
-
-### First-principles design rules
-
-| Reality of the problem | Design consequence |
+| | |
 | --- | --- |
-| Financial records can be incomplete, stale or wrong | Preserve source/type/date and uncertainty; review critical fields before accepted facts or totals |
-| Knowing someone is family does not establish permission | Check actor, subject, action, authority and consent separately; a match never decides inheritance |
-| Institutions own different records and procedures | Use source/category/subject-specific adapters and versioned templates; no universal financial connector |
-| Sharing may be irreversible | Freeze exact content/recipient/purpose, approve it, recheck permission at download/execution and retain the receipt/history |
-| Requests repeat and jobs fail | Persist domain state and pending work together; use versions, safe retries, receipts and unknown-outcome reconciliation |
-| Conversation and model output are fallible | Keep reviewed domain records authoritative; AI proposes through bounded tools and cannot alter policy |
-| Sensitive records need a bounded lifetime | Encrypt, minimize access/processors, audit reads, revoke future work and track deletion/holds/restore markers |
-| The first build must teach us cheaply | One modular backend, one database and shared worker code; sample adapters first, no separate agent fleet or unapproved real connections |
+| **Version** | 0.5 (draft for review) |
+| **Date** | 17 October 2026 |
+| **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
+| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, deployed on Google Cloud Run. |
+| **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. [BACKEND_PLAN.md](BACKEND_PLAN.md) remains the milestone plan for the hackathon build and is referenced from §21. |
+| **Status** | Milestones M0–M3 of BACKEND_PLAN are built. Large parts of the PRD MVP are not built yet — see the gap analysis in §20. |
 
-These rules implement the existing PRD requirements; they do not create extra product features. The wire/database contracts remain the exact implementation format.
+---
 
-### The six product layers
+## Contents
 
-| Layer | What it does | First implementation |
-| --- | --- | --- |
-| User experience | Conversation, document upload/review and views for holdings, legacy, claims and tasks | Responsive web with voice input/output and text; native apps later |
-| Identity and authorization | Sign-in, consent, claimant checks, permissions and access history | Local OIDC plus case-scoped reviewer/backend checks |
-| AI orchestration | Understand the goal, propose questions/actions, coordinate tools and handle exceptions | One rule-based case manager; approved external providers later |
-| Financial integration | Permitted APIs/partners, official workflows and authorized imports | Sample source/document adapters and guided steps; no real connector |
-| Asset and document records | Evidence, extraction, matching, dated values, storage and audit | PostgreSQL and encrypted private files with reviewed proposals |
-| Claims and workflow | Institution requirements, forms/packs, approval, tasks, follow-ups and outcomes | Versioned demonstration procedures and manually recorded sample receipts/outcomes |
+1. [Design principles](#1-design-principles)
+2. [Architecture overview](#2-architecture-overview)
+3. [Technology stack](#3-technology-stack)
+4. [Code layout](#4-code-layout)
+5. [Data model](#5-data-model)
+6. [Case types and journeys](#6-case-types-and-journeys)
+7. [Trust gates and access control](#7-trust-gates-and-access-control)
+8. [Documents and extraction](#8-documents-and-extraction)
+9. [Discovery](#9-discovery)
+10. [Inventory, evidence status and totals](#10-inventory-evidence-status-and-totals)
+11. [Claims](#11-claims)
+12. [Legacy planning](#12-legacy-planning)
+13. [AI layer](#13-ai-layer)
+14. [Voice](#14-voice)
+15. [API design](#15-api-design)
+16. [Security and privacy](#16-security-and-privacy)
+17. [Reliability, operations and deployment](#17-reliability-operations-and-deployment)
+18. [Configuration](#18-configuration)
+19. [Testing and evaluation](#19-testing-and-evaluation)
+20. [Gap analysis against the PRD MVP](#20-gap-analysis-against-the-prd-mvp)
+21. [Build plan](#21-build-plan)
+22. [Later capabilities](#22-later-capabilities)
+23. [Change control and superseded documents](#23-change-control-and-superseded-documents)
 
-These are responsibilities inside one modular backend, not six independent services. The assistant coordinates work; deterministic backend code controls access and accepted changes.
+### How to use this document
 
+- **New engineers:** read §1–§5, then the section for the area you are working on.
+- **Every task, PR and test** names the PRD requirement IDs (FL-xx) it implements. Section headings below list the IDs they cover.
+- **"Built"** means present in `frontend/` today. **"To build"** means designed here but not yet implemented.
 
-**Start B-01 in the coding table below, using the [PRD](PRD.md), [API](contracts/openapi.json), [SQL](contracts/schema.sql) and [fixtures](contracts/fixtures.json).** Expand reference sections only for the module being built.
+---
 
-First journey: Demo Owner → case 100 → identity fixture 330 → reviewer checks/scoped consent → bank fixture 300 → field review → saved holding → sign out/resume. Expected reviewed bank value: ₹42,000. Section 17 gives exact checks. Build this slice before extending the remaining first-release paths.
+## 1. Design principles
 
-### What is being coded
+These turn the PRD's product principles into engineering rules.
 
-A responsive web application covering all three user paths and all P requirements: voice/text case manager, isolated cases, verification/authority review, secure evidence intake/review, bank/FD and mutual-fund inventory, legacy record/export/contact intent, manual claim packs/receipts/outcomes, tasks, operations, audit, deletion and recovery. F features have explicit disabled capabilities and contracts, not partially working hidden features.
-
-**Reference mode is synthetic-only.** Banner every page/export/pack: “Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.” No real customer financial documents, credentials, phone calls, emails or institution requests. The app must refuse a real-data configuration until launch policies are supplied. This is the first implementation, not a relabeling of a simulation as a live pilot.
-
-<details>
-<summary><strong>Implementation reference — stack, setup, security, screens, APIs and data rules</strong></summary>
-
-## 2. Fixed technology decisions
-
-The web app is what the user sees. The API is the backend interface the web app calls. PostgreSQL stores linked records. The worker runs slow tasks after the API has accepted them. Keycloak handles sign-in. ClamAV checks files for malware. Docker Compose starts these local components together. The table selects the tools; developers should not choose a different framework before starting.
-
-API request means information sent to the backend. Response means what it sends back. A schema defines the allowed fields and types. An adapter connects our code to one storage, scanner or AI service.
-
-
-| Concern | Selection | Implementation rule |
-| --- | --- | --- |
-| Web | Node.js 24 LTS, Next.js 16 App Router, TypeScript, React as required by Next.js | Same-origin BFF; browser never stores financial-provider tokens |
-| UI | Tailwind CSS, accessible HTML controls; React Hook Form + Zod for client validation | Server validation authoritative; keyboard/screen-reader/large-text paths |
-| API | Python 3.13, FastAPI, Pydantic 2 | Typed contracts; strict extra-field rejection; no arbitrary model tools |
-| Persistence | PostgreSQL 18, SQLAlchemy 2, Alembic | SQL contract is initial relational baseline; migrations versioned |
-| Jobs | PostgreSQL outbox + leased job rows; separate Python worker | No Redis/Celery/Kafka required; duplicate delivery expected |
-| Local identity | Keycloak OIDC in Docker, synthetic realm/users only | Authorization Code + PKCE; API validates access-token issuer/audience/signature/expiry |
-| Storage | LocalEncryptedStore for reference mode; private object-store adapter interface | AES-256-GCM envelope encryption, generated local keys, opaque paths, no plaintext browser cache |
-| Scan | ClamAV adapter; deterministic synthetic test scanner only in tests | Fail closed; scanner outage never marks arbitrary file clean |
-| Extraction / AI | FixtureExtractionAdapter and RuleBasedCaseManager for reference mode; typed provider adapters | No external model/API key needed to start coding; output always source-linked proposals |
-| Rendering | Python PDF renderer for synthetic fixture documents and reviewed exports/packs | Stable metadata/order; manifest cites source/version; no legal form certification |
-| Tests | pytest + HTTPX, Playwright, accessible-role assertions and axe checks | Representative fixtures; contract/domain/integration/E2E boundaries |
-| Runtime | Docker Compose for web, API, worker, Postgres, Keycloak and scanner | One documented local command path; no cloud dependency |
-
-Major branches are deliberate choices, not a claim of latest patch. First scaffold resolves compatible patch releases, commits npm/uv lockfiles and records container digests; dependency locking is coding work, not a product decision. Do not install arbitrary latest majors. Background compatibility references: [Node release lines](https://nodejs.org/en/about/previous-releases), [Next.js 16](https://nextjs.org/docs/app/guides/upgrading/version-16), [Python 3.13](https://docs.python.org/3.13/), [PostgreSQL support](https://www.postgresql.org/support/versioning/), checked 15 October 2026. Provider/library compatibility must pass the scaffold tests before coding downstream work.
-
-## 3. Repository layout and developer contract
-
-    apps/web/                    Next.js UI and server-only OIDC/BFF
-      app/(auth)/                sign-in/callback/sign-out/session errors
-      app/cases/                 case list/new and case-scoped surfaces
-      app/operations/            assigned queues and approved review actions
-      components/                accessible reusable controls and case banner
-      lib/server/                session, CSRF and API client; never imported by client code
-    services/api/app/
-      main.py                    startup/config, routers, exception handlers
-      config.py                  typed env and mode validation
-      auth/                      OIDC validation, actor context, policy/holds
-      modules/                   cases, documents, discovery, assets, legacy,
-                                 claims, approvals, tasks, operations, lifecycle
-      db/                        session/context, models, migrations
-      adapters/                  storage, scanner, extraction, case manager, sources
-      contracts/                 generated/checked Pydantic schemas
-      audit/                     safe append-only events
-    services/worker/app/         job handlers, leases, retry/reconcile/deletion
-    contracts/                   OpenAPI JSON, PostgreSQL DDL and synthetic fixtures
-    tests/domain/                pure policy/money/state invariants
-    tests/integration/           API/DB/storage/worker and contract checks
-    tests/e2e/                   Playwright persona/journey packs
-    scripts/                     bootstrap, migrate, seed, fixture PDF generation
-    infra/                       Compose, synthetic OIDC realm and health checks
-    docs/evidence/               synthetic test/release evidence only
-
-Coding must create root commands with this behavior:
-
-| Command | Required outcome |
+| Reality | Engineering rule |
 | --- | --- |
-| npm run bootstrap | Check prerequisites, generate untracked local secrets, build synthetic PDFs/manifest, start dependencies, migrate and seed idempotently |
-| npm run dev | Start reference stack; print web URL and synthetic sign-in instructions without secrets |
-| npm run check | Formatting/type/lint checks and OpenAPI/SQL/fixture consistency |
-| npm run test:domain | Deterministic domain tests; no network or real data |
-| npm run test:integration | Disposable PostgreSQL/storage/worker integration tests and contract checks |
-| npm run test:e2e | Seeded browser journey packs A–G, including failure and revocation paths |
-| npm run test:all | Checks + domain + integration + E2E; nonzero on failure |
-| npm run reset:demo | Explicit confirmation before dropping only the named local demo database/volumes; never a production command |
+| Financial records are incomplete, stale or wrong | Every fact keeps its source, date and evidence status. Critical fields are reviewed by a person before they count. |
+| Knowing someone is family does not prove they may act | Access is decided by **deterministic code** (trust gates, §7), never by the AI or the UI. |
+| AI output can be wrong or manipulated | The AI proposes; code validates. AI never decides access, entitlement, verification or risk. Uploaded documents are data, never instructions. |
+| Sensitive data has a lifetime | Read, extract, forget: store extracted fields and short snippets, not raw documents or message bodies. Mask by default. Delete on request. |
+| Sharing can be irreversible | Anything leaving the product needs an exact preview and the user's approval, recorded in the audit trail. |
+| Requests repeat and things fail | Retries must be safe; unknown outcomes are recorded as unknown, never guessed. |
+| We must learn cheaply | One web app, one database, one deployable service. Mocks behind interfaces, swapped for real providers without rewrites. |
 
-The commands are deliverables to implement, not existing commands. README must show their actual tested output when implemented. Local web is http://localhost:3000, API internal on 8000, OIDC on localhost:8080. Bind reference ports to loopback. Docker data volumes and .env.local are ignored by Git.
+---
 
-## 4. Configuration, secrets and startup gates
+## 2. Architecture overview
 
-Required non-secret keys: APP_MODE=reference, API_BASE_URL, WEB_ORIGIN, DATABASE_URL reference, OIDC_ISSUER, OIDC_AUDIENCE, OIDC_CLIENT_ID, STORAGE_ROOT, SCANNER_MODE, CASE_MANAGER_MODE, EXTRACTION_MODE, policy version, log level and time zone default Asia/Kolkata. Secrets: OIDC client secret, database login, storage encryption key, field-HMAC key and session signing key. Generate these during bootstrap into ignored local env; never print or commit them. Tests supply isolated ephemeral secrets.
+### 2.1 One deployable app
 
-Reference uses fixture extraction, rule-based conversation, synthetic-only source registry and no outbound notification/submission connectors. F flags default false and cannot be enabled without matching approved capability/policy configuration.
+```
+ Browser (phone or laptop)
+   │  React UI (Next.js App Router, client components)
+   │  x-session-id header (v0) → real sign-in (MVP)
+   ▼
+ Next.js on Cloud Run ──────────────────────────────────────────────────
+ │ app/api/**        thin route handlers: validate (Zod) → call server → respond
+ │ src/server/
+ │   core/           session · access guards · gate engine · masking · crypto ·
+ │                   rate limit · name matching · upload validation · http
+ │   domain/         case service · journey engine · gates
+ │   ai/             provider interface · Gemini adapter · fixture provider
+ │   providers/      identity · death proof · relationship · entitlement (mock now)
+ │   rules/          claim path · confidence · totals            (to build)
+ │   connectors/     connector interface · mock connectors       (Later)
+ │   pdf/            claim-pack templates                        (to build)
+ │   data/           official resources · demo data · synthetic registries
+ ▼
+ Prisma ─► SQLite (v0) ─► Cloud SQL PostgreSQL (MVP)
+ Gemini API / Vertex AI  (text + vision; synthetic data only until Pilot)
+```
 
-Startup rejects: missing keys; wrong OIDC issuer/audience; unsafe writable storage; real-data mode with fixture identity/scanner/extraction; externally reachable reference host without explicit secure deployment config; real-data mode without accepted authority/retention/provider/source policy. There is no “skip security” production flag.
+### 2.2 The one-pager's six layers, mapped to code
 
-## 5. Identity, sessions and authorization
-
-OIDC login is server-side through the Next.js BFF with PKCE/state/nonce validation. Store tokens in an encrypted server session; cookie HttpOnly, SameSite=Lax, path=/, absolute expiry 8 hours and idle expiry 30 minutes. Secure=true except loopback HTTP reference mode. State-changing BFF requests require an origin check and session-bound CSRF token. API accepts validated OIDC access tokens only; no actor ID from a request body/header is trusted.
-
-Privileged review comes from assigned case membership plus allowed operation, not merely an identity-provider role. Synthetic owner, claimant, reviewer and unrelated personas are fixtures. Reviewer cannot authorize an external disclosure for themselves; case owner/claimant must approve. Support receives no blanket financial access. Actor and case context are transaction-local and cleared on rollback/pool reuse.
-
-Sensitive approval/export/access uses an authentication age of at most 5 minutes in the reference policy. Expired session redirects to sign-in preserving only a safe case route; no financial content in redirect URLs. Account recovery uses OIDC provider flow; it does not bypass authority/recipient verification.
-
-## 6. Deterministic product policy for the reference build
-
-These are synthetic-development defaults, not legal rules or production promises. Implement through a versioned PolicyConfig; production replacement remains PRD D-02/D-04/D-05/D-06/D-07/D-10.
-
-| Rule | Fixed reference behavior |
-| --- | --- |
-| Pilot subjects | Living adult owner or adult claimant/deceased subject; known-asset route supported. Joint/minor/representative/nonresident/disputed evidence needs supported workflow or explicit hold/handoff |
-| Authority | Assigned reviewer accepts/rejects scoped synthetic evidence; synthetic method labeled; expiry 90 days; evidence/version/rationale mandatory |
-| Consent | Exact data/purpose/recipient scope; maximum 30 days; revoked/expired blocks new and queued restricted work |
-| Approval | Exact canonical manifest, recipient/channel/purpose and current policy versions; expires after 15 minutes; material changes invalidate |
-| Evidence | SELF_DECLARED, POTENTIAL_MATCH, DOCUMENT_BACKED, INSTITUTION_VERIFIED; institution state requires reviewed institution-attributed evidence, synthetic in reference mode |
-| Amounts | Decimal strings, INR only in initial UI; money up to 18 digits including 2 fractional places, units up to 24 digits including 8 fractional places; no floats, FX or inferred zero |
-| Summary eligibility | Reviewed institution-attributed observation at most 30 days old, no unresolved conflict/duplicate/hold, supported amount type; select latest qualifying observation per holding; title “Reviewed value from dated sources,” not live balance |
-| Included amount types | CASH_BALANCE and CURRENT_VALUE; FD principal/maturity, insurance benefit, units, historical amount, locker and settlement amounts excluded from that total |
-| Unknown dates | No freshness or total eligibility; show source amount separately. Future dates rejected except maturity/due dates explicitly typed |
-| Upload | PDF/JPEG/PNG; 20 MB, 100 PDF pages, 100 megapixel image ceiling; type/signature/size/decoder/scan validation; encrypted PDFs blocked with secure-help next step |
-| Reference intake | Only generated synthetic fixture documents with registered SHA-256 may be uploaded; unknown hash rejected; test adversarial fixtures explicitly registered as unsafe/unreadable |
-| Extraction review | All identity/ownership/identifier/amount/date/source-association fields require review; confidence never bypasses review |
-| Tasks | Suggested due date 7 calendar days unless institution evidence supplies deadline; distinguish suggested from institutional deadline; default reminder once per day at 09:00 user time zone |
-| Deletion | Access revoked immediately; jobs cancelled; eligible live/derived reference copies purged within 24 hours; justified hold shown explicitly; reference backups disabled, restore tests use synthetic snapshots/tombstones |
-| Reference retention | Synthetic active cases persist until reset/deletion; closed-case purge 30 days; operational logs 7 days and audit metadata 30 days; no real-data policy inferred |
-| Notifications | In-app only; no external email/SMS/calls in P/reference |
-| Native/offline | Responsive mobile web; no native client or offline document cache |
-
-Amounts/date/evidence semantics refine FL-07/09/28/29; production eligibility/freshness must be reviewed before real data. Never label a simulation as institution verification without the synthetic banner.
-
-## 7. Screen-by-screen coding contract
-
-Use [DESIGN.md](DESIGN.md) for layout, visual tokens, navigation and interaction states. The route/data/permission rules below remain authoritative; presentation cannot enable an unsupported action.
-
-All case routes show subject, path, case state and synthetic-mode banner. All lists have loading, empty, error, retry and permission-expired states. UI derives permitted actions from server policy; hiding a button never replaces server authorization.
-
-| Route | Data and actions | Critical interaction |
+| Layer (one-pager §7) | Where it lives | Status |
 | --- | --- | --- |
-| /cases | Authorized case summaries and next owned task | New case or resume; no cross-case data in previews |
-| /cases/new | Goal → subject → confirm mode; known-asset checkbox for claimant | Explain next step; never force discovery |
-| /cases/{id}/chat | Persisted messages, fact summary, tasks and proposed action cards | Ask one useful next question; confirm intent; use typed action cards for consequential decisions |
-| /cases/{id}/verification | Identity/relationship/authority requirements and scoped consent | Pending/rejected/expired/hold shown separately; no “verified case” blanket badge |
-| /cases/{id}/documents | Upload progress, document status, source preview and field proposals | Side-by-side evidence/field review; accept/correct/reject with reason where material |
-| /cases/{id}/discovery | Source plan and attempts with coverage/prerequisites/owner | Manual enquiry task; no-result/partial/blocked distinguished |
-| /cases/{id}/assets | Reviewed holdings, separate potential matches, summary eligibility/exclusions | Filter by category/status; detail shows observations/evidence/nomination/next action |
-| /cases/{id}/legacy | Checklist, dated record/contact intent and export preview | Adding contact discloses nothing; export review lists gaps/snapshot/date |
-| /cases/{id}/claims | Independent claim cards/status/owner | Add known holding and supported template; unsupported situation escalates |
-| /cases/{id}/claims/{claimId} | Requirements, pack versions, approvals, receipt, requests and outcomes | Review/download approved pack; record manual receipt; partial outcome preserves remainder |
-| /cases/{id}/tasks | Task owner/due/time-zone/state/blocker | Complete/cancel/update with reason/evidence; no fake institution deadlines |
-| /cases/{id}/activity | Authorized redacted access/change timeline | Source/version/actor/time; no audit raw secrets |
-| /cases/{id}/privacy | Consents, membership, exports and deletion/hold status | Revoke confirms exact scope and future-access effect; explains irreversible completed disclosures |
-| /operations | Assigned review/claim/complaint/unknown-submission/overdue queues | No unassigned evidence; review rationale and escalation |
-| /operations/{id} | Assigned case review tasks and template/source metadata by role | Reviewer cannot bypass owner approval or enable unsupported sources |
+| User experience | `src/app/page.tsx`, `src/components/fl/*` | Built (single-page views); voice to build |
+| Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
+| AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
+| Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
+| Asset and document records | Prisma models, `api/documents`, `api/assets`, masking | Built; evidence-status model to update (§10) |
+| Claims and workflow | `JourneyTask`, journey engine; `ClaimPack` model | Tasks built; claim packs to build |
 
-Use system fonts, clear spacing, INR formatting for display only, masked identifiers and semantic HTML. Destructive/reset actions describe exact effect; review controls remain keyboard accessible. No marketing claims, real institution logos or fake success indicators in the reference build.
+`src/server/` must never import from `src/app/` or React code, so it can later move into a standalone service with the same API (§21, M9).
 
-## 8. API contract and error behavior
+---
 
-OpenAPI 3.1 JSON is the executable request/response contract. Models reject unknown fields. All case-bound identifiers are authorized server-side; inaccessible case/object returns non-enumerating 404. Error envelope: code, safe message, request_id, field_errors. Trace IDs contain no financial identity.
+## 3. Technology stack
 
-Use 401 unauthenticated; 403 forbidden action on accessible object; 404 inaccessible/missing; 409 stale version/invalid state/idempotency conflict/disabled capability; 413 size; 415 unsupported file; 422 schema/business validation; 429 rate limit; 503 approved dependency unavailable. Include Retry-After for 429/503 when safe.
+| Concern | Choice | Notes |
+| --- | --- | --- |
+| Runtime | Node.js ≥ 22 | Cloud Run buildpacks |
+| Web framework | Next.js 16 (App Router), React 19, TypeScript 5 | `frontend/AGENTS.md`: read the bundled Next.js docs before changing framework code — this version has breaking changes |
+| UI | Tailwind CSS 4, shadcn/ui (Radix), lucide icons, sonner toasts, framer-motion | Accessible primitives from Radix |
+| Validation | Zod 4 at every API boundary | Enums enforced by Zod (SQLite has no native enums) |
+| Database | Prisma 6; **SQLite in v0**, **Cloud SQL PostgreSQL for the MVP** | Provider switch only; no raw SQL |
+| AI | Google Gemini via `@google/genai` (API key or Vertex AI) | Provider interface + fixture provider for tests (§13) |
+| PDF text | `unpdf` | Images go to Gemini vision |
+| Tests | Vitest (unit and route), Playwright (end-to-end, to add) | No tests are committed yet (§19) |
+| Deploy | Google Cloud Run, **from source via buildpacks — no Docker** | `npm run build`, `npm start`, listens on `$PORT` |
+| Secrets | Google Secret Manager | Never in the repo |
 
-Every retryable JSON mutation uses Idempotency-Key (UUID/opaque 16–128 characters). Same actor/case/operation/key + same canonical request hash returns original resource/job; different hash returns IDEMPOTENCY_CONFLICT. Retain reference idempotency records 7 days; external action records and receipts follow case retention and are not forgotten merely because a client key expires. Mutable resources use If-Match version; missing/stale precondition is rejected. Approval decisions bind exact immutable payload and cannot be edited into a different decision.
+Installed but unused: `next-auth` (candidate for real sign-in), `next-intl` (candidate for Indian-language UI). Remove what is not adopted.
 
-Lists use opaque cursor, limit 1–100 (default 25), stable ordering created_at descending then id. Jobs return 202 with data.id and data.status_url; poll at 1, 2, then 5 seconds, stop on terminal state. Conversation stream is optional transport optimization only; baseline uses persisted message + job polling. No financial content in browser URL/query state.
+---
 
-Rate-limit reference defaults: 120 ordinary requests/minute/user, 20 message requests/minute/user, 10 upload sessions/hour/user; service tests use isolated configurable budgets. Exact counters use server-side storage/DB; never trust client throttling. Production capacity remains measured D-07.
+## 4. Code layout
 
-## 9. Saving records safely
+```
+frontend/
+  prisma/schema.prisma        data model (§5)
+  src/
+    app/
+      page.tsx                single page; client view state: landing | intake | workspace | resources
+      api/                    route handlers (§15)
+    server/                   all server-only logic (no React imports)
+      ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
+      core/                   access.ts · crypto.ts · gate-engine.ts · http.ts · masking.ts ·
+                              name-match.ts · rate-limit.ts · session.ts · upload.ts
+      domain/                 case-service.ts · gates.ts · journey-engine.ts
+      providers/              identity.ts · death-proof.ts · relationship.ts · entitlement.ts · types.ts
+      data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
+      rules/                  (to build) claim-path.ts · evidence.ts · totals.ts
+      pdf/                    (to build) claim-pack templates
+      connectors/             (Later) base.ts · mock/* · real/*
+    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts
+    components/
+      fl/                     product components: landing, intake, workspace tabs, gate-panel, ask-panel …
+      ui/                     stock shadcn components
+  test/                       (to add) unit, route and live-AI tests
+```
 
-schema.sql defines relational names, types, constraints, case-bound foreign keys and isolation policies. Alembic starts from this contract. API uses fl_app runtime role, not schema owner/superuser. Authentication/authorization precede transaction-local actor/case settings. RLS is case-isolation defense in depth, not an alternative to membership/authority/consent checks.
+**Housekeeping to do:** delete the leftover `src/app/api/route.ts` ("Hello, world"); rename the package from `nextjs_tailwind_shadcn_ts`; bring `worklog.md` up to date or remove it in favour of `DECISIONS.md`.
 
-A request transaction commits domain change, audit event and outbox event together. No network call inside that transaction. Worker claims an outbox/job using FOR UPDATE SKIP LOCKED, lease duration 60 seconds with heartbeat every 20 seconds; five safe transient attempts with delays 5, 30, 120, 600, 1800 seconds. Nonretryable validation/authority/hold fails immediately. An ambiguous external effect never enters generic retry.
+---
 
-Use UTC internally and injected Clock in tests; user display uses their IANA time zone. Default reference fixture clock is 2026-10-15T00:00:00Z. Sort and canonicalize manifests using UTF-8, stable keys/order and Decimal strings; hash actual generated file bytes plus manifest/recipient/channel/purpose/policy versions. Do not trust a client-provided content hash as an approval.
+## 5. Data model
 
-## 10. Rules for moving work to the next step
+The Prisma schema in `frontend/prisma/schema.prisma` is the **source of truth for data**. The tables below summarise it and map it to the PRD's concepts ([PRD §12.1](PRD.md#121-the-main-things-the-product-keeps-track-of)).
 
-The workflow guards in section 18 apply; exact fields/enums come from OpenAPI and SQL. Implement explicit command handlers, not arbitrary PATCH status. A transition records actor, expected version, guard result, evidence and event. For the reference release:
+### 5.1 Existing models
 
-- Claim requirements: MISSING, PROPOSED, ACCEPTED, REJECTED, NEEDS_UPDATE; shared template remains immutable per version.
-- Pack creation allowed only after current required evidence/authority reviewed. Material evidence/template/form changes mark old pack superseded and invalidate approval.
-- Manual handoff consumes an approved export/handoff record; platform records user/operator submission later with receipt. It cannot guarantee what a user does outside the product and must not say it submitted the claim.
-- Outcomes SETTLED/TRANSFERRED require institution-attributed evidence; PARTIALLY_SETTLED stores accepted settled amount and known/unknown remainder; unresolved work remains open.
-- CLOSED case requires reviewed summary, no executing work and explicit acknowledgment of unresolved items. Reopening appends reason/evidence.
-- Hold scope can block retrieval/export/submission/release without destroying records. Only authorized resolution with reason/evidence removes it.
-- Deletion request immediately revokes access and cancels queued jobs; purge and processor/backup outcomes are separately tracked.
+| Model | Purpose | PRD concept |
+| --- | --- | --- |
+| `Session` | Anonymous browser session (v0 identity) | Participant (temporary) |
+| `UserProfile` | Preferred name, state, language, relationship (unused) | Participant |
+| `LegacyCase` | One case: type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
+| `DeceasedPerson` | Name, name variants, DOB, PAN **hash**, date of death, death-proof status | Subject (deceased) |
+| `Claimant` | Relationship, role (lead / co-heir), identity and relationship status | Participant + role |
+| `Proof` | Identity / death / relationship / entitlement proof: provider, status, matched fields | Authority evidence |
+| `AssetRecord` | Category, institution, masked ref, last-4, value band, discovery and verification status, `entitled` | Holding |
+| `DocumentRecord` | Category, extraction status, redacted text, extracted fields, user-verified flag | Document + evidence |
+| `Signal` | Extracted fields and a ≤300-character snippet from a source; no raw bodies | Evidence (from sources) |
+| `Institution` | Reference data: names, aliases, sender IDs, email domains, claim template | Institution |
+| `JourneyTask` | Task with instructions, official URL, required documents, dependencies, priority, next-best flag | Task |
+| `ClaimPack` | Claim path, checklist, generated forms, status | Claim pack |
+| `ConsentRecord` | Per case and source: purpose, scope, status, expiry, revocation | Consent |
+| `CaseEvent` | Append-only timeline with event type and actor | Audit event |
+| `IntakeMessage`, `QaMessage`, `Draft` | Conversation, questions and answers, drafted letters | Conversation |
+| `ResourceVisit` | User opened an official portal; outcome logged back | Discovery attempt |
+| `InstitutionClaim`, `CheckResult` | Institution-side claim review (Verify) | Later (§22) |
 
-Templates in fixtures are explicitly demonstration procedures, not official forms or legally complete requirements. An institution-specific live template needs D-10 validation before real use.
+Models defined but not yet used by code: `ClaimPack`, `Signal`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`.
 
-## 11. What the assistant receives, returns and may do
+### 5.2 Changes required for the PRD MVP
 
-Case manager input: actor/case/mode, reviewed fact references, allowed actions, open tasks, policy version and current user message. Output: response text, cited evidence IDs, uncertainty flags, proposed questions and typed proposed actions. Persist output/model or rule version before showing completion. No chain-of-thought logging.
+| Change | Why | PRD |
+| --- | --- | --- |
+| Add `AssetRecord.evidenceStatus`: `SELF_DECLARED \| POTENTIAL_MATCH \| DOCUMENT_BACKED \| INSTITUTION_VERIFIED` (§10) | PRD requires exactly these four labels | FL-07 |
+| Add `Observation` model: `assetId`, `amount` (decimal string), `amountType`, `currency`, `asOfDate`, `sourceDocumentId`/`signalId`, `reviewedAt`, `reviewedBy` — append-only | Dated amounts with history; honest totals | FL-09, FL-28, FL-29 |
+| Add `FieldReview` (or extend `DocumentRecord.extractedFields`) with per-field `state: proposed \| accepted \| corrected \| rejected`, reviewer and reason | Critical fields must be reviewed before use | FL-06, FL-26 |
+| Add `Approval`: exact content hash, recipient, channel, purpose, expiry, state | Approval of exactly what is sent | FL-14 |
+| Add `Claim` (one per asset) with states and outcomes (§11); link `ClaimPack` to it | Claims tracked independently to an outcome | FL-12–FL-16 |
+| Add `Hold`: scope, reason, created/resolved by | Pause specific actions | FL-47 |
+| Add `LegacySnapshot`: frozen record, date, known gaps; `TrustedContact` (intent only) | Legacy planning | FL-11, FL-31, FL-34 |
+| Add `User` + real auth link; replace session-only ownership | Real sign-in | FL-45, FL-48 |
+| Store money as **decimal strings**, never floats | Exact amounts | FL-29 |
+| Add `insurance` asset category and claim paths (if not already covered) | Life insurance is in the MVP | PRD §8.1 |
 
-RuleBasedCaseManager handles intent confirmation, missing prerequisites, next task, extraction review, inventory gaps, legacy preparation, known-asset claims and help routing. It never invents a holding, requirement or completed task. FixtureExtractionAdapter returns fixture-linked proposals by document ID/hash. Unknown source does not produce fabricated extraction; it produces manual-review/help state.
+Every change ships with a Prisma migration and is reflected in `src/lib/types.ts`.
 
-Adapters expose typed schemas for ConversationProvider, ExtractionProvider, Scanner, Storage and SourceConnector. Future external AI is not enabled without approved provider terms and credentials. Every model/tool response is untrusted and revalidated. Actor/case/role/recipient scope cannot be model-controlled. SourceConnector implementations other than the synthetic fixture source are disabled in reference mode.
+---
 
-## 12. Sample records and their expected results
+## 6. Case types and journeys
 
-fixtures.json is seed input, not customer data. Bootstrap renders its synthetic document descriptions into deterministic PDFs, computes SHA-256, registers the allowlisted document IDs/hashes and seeds personas/cases/requirements. Never pretend the JSON itself is a PDF or predeclare an uncomputed binary hash.
+The code has seven case types (plus `general`), each driven by the deterministic journey engine (`src/server/domain/journey-engine.ts`). They map onto the PRD's three journeys:
 
-Expected reference inventory: one reviewed bank balance INR 42,000 and one reviewed mutual fund value INR 2,500, both within 30 days of fixture clock, yield eligible total INR 44,500. Historical FD principal INR 100,000, potential-name match INR 999,999, duplicate bank record and unknown-date holding are excluded with reasons. Units are not summed as currency. Newer contradictory ownership evidence blocks that holding until review.
-
-Fixtures also include missing/expired authority, revoked consent, unsafe/unreadable document, competing claimant hold, stale template, changed pack, possible-acceptance timeout, partial settlement INR 1,000 of an evidenced INR 2,500 claim and unknown remainder variant. Known remainder is INR 1,500; never infer zero when outcome source gives no remaining figure.
-
-
-</details>
-
-## 13. Ordered coding work packages
-
-Each B number is a piece of implementation, not a separate product. Build and test a small working journey as these pieces come together. “Depends on” identifies work that must already exist. “Completion evidence” describes what must actually work before the package is considered done. B-01 means starting the local components safely; it is not a finished user journey.
-
-
-| ID | Implement | Depends on | Completion evidence |
+| Code `caseType` | Kind | PRD journey | Gates required (§7) |
 | --- | --- | --- | --- |
-| B-01 | Create the web/API/worker folders and local Docker setup; lock dependency versions; reject unsafe configuration; make health checks and basic CI run | This baseline | Local services start; startup rejects unsafe mode; no cloud credentials needed |
-| B-02 | Create the database from the SQL contract; connect through restricted roles; save changes and pending jobs together; implement version checks, audit and safe request retries | B-01 | Fresh DB migrates/seeds twice safely; isolation/version/retry tests |
-| B-03 | Connect sign-in; keep sessions server-side; create isolated cases; check case membership, verification, consent and holds on every action | B-02 | Cross-case/revoked/expired/unassigned cases denied; known-asset routing |
-| B-04 | Generate the sample PDFs; register their hashes; upload, encrypt and scan them; show cited field proposals and record accept/correct/reject reviews | B-02/03 | Upload stages, unsafe/unknown hash rejection, cited fields/corrections and cancellation |
-| B-05 | Save reviewed holdings and dated values; show discovery steps; review duplicates/conflicts; calculate totals and explain exclusions | B-04 | INR 44,500 oracle and exclusions; no-result/partial/conflict/merge-reversal cases |
-| B-06 | Build voice input and spoken replies alongside the text assistant and saved conversations; show proposed action cards and owned tasks; recover from failure without duplicate actions | B-03/05 | Real speech input/output, transcript correction, stop, text switching, permission/failure/help paths without duplicate actions or invented facts |
-| B-07 | Build the legacy checklist, inert trusted-contact instructions, dated snapshots, preview and approved export | B-05/06 | Dated scope/gaps; no contact disclosure; download expiry/audit |
-| B-08 | Build claims from known holdings; review requirements; generate packs; approve exact handoffs; record manual receipts, requests and partial/unknown outcomes | B-03/04/05 | Known-asset claim, invalidation, unknown outcome and remainder tests |
-| B-09 | Build assigned operator queues, help/complaints, due dates, in-app reminders and the ability to stop an unsafe workflow | B-06/08 | Assignment and hold restrictions; idempotent in-app reminders |
-| B-10 | Remove eligible records through the deletion process; preserve deletion markers; test recovery; finish accessible desktop/mobile behavior and redacted measurements | B-01–09 | Deletion/restore/outage, accessibility and metric privacy evidence |
-| B-11 | Run every first-release journey and required failure case; record results and defects; confirm future capabilities are disabled; prepare a reproducible handoff | B-01–10 | All P requirement/scenario results recorded; F disabled; no critical unresolved defect |
+| `living_individual` | Personal | A — Discover my own assets | G1 |
+| `estate_planning` | Personal | B — Plan my legacy | G1 |
+| `caregiver` | On behalf of a living person | A or B, for a parent | G1 + recorded consent of the relative (G3 via `relative_consent`) |
+| `family_death` | About a deceased person | C — Find and claim after a death | G1 → G2 → G3; G4 per asset |
+| `nominee_heir` | About a deceased person | C | G1 → G2 → G3; G4 per asset |
+| `rejected_claim` | About a deceased person | C (claim already rejected) | G1 → G2 → G3; G4 per asset |
+| `nri_cross_border` | About a deceased person | C (claimant abroad) | G1 → G2 → G3; G4 per asset |
+| `general` | Unclassified | Routed after intake | Strict path G1 → G3 |
 
-Each package maps to the requirement IDs in PRD requirement rows and this guide; it may refine internal code without inventing scope. Start B-01 now. Source-provider contracts, legally sufficient real-data policies, commercial terms and F enablement are not prerequisites to coding this reference release.
+**Intake** (`POST /api/intake`): Gemini classifies the user's situation; a rule-based classifier is the fallback when AI is unavailable. The user can correct the classification (FL-01). A known-asset claimant is never forced into discovery.
 
-## 14. Definition of coding completion
+---
 
-A new developer can clone, bootstrap, run, exercise all three synthetic journeys, run checks/tests and inspect attributable evidence without cloud credentials or hidden manual database edits. All P normal/failure/revocation/hold/deletion cases have recorded results. OpenAPI, migrations, fixtures, generated client types and implementation agree; CI rejects drift. F capabilities return explicit disabled state. Reference behavior is labeled everywhere and cannot be promoted to real data by changing one unchecked flag.
+## 7. Trust gates and access control
 
-Live launch remains a separate permission/policy/operational acceptance decision. Documentation is coding-ready when these contracts are internally consistent; it is not proof that code, security testing, legal approval or integrations already exist.
+**PRD:** FL-03, FL-04, FL-22, FL-23, FL-47. **Built** in `src/server/core/gate-engine.ts`, `access.ts`, `masking.ts`.
 
-<details>
-<summary><strong>Exact command rules, first-journey checks and edge cases</strong></summary>
+### 7.1 Gates
 
-## 15. Exact implementation rules
+| Gate | What it proves | v0 provider (simulated, labelled) | Unlocks |
+| --- | --- | --- | --- |
+| **G0 Account** | Control of a session | Anonymous `x-session-id` | Intake chat, guides, official resources, demos |
+| **G1 Identity** | The user is a specific real person | Mock DigiLocker; passport + selfie for NRIs | Personal cases; opening a case about someone else |
+| **G2 Death** | The named person has died | Mock DigiLocker civil-registry lookup, or certificate scan read by Gemini vision and matched by code | Case active — **still no discovery** |
+| **G3 Relationship** | The user is a close relative (or has the living person's consent) | Heir's own document naming the deceased; legal-heir certificate or relative consent (mock) | Discovery; assets visible **masked** |
+| **G4 Entitlement** (per asset) | The user may claim *this* asset | Nominee / joint-holder record, legal-heir or succession certificate (mock) | Full details and claim pack for that asset |
 
-- Header If-Match is a quoted positive integer ETag, for example \"3\". Server returns ETag with mutable resources; command routes require it where marked in OpenAPI.
-- Upload/download URLs remain same-origin authenticated endpoints. Upload-Token/Access-Token capabilities are separate short-lived headers, not secrets in query strings; persist only token hashes. Capabilities expire after 5 minutes and bind actor/case/object/version/purpose.
-- Encryption uses a vetted AESGCM implementation with random 96-bit nonce per write, 256-bit key and authenticated context containing case/object/field. Stored envelope includes version/key ID/nonce/ciphertext; keys remain outside the database. Never implement the cipher manually.
-- Runtime login inherits fl_app only. Dispatcher inherits fl_dispatch for job/outbox metadata, not customer evidence. Configuration-review commands use fl_control only after application role checks and write configuration_audit. Purge uses fl_purge, checks accepted retention/hold policy first, sets actor/case context and records minimal completion/tombstone evidence outside purged case data. Migration-owner credentials never serve requests.
-- Evidence arrays and polymorphic scope IDs require application same-case validation before commit; relational FKs cover concrete links. A row-level case selector is defense in depth; it is not proof of current membership/authority.
-- Store only accepted observations/outcomes in their append-only tables. Unreviewed reported outcomes are field proposals/review tasks until authorized review creates an outcome; corrections append superseding rows.
-- Negative balances can be recorded as source observations but are excluded from positive asset totals with an explicit reason; the product does not implement debt recovery.
-- DiscoveryPlan and immutable LegacySnapshot records persist the reviewed plan/snapshot; an export cannot rebuild silently from changed current assets. AccessCapability records bind upload/view/download authorization without exposing storage paths.
+Gates are pure functions; every case-scoped route calls the guard (`caseAccess`, `assetAccess`, `documentAccess`). The UI cannot skip a gate.
 
-Reference auth is closed to seeded personas: resolve validated issuer/subject through the restricted identity lookup; unknown identity returns ACTOR_NOT_REGISTERED. Self-registration is not included. case_members.display_label is a case-scoped safe label, avoiding a broad user-directory read. Production provisioning/recovery policy is a deployment gate, not permission to expose all users.
+### 7.2 Guard responses
 
-Upload capabilities bind one document/hash and may retry identical bytes until completion/expiry; completion consumes the upload session. Access capabilities bind authorized actor/object/version and short expiry; each successful read is audited. Never leak capability tokens into logs/referrers/URLs.
-
-Reference load acceptance uses 4 CPU cores, 8 GB RAM, loopback Compose, 5 concurrent synthetic users, 20 cases and 200 holdings; record machine/container versions and scanner/model mode. Check 10 ordinary API requests/second for 5 minutes, zero authorization/integrity failures, p95 ordinary requests under 1 second, acknowledgement under 2 seconds, and clean 20-page synthetic extraction/review-proposal job under 2 minutes. Monthly availability is an operational metric after deployment, not something a local test can certify. Browser acceptance sizes: 1280×800 and 375×812, keyboard-only core paths, screen-reader spot checks and zero unresolved critical/serious automated accessibility violations. These are reference engineering acceptance targets; no production SLA is inferred.
-
-Summary exclusion precedence is fixed in fixtures.json: potential match, duplicate, held, conflict, unknown date, historical (>365 days), stale (>30 days), unreviewed/unverified, negative balance, unsupported amount type. Evaluate each holding’s latest qualifying observation; list an asset once in exclusions only if it has no eligible selected observation. A reference synthetic institution source can attest a holding while its amount date remains unknown; that amount is still excluded.
-
-Manual submission supports SUBMITTED with a receipt/reference or SUBMISSION_UNKNOWN with a user/operator reason and no invented receipt. The latter stores an unknown external action record and a reconciliation task; it does not invoke a connector or retry an outside submission. Verification and outcome proposals remain review tasks until an assigned reviewer accepts attributable evidence.
-
-Mode correction uses PATCH /cases/{id}: self_discovery↔legacy is allowed for the same living owner, preserves evidence and rechecks purpose/consent; any material change invalidates dependent approvals. A deceased-claim mode is not converted into another person’s case. Subject correction is limited to a confirmed same-person display/relationship correction with reason and re-review; a different subject requires a new isolated case. Legacy fixture case 101 has its own cloned synthetic documents/evidence/holdings with new IDs; there are no cross-case evidence links.
-
-## 16. Checks required before commands run
-
-| Command/event | Resulting behavior |
+| Situation | Response |
 | --- | --- |
-| Review discovery plan | ACCEPT marks REVIEWED; REJECT supersedes draft. An attempt requires current reviewed plan, selected source/method and current permissions |
-| Review legacy | Persist immutable LegacySnapshot from current reviewed versions, acknowledged gaps and policy; update reviewed_at/snapshot version; later edits require a new review |
-| Create claim | Optional selected authority may be null; state AUTHORITY_REVIEW until a current scoped authority is attached |
-| Attach claim authority | Validate same case/subject/institution/action and current review; move unsubmitted claim to DOCUMENT_COLLECTION |
-| Accept all required claim items | If authority current, mark PACK_REVIEW; missing/stale item keeps collection/review task |
-| Pack generated | Immutable reviewed inputs/bytes/manifest; claim remains PACK_REVIEW until exact user handoff approval |
-| Approve exact handoff | Claim becomes READY_FOR_SUBMISSION; approved download is preparation, never platform submission |
-| Record manual receipt | SUBMITTED only with receipt/reference; unknown attempted delivery becomes SUBMISSION_UNKNOWN and reconciliation task. reconciles_action_id binds any later receipt to the original unknown action |
-| Institution request/outcome | Accepted attributable evidence can move SUBMITTED through INSTITUTION_REVIEW into additional-document or outcome state atomically; do not wait on an undefined status endpoint |
-| Evidence or authority changes | Invalidate affected pending packs/approvals and restrict next actions; do not erase an already-submitted claim’s history/status |
-| Support update | Assigned operator records ASSIGNED/WAITING/RESOLVED/CLOSED with reason/evidence; no unassigned case access |
+| Case or object belongs to another session/user | **404** (never reveal it exists) |
+| Gate not yet reached | **403** `{ error, nextGate }` |
+| Case frozen for review | **423** `{ error, frozen: true }` |
 
-Reference member edits may assign/revoke a configured staff OPERATOR only after service role checks. They cannot transfer OWNER, add another claimant or bypass disabled COLLABORATOR/RECIPIENT capabilities. Account ownership transfer is not an implementation shortcut.
+### 7.3 Rules built into the gate layer
 
-Database connection variables are distinct: DATABASE_URL (fl_app login), DISPATCH_DATABASE_URL (fl_dispatch), CONTROL_DATABASE_URL (fl_control), PURGE_DATABASE_URL (fl_purge), MIGRATION_DATABASE_URL (bootstrap/migrations only). Generate separate local login secrets, grant no schema ownership/BYPASSRLS and keep privileged connections out of ordinary request handlers. Control/purge commands require their application-level reviewer/retention authorization before using those roles. OIDC reference client IDs are financial-legacy-web (BFF) and financial-legacy-api (audience); realm is financial-legacy-reference.
+- **Name matching** (`name-match.ts`): drops honorifics; handles initials, phonetic folding (sh/s, ee/i, w/v, doubled letters, trailing "a") and abbreviations. A non-match goes to **review**, never to automatic rejection.
+- **One case per deceased person:** a second claimant's case for the same person (same PAN hash, or same DOB + name match) **freezes both cases** and links them until an operator reviews. Demo cases are excluded.
+- **Living-person guard:** activity by the "deceased" after the date of death freezes the case (implemented; to be wired to sources).
+- **Masking below G4** (`masking.ts`): institution, category, value band, last-4 and statuses only; holder name hidden; identifiers and exact amounts redacted from evidence. Every asset leaving the API passes through masking.
 
-Job registry is closed: SCAN_DOCUMENT, EXTRACT_DOCUMENT, CASE_MANAGER_RESPONSE, RUN_SYNTHETIC_DISCOVERY, GENERATE_PACK, GENERATE_EXPORT, RECONCILE_SUBMISSION, SEND_IN_APP_REMINDER, EVALUATE_EXPIRY and PURGE_CASE. Each declares aggregate type, allowed initiating action, terminal states, cancellation checks and safe-retry class in code. No arbitrary job type, shell, URL or connector execution from a model/client. EVALUATE_EXPIRY changes derived permission/action availability, never destroys claim/evidence history.
+### 7.4 How gates map to the PRD's authority model
 
-Rule-based case-manager priority is deterministic: unsupported/risky request→help; unconfirmed intent→confirm route; missing scoped verification/consent→explain prerequisite; pending critical fields→review; blocking task/hold→explain owner and next step; otherwise offer the next path milestone. It cites evidence/task IDs, asks at most one main question per turn and never asserts a missing holding or invented institution rule. Example safe copy: “This record is a possible match; please review the source before we add it as a holding.” “This statement is historical, so its amount is excluded from the dated-value total.” “We don’t have a confirmed submission receipt yet; we’ll track this as unknown until it is checked.”
+The PRD separates identity, relationship, authority and consent (FL-03, FL-04). Gates implement this: G1 = identity, G2 = death evidence, G3 = relationship (or consent for a living person), G4 = **per-asset, per-action authority**. **To build:** expiry on proofs (reference policy 90 days), reviewer and reason on each accepted proof, and an operator action to unfreeze a case.
 
-For reference correctness, serialize case-bound writes with a case-row lock and recheck guards after acquiring it. Update the relevant aggregate version when dependencies change. Inventory/snapshot reads use one consistent transaction/view; snapshot/export manifests freeze all dependent record versions. Never keep the case lock open during network/scanner/model I/O. Recheck policy when a job resumes and before authorizing access.
+### 7.5 Real providers (Pilot)
 
-Unexpected server errors return the shared INTERNAL_ERROR envelope with request ID and no financial/stack details; record only redacted diagnostics. Apply the production/real-data gate to the entire binary/configuration, not merely the UI or a connector flag. The first reference build must not accept real uploads or real-source/provider calls by toggling an environment variable alone.
+Mock providers are replaced behind the same interface (`src/server/providers/types.ts`) — e.g. DigiLocker for identity and death certificates once partner approval exists (D-03). Real identity evidence rules are decision D-02.
 
+---
 
-## 17. First journey, role rules and edge cases
+## 8. Documents and extraction
 
-Use the synthetic policy and exact contracts below. Real-data and later-feature gates remain in PRD section 17.
+**PRD:** FL-05, FL-06, FL-25, FL-26. **Built:** upload, validation, extraction. **To build:** per-field review states and invalidation of dependants.
 
-Reserved F tables may stay empty; F routes return disabled state without building sharing, release or connector internals. Case isolation, review, encryption and audit apply from the first slice. All P behavior and all three paths still gate completion.
+### 8.1 Pipeline
 
-### First executable journey: owner → statement → reviewed inventory
+```
+upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, PNG, JPEG, WebP)
+       ─► extract text (unpdf for PDFs) or Gemini vision (images)
+       ─► Gemini structured extraction → proposed fields
+       ─► redact identifiers BEFORE storage (6+ digit runs, 8+ digit groups, Aadhaar, PAN; dates kept)
+       ─► store redacted text (≤20k chars) + proposed fields; original file NOT stored in v0
+       ─► user reviews each critical field (accept / correct / reject)        ◄── to build
+       ─► accepted fields create/update holdings and observations             ◄── to build
+```
 
-Use fixtures.json intake profile in a fresh disposable database at the fixture clock. It seeds personas/cases/configuration and the generated hash registry, but no pre-reviewed domain records. Default reviewed profile remains the INR 44,500 oracle. Profile selection is explicit; seed never overwrites an edited database.
+### 8.2 Rules
 
-| Step | Action | Observable acceptance |
+- Content type comes from **sniffing bytes**, not the browser's MIME type.
+- Encrypted or unreadable files return a clear message and a "get help" path; we never ask for a document password (FL-25).
+- **Critical fields** — names, identifiers, ownership, amounts, dates, institution — must be reviewed before they count (FL-06).
+- A correction keeps the old value, who changed it and why; it invalidates any pending claim pack or approval that used it (FL-26).
+- **Original files:** not stored in v0. For the MVP with real users, store originals encrypted in Cloud Storage with a retention policy (D-05), because claim packs need them.
+- **Malware scanning:** to add before real uploads (Cloud Storage + a scanning service) (FL-05).
+
+---
+
+## 9. Discovery
+
+**PRD:** FL-10, FL-27. **MVP = uploaded documents + guided official searches.** Automated connectors are **Later**.
+
+### 9.1 MVP discovery
+
+1. **Documents** the user uploads (statements, CAS, policy bonds, passbooks) → extraction (§8) → holdings.
+2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, IEPF, the government common landing portal). The product:
+   - proposes which searches fit this case (discovery plan, FL-10);
+   - opens the official portal for the user (`ResourceVisit` created);
+   - asks the user to log the outcome (found / not found / partial), recorded on the visit;
+   - turns a "found" outcome into a `POTENTIAL_MATCH` holding for review.
+3. **Inference** from documents (e.g. recurring interest credits suggesting an FD) creates `POTENTIAL_MATCH` holdings only — never confirmed.
+
+Each discovery attempt records what was checked and when. Results distinguish **nothing found**, **partial**, **blocked** and **failed**; the product never says "you have no other assets".
+
+### 9.2 Connector interface (Later)
+
+```ts
+interface Connector {
+  id: "email" | "tax_record" | "sms" | "statement" | "registry" | "scan";
+  connect(caseId: string, consent: ConsentInput): Promise<void>;
+  fetchSignals(caseId: string): Promise<Signal[]>;
+  disconnect(caseId: string): Promise<void>;
+}
+```
+
+- Mode per source via `CONNECTOR_MODE_<SOURCE>=mock|real`. Mock mode is allowed for demos and must be labelled "Simulated".
+- Pipeline: filter (financial senders only; OTP messages dropped) → Gemini structured extraction into `Signal` → match to `Institution` → merge into `AssetRecord` (same institution + category + last-4 = one holding) → confidence → masking.
+- Raw email/SMS bodies are never stored; only extracted fields and ≤300-character snippets.
+- A real connector is enabled only after FL-27's checks: approved source, subject type, method, consent and (for Gmail) Google's security review.
+
+---
+
+## 10. Inventory, evidence status and totals
+
+**PRD:** FL-07, FL-08, FL-09, FL-28, FL-29.
+
+### 10.1 Evidence status (to build — replaces the current two status fields)
+
+| Status | Set when | Set by |
 | --- | --- | --- |
-| 1 | Demo Owner signs in and opens case ending 100 | Subject/mode/synthetic banner visible; empty inventory shows no reviewed value available, total=null |
-| 2 | Upload owner-identity fixture ending 330, review fields, request IDENTITY verification and grant scoped consent | Upload/intake permitted before verification. Assigned Demo Reviewer accepts the resulting same-case evidence with rationale; distinct verification/consent records, no real verification claim |
-| 3 | Upload generated bank fixture document ending 300 | Upload → quarantine/scan → field proposals; unknown hash and unsafe fixture blocked; retry creates no duplicate |
-| 4 | Inspect citations and accept/correct critical fields | Source page, ownership, reference, source type, amount/type/date reviewed explicitly; no monetary observation before review |
-| 5 | Commit reviewed bank holding | Exactly one qualifying bank holding; total=42000.00, summary_state=AVAILABLE, dated source shown |
-| 6 | Sign out, resume, then retry original mutation | Accepted facts persist; same idempotency key returns original result; unrelated persona receives non-enumerating denial |
-| 7 | Add/review fund fixture and exercise exclusions in separate reviewed-profile test | Total=44500.00; historical/potential/duplicate/undated records excluded; no complete-discovery assertion |
+| `SELF_DECLARED` | The user told us | User |
+| `POTENTIAL_MATCH` | A search or inference suggests it; not yet supported by a document | System (search outcome, inference) |
+| `DOCUMENT_BACKED` | A reviewed document supports it | User review of extracted fields |
+| `INSTITUTION_VERIFIED` | Reviewed evidence **from the institution** confirms it | Operator only, with attributable institution evidence |
 
-Do not satisfy this journey by displaying seeded accepted records or hard-coded totals. Screens call domain commands and persisted evidence; fixture extraction supplies proposals only. Authentication and authority evidence intake must work before verification is complete, or onboarding deadlocks. Permit case creation, own-case prerequisite upload/review, consent and help under membership; gate financial retrieval/disclosure/claim actions separately.
+Migration from today's fields: `discoveryStatus=possible` → `POTENTIAL_MATCH`; `confirmed` + `verificationStatus=user_confirmed` → `DOCUMENT_BACKED` if a reviewed document is linked, else `SELF_DECLARED`; `institution_verified` → `INSTITUTION_VERIFIED` only with linked institution evidence. `dismissed` stays as a separate lifecycle flag. AI confidence and name similarity can **never** set `INSTITUTION_VERIFIED`.
 
-### Explicit role and command rules
+### 10.2 Duplicates
 
-All actions require current actor, accessible case, object scope, supported mode, version/idempotency rules and applicable holds. The OpenAPI policy metadata is a summary; enforce this matrix in a single deterministic policy service.
+Same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
 
-| Action | Authorized reference actor and rule |
+### 10.3 Totals (to build, `rules/totals.ts`)
+
+- Count **one** reviewed, dated observation per holding: the latest with `amountType` in {`CASH_BALANCE`, `CURRENT_VALUE`}.
+- Exclude, with a stated reason: potential matches, duplicates, conflicts, holdings on hold, undated values, historical values, FD principal/maturity, insurance sum assured, units, negative balances.
+- Amounts are **decimal strings**; currencies are never mixed.
+- No eligible values → total is `null` ("unknown"), not ₹0. An evidenced zero is `0.00`.
+- Label: **"Reviewed value from dated sources"** — never "your wealth".
+
+---
+
+## 11. Claims
+
+**PRD:** FL-12–FL-17, FL-35–FL-37. **Mostly to build** (`ClaimPack` model exists; no code uses it).
+
+### 11.1 Claim path rules (`rules/claim-path.ts`, deterministic code)
+
+For each confirmed holding, code — not the AI — chooses the path:
+
+| Path | When |
 | --- | --- |
-| Declare/upload/correct fields, inspect own evidence, propose inventory/claims | OWNER/CLAIMANT or assigned OPERATOR within action scope; a declaration alone cannot verify institution provenance |
-| Accept identity/relationship/authority, institution claim requirements or outcomes; create/resolve fraud/dispute hold | Assigned OPERATOR only, attributable evidence and rationale; no AI or client verified flag |
-| Approve exact handoff/export or request deletion | Case OWNER/CLAIMANT, recent authentication and current scoped prerequisites; OPERATOR cannot approve on their behalf |
-| Assign/revoke staff | Case OWNER/CLAIMANT may select configured reference OPERATOR; no ownership transfer, new claimant or F recipient access |
-| Change shared source/template configuration | WORKFLOW_REVIEWER service entitlement and configuration audit; not inferred from OPERATOR membership |
-| Run worker/purge | Closed job registry/service role, initiating context and execution-time checks; purge has separate lifecycle credentials |
+| `nominee` | A nominee is recorded and alive |
+| `joint` | A surviving joint holder exists |
+| `simplified` | No nominee; bank deposit within the bank's simplified-settlement threshold (per current RBI directions; threshold values held in versioned config and checked against the source before use) |
+| `succession` | Above threshold, disputed, or required by the institution |
 
-Owner field review confirms what a document says. Institution-verified support additionally requires accepted attributable institution evidence and an assigned reviewer; never derive it solely from owner assertion or AI confidence. Rejection/correction invalidates dependent pending approvals. Existing submitted history remains intact. No emergency-access UI or universal administrator bypass is part of reference scope.
+The AI only writes the plain-language explanation of the chosen path.
 
-### Contract clarifications engineers must use
+### 11.2 Procedures (FL-12, FL-44)
 
-- Empty/unqualified inventory: total=null, summary_state=NO_ELIGIBLE_VALUES, included_asset_ids=[]; show excluded values/reasons separately. An evidenced qualifying zero uses total=0.00 and AVAILABLE with at least one included holding. These totals describe reviewed coverage, never all wealth.
-- Select one latest qualifying monetary observation per holding across CASH_BALANCE/CURRENT_VALUE; never count both representations of one holding. Units remain separate. Conflicting observations hold that holding for review.
-- Observation proposal route returns the primary amount FieldProposal; it creates a fixed group of scalar proposals with field_path observation:{asset_id}:{draft_id}:{field}. Allowed fields are evidence_id, amount, currency, amount_type, units and as_of_date; create every field, including explicit nulls. Each value is encrypted independently in field_proposals.value_ciphertext. Existing listFieldProposals exposes siblings; no new table or opaque JSON-in-string format is needed. The server creates draft_id and sets group context; clients cannot substitute asset/case/evidence scope through field_path. All six fields and associated critical ownership/source reviews must be resolved before an atomic commit creates Observation id=draft_id. A rejected sibling blocks the group. Corrections append superseding proposals within the same group; stale/conflicting corrections require re-review. A case-row lock and unique observation ID prevent double commit; repeated review returns the existing result. Never insert an accepted Observation early.
-- Evidence is created by controlled intake/declaration/fixture-source commands, not a client-supplied accepted flag. New uploads produce proposed source evidence; review finalizes its associations. Accepting a claim requirement/outcome does not let an operator invent institution provenance.
-- Document scan_state and processing_state are separate canonical fields. Section 18's linear diagram is conceptual; a scan failure does not equal an extraction failure. Exact routes and enums come from OpenAPI/SQL.
-- Pack generation precedes approval. A CLAIM_HANDOFF approval binds pack, institution recipient and MANUAL_HANDOFF; controlled pack retrieval uses a CLAIM_PACK export referencing that approval. A legacy EXPORT approval binds the reviewed snapshot, requesting actor and APP_EXPORT. Operator download must be in that approved handoff scope. Creating/generating a pack never itself authorizes download or submission.
-- Missing If-Match on a marked command returns 422 PRECONDITION_REQUIRED; stale value returns 409 VERSION_CONFLICT. Failed authorization never returns a cached idempotent result.
+Each institution + asset type + path has a **versioned procedure**: required documents, forms, where to submit, source URL and the date it was checked. Stored as reference data with a version number; each claim records the version it used. Out-of-date or missing procedures send the claim to review instead of guessing. MVP procedures: bank/FD deceased-claim, mutual fund transmission (via fund house/registrar), life insurance death claim.
 
-Retention request EXPORT follows the existing scoped export workflow and does not revoke access. Only DELETE triggers access revocation/cancellation and the policy-controlled purge.
+### 11.3 Claim lifecycle
 
-Dependency compatibility, SQL execution, isolation, accessibility, security and journey tests must be run during implementation; no runtime result is implied by this document.
+```
+DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR_SUBMISSION
+      → SUBMITTED (with receipt) | SUBMISSION_UNKNOWN (no receipt — reconcile before re-sending)
+      → INSTITUTION_REVIEW → MORE_INFORMATION_REQUIRED → DOCUMENT_COLLECTION …
+      → SETTLED | TRANSFERRED | PARTIALLY_SETTLED (remainder tracked) | REJECTED | UNRESOLVED_DISPUTE
+```
 
-</details>
+- A pack can be built only after current authority (G4 for that asset) and required evidence are in place (FL-13).
+- **Approval** (FL-14) binds the exact pack bytes (hash), recipient, channel and purpose; it expires (reference: 15 minutes) and is invalidated by any change.
+- **MVP submission is manual:** the user downloads the approved pack and submits it; the product records the receipt or marks the submission unknown. It never claims it submitted on the user's behalf.
+- Outcomes need evidence; a rejection is never counted as recovery; claims progress independently (FL-16, FL-37).
+- **PDF templates** (`src/server/pdf/`): pre-filled from reviewed case data; full identifiers only at G4. Clearly marked as prepared by the user with our help — not official forms.
 
-<details>
-<summary><strong>Workflow state changes and release test checklist — engineering reference</strong></summary>
+---
 
-## 18. Workflow states and release checks
+## 12. Legacy planning
 
-PRD requirement rows are the acceptance authority; OpenAPI and SQL are the exact wire/database formats. The state table describes logical workflow steps; document scan_state and processing_state are separate fields, as section 17 explains.
+**PRD:** FL-11, FL-31, FL-34 (MVP); FL-32, FL-33 (Later). The existing "estate" tab drafts a will with AI; **the PRD says we do not draft legally binding wills** (PRD §3.3), so that feature must be relabelled as "notes for your lawyer" or removed.
 
-### Allowed workflow moves
+To build:
 
-A state tells us where a record is now. A transition is a permitted move to another state. A guard is the check required before that move. For example, a document cannot move into extraction until scanning passed. A claim cannot become ready for handoff until its current pack and permissions have been reviewed. The arrows below show possible moves, not steps the app can skip.
+- **Legacy record:** the planner's reviewed inventory plus a checklist — missing nominees, missing documents, stale records (older than the configured freshness), open steps.
+- **Trusted contacts:** stored as **intent only**. Adding or changing one sends nothing and grants no access.
+- **Snapshot and export:** `LegacySnapshot` freezes the reviewed record with date and known gaps. Export requires owner approval, uses a short-lived download link, is audited, and warns that downloaded copies cannot be recalled.
 
-| Aggregate | States / transition | Guard or evidence |
+---
+
+## 13. AI layer
+
+**PRD:** FL-38, FL-39, FL-40, FL-53, §10.4 guardrails. **Built** in `src/server/ai/`.
+
+### 13.1 Provider design
+
+- `provider.ts` defines the interface; `gemini.ts` implements it; `fixture.ts` returns canned responses for tests; `index.ts` exposes `complete`, `completeJson` and `completeWithHistory`.
+- **Auth order:** `GEMINI_API_KEY`, else Vertex AI (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, Application Default Credentials on Cloud Run), else "not configured" — callers degrade gracefully, never fake output.
+- **Models:** `GEMINI_MODEL` (default `gemini-flash-latest`), fallbacks `GEMINI_FALLBACK_MODELS` (default `gemini-3.5-flash,gemini-flash-lite-latest`). Model aliases change; pin explicit versions before the Pilot and record them per response.
+- **Retries:** transient errors (429/5xx/UNAVAILABLE) get one retry after 800 ms, then the next model; 404 skips to the next model; others fail fast. Overall timeout `AI_TIMEOUT_MS` (45 s).
+- System prompts go in `systemInstruction`; JSON calls set `responseMimeType: application/json` and are **validated with Zod** before use.
+- **Rate limit:** per session, `RATE_LIMIT_AI_PER_MINUTE` (20). Per instance in v0; move to a shared store (e.g. the database or Memorystore) before scaling.
+
+### 13.2 Where AI is used
+
+| Use | Route | AI may | AI may not |
+| --- | --- | --- | --- |
+| Intake classification | `/api/intake` | Classify situation, ask follow-ups | Create holdings before G3 (mentioned institutions become "assumptions") |
+| Document extraction | `/api/documents` | Propose fields with page references | Accept fields; store unredacted identifiers |
+| Death-certificate scan | `providers/death-proof.ts` | Read the certificate | Decide the match — code compares fields |
+| Ask about this case | `/api/ai/ask` | Answer from the masked case view, citing evidence | See data above the user's gate |
+| Checklists and drafts | `/api/ai/checklist`, `/api/ai/draft` | Draft letters and checklists | Send anything; give legal advice; draft a binding will |
+
+### 13.3 Safety rules
+
+- **Grounding:** prompts include only the masked, gate-appropriate case view.
+- **Prompt injection:** document text is wrapped and labelled as untrusted data; model output can never trigger a tool, change a gate or alter permissions.
+- **No invented facts:** if a value isn't in the evidence, the answer says so.
+- **Data to AI:** synthetic data only until the Pilot; for the Pilot, an approved provider configuration with data-residency, retention and no-training terms (D-05, FL-46).
+- **Logging:** store model, model version, prompt template version and output; never log raw sensitive inputs.
+
+### 13.4 Case manager
+
+Today the "case manager" is the deterministic **journey engine** (next-best task, dependencies, stage) plus AI routes. The PRD's single case manager (FL-38) is built by adding a coordinator that reads saved case facts and proposes the next step as a typed action card; consequential actions always go through an approval screen.
+
+---
+
+## 14. Voice
+
+**PRD:** FL-20, FL-41 — **MVP requirement, not built.**
+
+### 14.1 Design
+
+- **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `src/server/voice/`, same pattern as the AI provider.
+- **Candidate provider:** Google Cloud Speech-to-Text and Text-to-Speech, or Gemini's native audio — chosen under decision D-09 (languages, latency, cost, privacy).
+- **Flow:** user taps the mic (explicit action + browser permission) → audio streamed to the server → transcript shown for correction → corrected text sent through the normal conversation route → reply shown and optionally spoken.
+- Raw audio is **not stored** by default; transcripts follow the conversation's retention.
+- Names, account numbers and amounts from speech are always shown for correction before use.
+- Stop, case switch or permission revocation cancels capture and playback.
+- Voice never approves an action, verifies identity or changes an accepted fact.
+
+### 14.2 Done when
+
+Real microphone → transcript → corrected message → spoken reply works in all three journeys on desktop and mobile browsers, including: denied permission, silence, noise, stopping mid-reply, switching to text, Indian names, mixed language and spoken numbers — measured per supported language against D-09 thresholds.
+
+---
+
+## 15. API design
+
+### 15.1 Conventions
+
+- Route handlers are thin: **validate (Zod) → call `src/server` → respond.**
+- Identity: `x-session-id` header in v0 (G0); real authenticated sessions in the MVP (§16.1).
+- Errors: non-2xx with `{ "error": string }` plus `nextGate` (403) or `frozen` (423) where relevant.
+- Status codes: 400/422 validation, 403 gate locked, 404 not found or not yours, 409 version conflict (to add), 413 too large, 415 unsupported file, 423 frozen, 429 rate limited, 503 AI not available.
+- JSON-in-string database fields are always parsed before responding.
+- **To add for the MVP:** idempotency keys on retryable writes (FL-36), version checks (`If-Match`) on mutable records, cursor pagination on lists.
+
+### 15.2 Endpoints
+
+| Method | Path | Purpose | Gate | Status |
+| --- | --- | --- | --- | --- |
+| GET | `/api/health` | Health check | — | Built |
+| GET | `/api/resources` | Official portals directory | — | Built |
+| POST | `/api/intake` | Conversational intake; creates case | G0 | Built |
+| POST | `/api/demo` | Load a demo case | G0 | Built |
+| GET | `/api/cases`, `/api/cases/:id` | List cases; case workspace (masked) | Owner | Built |
+| POST | `/api/cases/:id/proofs/:kind` | Identity / death / relationship proof | → G1/G2/G3 | Built (mock providers) |
+| POST | `/api/assets`, PATCH `/api/assets/:id` | Add / update holdings | G3 | Built |
+| POST | `/api/assets/:id/entitlement` | Per-asset entitlement proof | → G4 | Built (mock) |
+| POST | `/api/documents`, PATCH `/api/documents/:id` | Upload + extract; review fields | G3 for deceased | Built |
+| PATCH | `/api/tasks/:id` | Update a journey task | Owner | Built |
+| POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | Q&A, drafts, checklists | Owner | Built |
+| GET/POST | `/api/consent` | Consent per case and source | Owner | Built |
+| GET | `/api/cases/:id/messages` | Restore intake chat | Owner | To build |
+| GET | `/api/cases/:id/audit` | Audit trail for the user | Owner | To build |
+| GET | `/api/cases/:id/plan` | Claim path per asset + ordered plan | G3 | To build |
+| POST | `/api/assets/:id/claim-pack` | Generate claim pack | G4 | To build |
+| GET | `/api/claim-packs/:id/:form.pdf` | Download a pre-filled form (approved scope) | G4 | To build |
+| POST | `/api/claim-packs/:id/approve` | Approve exact handoff | G4 | To build |
+| POST | `/api/claims/:id/receipt`, `/api/claims/:id/outcome` | Record submission and outcome | G4 | To build |
+| POST | `/api/resources/:id/visit`, `/api/visits/:id/outcome` | Guided official search | G0 / G3 | To build |
+| POST | `/api/cases/:id/legacy/snapshot`, `/api/legacy/:id/export` | Legacy snapshot and export | Owner | To build |
+| POST | `/api/voice/session`, `/api/voice/transcript` | Voice capture and transcript | Owner | To build |
+| DELETE | `/api/cases/:id`, `/api/session` | Delete case / all my data | Owner | To build |
+| — | `/api/cases/:id/connectors/*`, `/api/console/*` | Connectors, Verify console | — | Later (§22) |
+
+Remove the leftover `/api` "Hello, world" route.
+
+---
+
+## 16. Security and privacy
+
+**PRD:** FL-18, FL-19, FL-45, FL-46, FL-48; PRD §11.
+
+### 16.1 Authentication
+
+- **v0 (built):** anonymous session UUID in `localStorage`, sent as `x-session-id`. Acceptable only for synthetic demo data.
+- **MVP (to build):** real sign-in — email OTP or Google sign-in (candidate: `next-auth`, already installed). Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
+
+### 16.2 Data protection (built unless noted)
+
+| Control | Implementation |
+| --- | --- |
+| Masking by default | `masking.ts` on every asset response below G4 |
+| PAN | Stored only as HMAC (`PAN_HASH_SECRET`, required in production) |
+| Redaction before storage | Identifiers removed from stored text and extracted fields |
+| No raw originals | v0 stores no original files; MVP stores them encrypted in Cloud Storage (to build) |
+| Encryption at rest | Cloud SQL and Cloud Storage default encryption; customer-managed keys considered for the Pilot (to decide, D-05) |
+| Encryption in transit | HTTPS only (Cloud Run) |
+| Secrets | Secret Manager; never in the repo or logs |
+| Upload safety | Size limit, byte sniffing (built); malware scanning (to build before real uploads) |
+| Rate limiting | Per session on AI routes (built); shared store before scale |
+
+### 16.3 Audit
+
+`CaseEvent` is the append-only trail (actor, event type, time). **To build:** record every sensitive read, export, approval and outside action with actor, case, object, reason and request ID; expose it to the user (`/api/cases/:id/audit`); never put secrets or document contents in audit or application logs (FL-18).
+
+### 16.4 Deletion and retention
+
+To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes access immediately, cancels pending work and purges derived copies; retention periods set by D-05; backups expire on a schedule and restores honour deletion markers.
+
+### 16.5 Before real data
+
+1. Purge `frontend/db/custom.db` from git history (owner action — see DECISIONS.md M0).
+2. Real authentication.
+3. Malware scanning and encrypted original storage.
+4. Approved AI and speech provider terms (data residency, retention, no training).
+5. Threat model and DPDP privacy assessment (PRD §11.2).
+
+---
+
+## 17. Reliability, operations and deployment
+
+**PRD:** FL-40, FL-51, FL-52.
+
+### 17.1 Deployment
+
+- **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository). **No Dockerfile, docker-compose or Caddy.**
+- Scripts: `build` = `prisma generate && next build`; `start` = `prisma db push --skip-generate && next start` (v0 SQLite); `postinstall` = `prisma generate`.
+- **MVP:** Cloud SQL PostgreSQL with versioned Prisma migrations (`prisma migrate deploy`), replacing `db push`. Environments: development, staging, production — each with its own database and secrets.
+
+### 17.2 Operating
+
+- `/api/health` for uptime checks.
+- Structured JSON logs (level from `LOG_LEVEL`) with request IDs; no sensitive values.
+- Error reporting and basic metrics (Cloud Logging / Error Reporting / Monitoring).
+- AI failures degrade gracefully: the user keeps their work and sees the next usable step (FL-40).
+- Long operations (extraction, pack generation) show progress; move to a job table with retries when they exceed request time limits (FL-51).
+- Working targets (to confirm under D-07): assistant reply starts within ~2 s; a typical statement extracted within ~30 s.
+
+### 17.3 Demo operations
+
+`/api/admin/reset` (planned) wipes and reseeds demo data; disabled in production unless `DEMO_MODE=true`. Every demo and mock is visibly labelled "Simulated".
+
+---
+
+## 18. Configuration
+
+All variables are listed in `frontend/.env.example`. Secrets come from Secret Manager in deployed environments.
+
+| Variable | Purpose | Used now |
 | --- | --- | --- |
-| Case | DRAFT → ACTIVE ↔ WAITING_ON_USER / WAITING_ON_INSTITUTION / NEEDS_REVIEW → READY_TO_CLOSE → CLOSED | Mode/subject confirmed; closure review summarizes remaining work; reopening requires reason |
-| Identity/authority | NOT_STARTED → PENDING → VERIFIED / REJECTED; VERIFIED → EXPIRED / REVOKED | Qualified review/provider evidence and scope; AI cannot set final verified state |
-| Document | UPLOAD_PENDING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → REVIEW_REQUIRED → REVIEWED | Only CLEAN enters extraction; original evidence retained |
-| Document exceptions | BLOCKED / PROCESSING_FAILED; DELETE_PENDING → DELETED | Unsafe files blocked; retry policy explicit; deletion cancels processing |
-| Discovery | PLANNED → BLOCKED / READY → RUNNING → RESULTS / NO_RESULTS / PARTIAL / FAILED | Current permission and enabled/manual method; results include actual coverage |
-| Asset evidence | SELF_DECLARED / POTENTIAL_MATCH → DOCUMENT_BACKED → INSTITUTION_VERIFIED | Reviewed attributable evidence; freshness downgrade preserves prior verification history |
-| Asset lifecycle | UNKNOWN / OPEN / CLOSED / TRANSMITTED / DISPUTED | Separate from evidence status; institution/user evidence according to policy |
-| Claim | DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR_SUBMISSION → SUBMISSION_PENDING → SUBMITTED → INSTITUTION_REVIEW | Each transition validates current authority, template version and evidence |
-| Claim request | INSTITUTION_REVIEW → MORE_INFORMATION_REQUIRED → DOCUMENT_COLLECTION | Preserve prior pack/receipt; material edits invalidate approval |
-| Claim outcome | INSTITUTION_REVIEW → SETTLED / TRANSFERRED / PARTIALLY_SETTLED / REJECTED / UNRESOLVED_DISPUTE; explicit CANCELLED | Accepted outcome evidence; partial remainder stays open; rejected/disputed are not success |
-| Submission uncertainty | SUBMISSION_PENDING → SUBMISSION_UNKNOWN → reconciled SUBMITTED / safe-to-retry / FAILED | Possible remote acceptance blocks blind resubmission |
-| Approval | PENDING → APPROVED → CONSUMED; or REJECTED / EXPIRED / INVALIDATED | Exact content hash, actor, recipient, purpose, scope and current prerequisites |
-| External action | CREATED → POLICY_CHECKED → QUEUED → EXECUTING → SUCCEEDED / FAILED_RETRYABLE / FAILED_FINAL / OUTCOME_UNKNOWN | Only safe transient failures retry; consumption and receipts recorded |
-| Task | OPEN → IN_PROGRESS / BLOCKED → DONE; or CANCELLED | Owner, due time, blocker and completion reason/evidence |
-| Legacy release · F | REQUESTED → EVIDENCE_REVIEW → RECIPIENT_VERIFICATION → AUTHORITY_REVIEW → READY → APPROVED → RELEASED | D-04 policy, explicit scope, no hold; any disputed prerequisite blocks release |
-| Release exceptions · F | ON_HOLD / REJECTED / WITHDRAWN / EXPIRED | Qualified resolution; death/inactivity alone cannot execute release |
+| `DATABASE_URL` | Prisma connection | Yes |
+| `GEMINI_API_KEY` | Gemini API key (or use Vertex) | Yes |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI | Yes |
+| `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | Model selection | Yes |
+| `AI_TIMEOUT_MS` | AI call timeout (45 000) | Yes |
+| `RATE_LIMIT_AI_PER_MINUTE` | AI rate limit per session (20) | Yes |
+| `PAN_HASH_SECRET` | HMAC key for PAN (required in production) | Yes |
+| `MAX_UPLOAD_MB` | Upload size limit (8) | Yes |
+| `CONNECTOR_MODE_EMAIL`, `_TAX_RECORD`, `_SMS`, `_REGISTRY`, `_SCAN` | Connector mock/real | Not yet (Later) |
+| `CONSOLE_KEY` | Verify console access | Not yet (Later) |
+| `DEMO_MODE` | Allow demo reset in production | Not yet |
+| `LOG_LEVEL` | Logging level | Not yet |
 
-A hold is a separate policy object; it can block reads/disclosures/submissions without overwriting the underlying claim’s history. Reopening/outcome correction appends evidence and a reason. Authority review and institution entitlement remain separate even when a claim is settled.
+Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing, when connectors are set to `real` without approved configuration, or when demo data would be served to real users.
 
+---
 
-### Keeping linked records correct and changing the database safely
+## 19. Testing and evaluation
 
-- Composite foreign keys include case_id for all evidence/asset/document/claim relationships. Check that subject belongs to case. Resolve Case/Subject creation with a transaction and deferred FK or insert/update order.
-- Unique active membership and idempotency constraints; unique external receipt/event keys within a provider; unique pack version per claim. Do not impose global uniqueness on names or ownership references.
-- Index (case_id, status, updated_at), (case_id, asset_id, as_of_date), (assignee, state, due_at), (claim_id, version), (provider_id, external_reference) and outbox/queue dispatch state as needed. Encrypt sensitive query values and use approved scoped matching keys.
-- Preserve accepted evidence/observations and approved manifests; corrections append a superseding record. Mutable resources require If-Match/version checking; stale edits return a safe conflict.
-- Apply backward-compatible migrations before dependent workers; retain schema/model/workflow versions needed to read old records. Never migrate a potential match into verified status without evidence review.
+**PRD:** FL-53, FL-55; PRD §15.1. **Current state: no tests are committed** (`vitest.config.ts` expects `frontend/test/**`, which does not exist). DECISIONS.md M1 mentions tests that were not committed. Adding them is the first engineering priority after the hackathon.
 
-
-### Complete journeys to test
-
-| Pack | Setup and journey | Critical result |
+| Level | Tool | Must cover |
 | --- | --- | --- |
-| A — Living owner | Old bank statement + newer conflicting observation + duplicate upload + forgotten fund declaration | Reviewed evidence and correction; uncertainty preserved; historical/duplicate value does not inflate current total |
-| B — Legacy planner | Reviewed inventory, unknown nomination, missing document and one contact intent | Dated record/gaps/export; no contact access or notification in pilot |
-| C — Known-asset claimant | Supported authority + known fund holding + current template + additional institution request | Discovery optional; exact pack review/manual receipt; visible task/outcome/closure |
-| D — Unknown holdings | Deceased subject, incomplete records and a no-result/partial source attempt | Honest coverage/gaps and actionable handoff; no “no assets exist” assertion |
-| E — Access and dispute | Unverified/expired/revoked authority, cross-case IDs, competing claimant and hostile uploaded instructions | Restricted action blocked; affected hold with reviewer; no leaked evidence/tool authority |
-| F — Submission and outcomes | Changed pack, duplicate submit and timeout after possible acceptance; partial settlement | Old approval invalid, single action, reconciliation before retry and tracked remainder |
-| G — Outage and lifecycle | Unsafe/unreadable file, stale template, provider/worker failure, delete/hold and restore | Durable work, usable next steps, no unsafe processing, tombstones and tracked retention |
-| H — Full product | Verified collaborator/lifetime share, post-death release dispute, additional language, extra class and source | Separate gated evidence per capability; no global F enablement shortcut |
+| Unit | Vitest | Gate engine, masking, name matching, redaction, claim-path rules, totals, evidence-status transitions |
+| Route | Vitest calling route handlers with a temporary SQLite DB and the fixture AI provider | 404 for foreign IDs; 403 below gate; 423 frozen; no asset data below G3; no full identifiers below G4; duplicate-deceased freeze; upload rejection by type and size |
+| End-to-end | Playwright | All three journeys on demo data, including failure paths (wrong date of death → review; frozen case; missing document; rejected claim) |
+| Live AI | Vitest, only with `LIVE_AI=1` | Gemini text and JSON calls still work (never in normal CI) |
+| AI evaluation | Labelled set of synthetic Indian bank statements, CAS, policy bonds, death certificates — including adversarial documents | Critical-field accuracy reported separately; any false "verified", gate bypass or wrong disclosure fails the release (FL-53) |
+| Accessibility | Playwright + axe | WCAG 2.2 AA checks on core screens (FL-50) |
 
-For specialized joint/minor/representative/nonresident cases, verify supported workflow routing or explicit block/handoff, never a guessed universal nominee procedure. Test institution/category/subject combinations separately where requirements differ.
+**CI (to add):** GitHub Actions on every PR — install, type-check (`tsc --noEmit`), lint, unit + route tests, build. End-to-end on main.
 
-### Record evidence and decide whether the release passes
+**Traceability (FL-55):** each test names the FL IDs it covers.
 
-Record test/scenario ID, PRD IDs, PRD/build-guide version and Git commit, P/F scope, fixture/environment, expected/actual result, automated/manual steps, reviewer/date, defect IDs and decision. Protect test artifacts containing sensitive data under approved policy; keep synthetic evidence in repo.
+---
 
-A pilot requires all P rows, section 4 packs A–G, accepted blocking decisions and named operators. No unresolved critical authorization, disclosure, evidence-integrity or duplicate-execution defect is acceptable. Mark failed/blocked tests honestly; a test plan is not a passing test.
+## 20. Gap analysis against the PRD MVP
 
-F needs pack H plus each language/category/source/subject/channel/release-specific gate. D-01 sets business targets; D-07 sets workload and service budgets; D-09 sets voice/language evaluation thresholds. Undefined thresholds are unresolved decisions, not default passes.
+| Area | PRD | Built | Gap |
+| --- | --- | --- | --- |
+| Intake and journeys | FL-01, FL-02, FL-22 | Intake with AI + fallback; 7 case types; journey engine | Restore chat (`/messages`); user correction of journey type |
+| Trust gates and authority | FL-03, FL-04, FL-23 | G0–G4 with mock providers; guards; freeze; masking | Proof expiry, reviewer/reason, operator unfreeze, real providers |
+| Real sign-in | FL-45, FL-48 | Session UUID only | **Real authentication** |
+| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction, redaction | Per-field review states; invalidation; malware scan; encrypted originals |
+| Discovery | FL-10 | Resources directory | Discovery plan; `ResourceVisit` flow; outcome logging; no-result/partial states |
+| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Two status fields | **Four evidence statuses**; observations; totals rules |
+| Insurance in MVP | PRD §8.1 | Category exists in demos | Insurance claim procedure and pack |
+| Claims | FL-12–FL-17, FL-36, FL-37 | Journey tasks only | **Claim model, procedures, packs, approval, receipts, outcomes** |
+| Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
+| AI | FL-38–FL-40, FL-53 | Gemini, fallbacks, grounding | Case-manager coordinator; injection hardening; evaluation set |
+| Voice | FL-20, FL-41 | — | **Not started** |
+| Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks | Reminders; operator queue; holds; help/complaints; procedure versioning |
+| Audit, deletion | FL-18, FL-19 | `CaseEvent` timeline | User-visible audit; delete endpoints; retention |
+| Quality | FL-50–FL-55 | Type-check passes | **No tests, no CI**; accessibility checks; metrics |
 
+---
 
-### First-increment negative cases and fixture checks
+## 21. Build plan
 
-Execute LLD section 17 with the explicit intake fixture profile; the reviewed profile is a separate regression oracle. Require a real upload/scan/proposal/review/commit/resume path, not a prepopulated success screen. Record the Git commit, fixture profile/clock, generated binary hashes, actor, expected/actual result and failure evidence.
+### Phase A — Hackathon (AI Builder Cup, due 18 Oct 2026)
 
-Required negative cases: prerequisite upload works before verification; non-reviewer cannot verify authority or accept institution outcome; assigned operator cannot approve a user disclosure; expired/revoked scope blocks download and queued work; changed pack invalidates approval; unknown file is rejected; observation proposal cannot become accepted before all critical fields are reviewed; same holding is not summed twice; empty inventory is null and an evidenced eligible zero is 0.00.
+Follow [BACKEND_PLAN.md §11](BACKEND_PLAN.md): M0–M3 done; M4 connectors + discovery (mock), M5 Verify console, M6 claim path + packs, M7 Cloud Run deploy. These may use mock connectors and the Verify console **for the demo only**, labelled "Simulated". Phase A does not change PRD scope.
 
+### Phase B — PRD MVP (after the hackathon)
 
-Fixture-integrity checks for B-02/B-04: every seeded holding reference and locator match its same-case statement; every extraction field exists at the cited generated page; owner case 100 can complete identity review using document 330 without case-102 evidence. An observation draft commits only after all scalar siblings and critical source/ownership reviews resolve; rejecting one sibling blocks it, corrections preserve history, and duplicate final-review delivery creates exactly one observation. Regenerated PDF hashes must replace the registry when source text changes.
+Ordered so that each step leaves a working product:
 
-Use the PRD requirement IDs on every implementation task, API/job/schema change and relevant test. A task states the behavior, permissions/data, failure/revocation/retry rules, dependencies and expected result. A PR records measured results, defects and migration/recovery impact. Amend the PRD before new product behavior; keep requirement IDs stable.
+| # | Work | PRD |
+| --- | --- | --- |
+| B1 | Tests + CI for what exists (gates, masking, routes); remove leftovers | FL-55 |
+| B2 | Postgres on Cloud SQL with migrations; environments | FL-51 |
+| B3 | Real sign-in; cases owned by users; re-authentication for sensitive actions | FL-45, FL-48 |
+| B4 | Evidence statuses, observations, field review, totals | FL-06–FL-09, FL-26, FL-28, FL-29 |
+| B5 | Guided discovery plan and `ResourceVisit` outcomes | FL-10 |
+| B6 | Claims: model, procedures (bank/FD, MF, life insurance), packs, approval, manual submission, outcomes | FL-12–FL-16, FL-36, FL-37 |
+| B7 | Legacy record, trusted contacts (intent), snapshot, export | FL-11, FL-31, FL-34 |
+| B8 | Voice (after D-09) | FL-20, FL-41 |
+| B9 | Audit view, deletion, holds, operator queue, help | FL-17–FL-19, FL-43, FL-47, FL-49 |
+| B10 | AI evaluation set, accessibility pass, metrics | FL-50, FL-53, FL-54 |
 
-Before real deployment, keep runbooks for provider outage, unauthorized access, leaked credentials, wrong evidence association, unsafe templates, unknown submission, deletion failure and restoration. Before enabling an outside connector, validate its permitted subject/purpose/channel, source coverage, contracts, retention, callback verification, replay handling, recipient/egress allowlists and reconciliation behavior. Reference mode enables none of these real external effects.
+### Phase C — Pilot readiness
 
-</details>
+Real providers where approved, encrypted originals, malware scanning, threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when).
 
-Live-source implementation must apply the evidence and unresolved access limits in PRD section 6, not infer permission from an official URL. Each live-source adapter starts disabled; current source/subject/channel approval, scoped data/retention, workflow version, exact-action control and sandbox evidence precede enablement. The one-pager summarizes the vision, PRD owns behavior, DESIGN.md specifies presentation, and this LLD owns implementation/testing instructions.
+### M9 — Optional service extraction
 
-## 19. Voice is required in the first release — FL-20/41
+If scale or team structure requires it, lift `src/server/**` into a standalone Node/TypeScript service with the same API, also deployed from source on Cloud Run. Not required for the MVP.
 
-Implement speech recognition and speech synthesis through typed SpeechInput/SpeechOutput adapters, coordinated with the existing case conversation rather than a separate source of financial truth. Keep raw microphone audio out of the ordinary message/attachment upload path. Browser microphone access begins on explicit consent/action; the authenticated case-scoped voice session binds actor, language and policy version. Stop/revocation/case switch cancels capture, processing and playback. Review/correct recognized text before sending through the existing persisted conversation command; synthesis reads the permitted assistant reply, never unreviewed document content or hidden case evidence. Session and transcript operations obey isolation, version, idempotency, audit and deletion rules.
+---
 
-D-09 must select the speech provider/runtime, audio transport, supported launch languages, device/browser matrix, retention and quality/latency budgets before the provider-dependent slice is coded. Provider credentials stay server-side; any external processing needs its approved terms, consent and retention policy. Do not silently enable a browser/vendor speech service with undisclosed processing. Reference voice uses spoken synthetic scripts and synthetic case content only; no real financial documents or live institutional effects. Raw audio is not retained by default; any proposed retention requires an explicit accepted policy and contract amendment.
+## 22. Later capabilities
 
-The existing voice-session create/stop/transcript-review operations now belong to P. They describe session control, not a complete audio transport contract. Finalize the adapter-specific media and response-playback contract under D-09 and update OpenAPI before implementing that transport; do not claim this decision has been made. No provider has been selected or voice code built yet. This is a first-release implementation dependency, not future product scope.
+Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
-B-06 completion requires actual microphone-to-transcript-to-reviewed-message-to-spoken-reply journeys on supported desktop/mobile browsers, with correction of Indian names, mixed language and financial numbers; denied/revoked permission, silence, noise, timeout, stop during recognition/playback, stale case, cross-case denial, duplicate transcript submission and text fallback. Record measured results by language/device and accepted D-09 thresholds. Add these to packs A–G; a text-only reference release does not pass all P requirements.
+| Capability | Design | PRD |
+| --- | --- | --- |
+| **Connectors** (Gmail read-only, tax record AIS/26AS, consolidated statements via email, Android SMS companion) | §9.2 interface; mock mode for demos | FL-27 |
+| **Verify console** for banks and insurers | Institution claim queue; checks stored as `CheckResult`: cross-document consistency, authenticity signals (flagged, not proof), duplicate claims, completeness; **risk score computed by code**, never by the AI; approve / request documents / escalate, all logged. Access via real institution accounts (v0 demo uses `CONSOLE_KEY`) | FL-56 (Later) |
+| Account Aggregator, DigiLocker | Behind the provider/connector interfaces after approval | FL-27, D-03 |
+| Direct claim submission | Through permitted institution channels, with execution-time checks and receipts | FL-35 |
+| Family collaboration, sharing and release after death | Verified recipients, scoped and expiring access, release policy | FL-24, FL-32, FL-33 |
+| External reminders and automated follow-ups | Email/SMS with opt-in; permitted calls | FL-42, FL-21 |
+| More asset types | Shares/demat, IEPF, EPF, NPS, PPF/small savings, lockers — each through FL-30 | FL-30 |
+
+---
+
+## 23. Change control and superseded documents
+
+- **One-pager → PRD → LLD.** Product behaviour changes in the PRD first; this LLD and the code follow in the same change.
+- **Prisma schema** is the source of truth for data; **this LLD** for architecture and rules; **`DECISIONS.md`** records implementation decisions as they are made (newest last).
+- **[BACKEND_PLAN.md](BACKEND_PLAN.md)** is the hackathon milestone plan (Phase A). Where it adds scope beyond the PRD (connectors as primary discovery, Verify console), this LLD treats that scope as **Later** or demo-only.
+- **[contracts/](contracts/openapi.json)** (`openapi.json`, `schema.sql`, `fixtures.json`) describe the superseded Python/FastAPI design. They are kept for reference only and are **not** the contract for the current code. Replace them with an OpenAPI spec generated from the Zod schemas once the MVP API stabilises.
+- **LLD v0.4** (Python/FastAPI, Keycloak, Docker Compose, PostgreSQL RLS) is superseded by this version. Its useful rules — exact approvals, unknown-outcome reconciliation, append-only evidence, honest totals, deletion markers — are carried forward above.
+
+### Changes in this version (0.5)
+
+- Rewritten to describe the real codebase (Next.js/TypeScript, Prisma, Gemini, Cloud Run, no Docker), aligned to PRD v0.6 and BRD v0.3.
+- Adds trust gates G0–G4 as the implementation of the PRD's authority model; four evidence statuses; claim lifecycle; voice design; API inventory with built/to-build status; gap analysis; phased build plan.
+- MVP discovery is upload + guided official searches; connectors and the Verify console are Later.
