@@ -1,6 +1,6 @@
 # Financial Legacy — Low-Level Design (LLD)
 
-Version 0.3 · 16 October 2026 · Implementation baseline for the reference release
+Version 0.4 · 16 October 2026 · Implementation baseline for the reference release
 
 
 ## 1. Start here
@@ -24,7 +24,7 @@ These rules implement the existing PRD requirements; they do not create extra pr
 
 | Layer | What it does | First implementation |
 | --- | --- | --- |
-| User experience | Conversation, document upload/review and views for holdings, legacy, claims and tasks | Responsive web/text; voice and native apps later |
+| User experience | Conversation, document upload/review and views for holdings, legacy, claims and tasks | Responsive web with voice input/output and text; native apps later |
 | Identity and authorization | Sign-in, consent, claimant checks, permissions and access history | Local OIDC plus case-scoped reviewer/backend checks |
 | AI orchestration | Understand the goal, propose questions/actions, coordinate tools and handle exceptions | One rule-based case manager; approved external providers later |
 | Financial integration | Permitted APIs/partners, official workflows and authorized imports | Sample source/document adapters and guided steps; no real connector |
@@ -40,7 +40,7 @@ First journey: Demo Owner → case 100 → identity fixture 330 → reviewer che
 
 ### What is being coded
 
-A responsive web application covering all three user paths and all P requirements: text case manager, isolated cases, verification/authority review, secure evidence intake/review, bank/FD and mutual-fund inventory, legacy record/export/contact intent, manual claim packs/receipts/outcomes, tasks, operations, audit, deletion and recovery. F features have explicit disabled capabilities and contracts, not partially working hidden features.
+A responsive web application covering all three user paths and all P requirements: voice/text case manager, isolated cases, verification/authority review, secure evidence intake/review, bank/FD and mutual-fund inventory, legacy record/export/contact intent, manual claim packs/receipts/outcomes, tasks, operations, audit, deletion and recovery. F features have explicit disabled capabilities and contracts, not partially working hidden features.
 
 **Reference mode is synthetic-only.** Banner every page/export/pack: “Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.” No real customer financial documents, credentials, phone calls, emails or institution requests. The app must refuse a real-data configuration until launch policies are supplied. This is the first implementation, not a relabeling of a simulation as a live pilot.
 
@@ -246,7 +246,7 @@ Each B number is a piece of implementation, not a separate product. Build and te
 | B-03 | Connect sign-in; keep sessions server-side; create isolated cases; check case membership, verification, consent and holds on every action | B-02 | Cross-case/revoked/expired/unassigned cases denied; known-asset routing |
 | B-04 | Generate the sample PDFs; register their hashes; upload, encrypt and scan them; show cited field proposals and record accept/correct/reject reviews | B-02/03 | Upload stages, unsafe/unknown hash rejection, cited fields/corrections and cancellation |
 | B-05 | Save reviewed holdings and dated values; show discovery steps; review duplicates/conflicts; calculate totals and explain exclusions | B-04 | INR 44,500 oracle and exclusions; no-result/partial/conflict/merge-reversal cases |
-| B-06 | Build the text assistant and saved conversations; show proposed action cards and owned tasks; recover from failure without duplicate actions | B-03/05 | Resume/correct/failure/help paths without duplicate actions or invented facts |
+| B-06 | Build voice input and spoken replies alongside the text assistant and saved conversations; show proposed action cards and owned tasks; recover from failure without duplicate actions | B-03/05 | Real speech input/output, transcript correction, stop, text switching, permission/failure/help paths without duplicate actions or invented facts |
 | B-07 | Build the legacy checklist, inert trusted-contact instructions, dated snapshots, preview and approved export | B-05/06 | Dated scope/gaps; no contact disclosure; download expiry/audit |
 | B-08 | Build claims from known holdings; review requirements; generate packs; approve exact handoffs; record manual receipts, requests and partial/unknown outcomes | B-03/04/05 | Known-asset claim, invalidation, unknown outcome and remainder tests |
 | B-09 | Build assigned operator queues, help/complaints, due dates, in-app reminders and the ability to stop an unsafe workflow | B-06/08 | Assignment and hold restrictions; idempotent in-app reminders |
@@ -320,7 +320,7 @@ Unexpected server errors return the shared INTERNAL_ERROR envelope with request 
 
 Use the synthetic policy and exact contracts below. Real-data and later-feature gates remain in PRD section 17.
 
-Reserved F tables may stay empty; F routes return disabled state without building voice, sharing, release or connector internals. Case isolation, review, encryption and audit apply from the first slice. All P behavior and all three paths still gate completion.
+Reserved F tables may stay empty; F routes return disabled state without building sharing, release or connector internals. Case isolation, review, encryption and audit apply from the first slice. All P behavior and all three paths still gate completion.
 
 ### First executable journey: owner → statement → reviewed inventory
 
@@ -422,7 +422,7 @@ A hold is a separate policy object; it can block reads/disclosures/submissions w
 | E — Access and dispute | Unverified/expired/revoked authority, cross-case IDs, competing claimant and hostile uploaded instructions | Restricted action blocked; affected hold with reviewer; no leaked evidence/tool authority |
 | F — Submission and outcomes | Changed pack, duplicate submit and timeout after possible acceptance; partial settlement | Old approval invalid, single action, reconciliation before retry and tracked remainder |
 | G — Outage and lifecycle | Unsafe/unreadable file, stale template, provider/worker failure, delete/hold and restore | Durable work, usable next steps, no unsafe processing, tombstones and tracked retention |
-| H — Full product | Verified collaborator/lifetime share, post-death release dispute, selected language/voice, extra class and source | Separate gated evidence per capability; no global F enablement shortcut |
+| H — Full product | Verified collaborator/lifetime share, post-death release dispute, additional language, extra class and source | Separate gated evidence per capability; no global F enablement shortcut |
 
 For specialized joint/minor/representative/nonresident cases, verify supported workflow routing or explicit block/handoff, never a guessed universal nominee procedure. Test institution/category/subject combinations separately where requirements differ.
 
@@ -451,3 +451,13 @@ Before real deployment, keep runbooks for provider outage, unauthorized access, 
 </details>
 
 Live-source implementation must apply the evidence and unresolved access limits in PRD section 6, not infer permission from an official URL. Each live-source adapter starts disabled; current source/subject/channel approval, scoped data/retention, workflow version, exact-action control and sandbox evidence precede enablement. The one-pager summarizes the vision, PRD owns behavior, DESIGN.md specifies presentation, and this LLD owns implementation/testing instructions.
+
+## 19. Voice is required in the first release — FL-20/41
+
+Implement speech recognition and speech synthesis through typed SpeechInput/SpeechOutput adapters, coordinated with the existing case conversation rather than a separate source of financial truth. Keep raw microphone audio out of the ordinary message/attachment upload path. Browser microphone access begins on explicit consent/action; the authenticated case-scoped voice session binds actor, language and policy version. Stop/revocation/case switch cancels capture, processing and playback. Review/correct recognized text before sending through the existing persisted conversation command; synthesis reads the permitted assistant reply, never unreviewed document content or hidden case evidence. Session and transcript operations obey isolation, version, idempotency, audit and deletion rules.
+
+D-09 must select the speech provider/runtime, audio transport, supported launch languages, device/browser matrix, retention and quality/latency budgets before the provider-dependent slice is coded. Provider credentials stay server-side; any external processing needs its approved terms, consent and retention policy. Do not silently enable a browser/vendor speech service with undisclosed processing. Reference voice uses spoken synthetic scripts and synthetic case content only; no real financial documents or live institutional effects. Raw audio is not retained by default; any proposed retention requires an explicit accepted policy and contract amendment.
+
+The existing voice-session create/stop/transcript-review operations now belong to P. They describe session control, not a complete audio transport contract. Finalize the adapter-specific media and response-playback contract under D-09 and update OpenAPI before implementing that transport; do not claim this decision has been made. No provider has been selected or voice code built yet. This is a first-release implementation dependency, not future product scope.
+
+B-06 completion requires actual microphone-to-transcript-to-reviewed-message-to-spoken-reply journeys on supported desktop/mobile browsers, with correction of Indian names, mixed language and financial numbers; denied/revoked permission, silence, noise, timeout, stop during recognition/playback, stale case, cross-case denial, duplicate transcript submission and text fallback. Record measured results by language/device and accepted D-09 thresholds. Add these to packs A–G; a text-only reference release does not pass all P requirements.
