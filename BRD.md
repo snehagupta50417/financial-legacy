@@ -5,7 +5,7 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.3 (draft for review) |
+| **Version** | 0.3.1 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Source of truth** | [ONE_PAGER.md](ONE_PAGER.md). Where this BRD and the one-pager disagree, the one-pager wins and this BRD is corrected. |
 | **Related documents** | [PRD.md](PRD.md) — what the product does · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens |
@@ -198,14 +198,14 @@ All four come from the one-pager. None is selected; the pilot decides.
 | --- | --- | --- | --- | --- |
 | **1. Consumer services** | Fixed-fee claims support per case; paid discovery assistance; optional legacy-planning subscription | Families and individuals | Pilot users accept a stated fixed price at the point of value (e.g. after assets are found, before claims are prepared) | Users drop off at the price screen, or only accept free |
 | **2. Institutional partnerships** | The service offered to an institution's customers or employees (e.g. bank offers it to bereaved families; employer offers it as a benefit) | Banks, insurers, wealth managers, employers | A signed pilot where the institution sponsors cases and measures fewer incomplete claims or better satisfaction | Institutions see it as a compliance risk or won't share costs |
-| **3. Software for institutions** | Claims-workflow tools, document processing, or a customer-facing legacy service | Banks and insurers | An institution pays to use our claim-pack and evidence tools internally | Institutions prefer to build or buy core-banking add-ons |
+| **3. Software for institutions** | Claims-workflow tools, document processing, or a customer-facing legacy service — including a **Verify console** where a bank or insurer checks a death claim's documents for consistency, duplicates and completeness ([PRD FL-56](PRD.md#97-tasks-reminders-and-operations), Later) | Banks and insurers | An institution pays to use our claim-pack and evidence tools internally | Institutions prefer to build or buy core-banking add-ons |
 | **4. Professional collaborations** | Referral or platform fee when complex cases are handed to permitted professionals | Professionals or the family, by agreement | Professionals accept cases and families value the handoff | Conflicts of interest, or professional rules forbid the arrangement |
 
 ### 7.2 Pricing principles (to be validated)
 
 - Price the **service**, not the size of the estate, by default.
 - Show the price **before** work begins; no surprise fees.
-- Free tier for discovery guidance (official search is free anyway); charge for preparation, coordination and tracking.
+- Basic discovery guidance is free (official search is free anyway). **Assisted discovery** — our team preparing and following up institution enquiries for a case — is a paid option, as the one-pager's "paid discovery assistance". Charge mainly for preparation, coordination and tracking.
 - A possible percentage-of-recovery model is **not** assumed; if ever tested it needs legal review, a cap and clear disclosure.
 
 ### 7.3 Cost structure (what we will measure)
@@ -247,10 +247,10 @@ Each business requirement maps to the product requirements that deliver it in [P
 | BR-02 | Produce records people can trust, without overstating certainty | Trust is the product; one false "verified" damages the brand | FL-06–FL-10, FL-25–FL-30 |
 | BR-03 | Help people prepare for their family without accidental disclosure | Planners will not use it if naming a contact leaks their finances | FL-11, FL-24, FL-31–FL-34 |
 | BR-04 | Carry supported claims through to a documented result | Completion is the value families pay for | FL-12–FL-17, FL-35–FL-37 |
-| BR-05 | Keep the case moving and make the next step obvious, by voice or text | Abandonment is the main failure mode for long procedures | FL-02, FL-20, FL-38–FL-43 |
-| BR-06 | Protect people's records and their permission to act | A single breach or wrong disclosure could end the business | FL-03, FL-04, FL-18, FL-19, FL-23, FL-24, FL-45–FL-49 |
+| BR-05 | Keep the case moving and make the next step obvious, by voice or text | Abandonment is the main failure mode for long procedures | FL-02, FL-20, FL-21 (Later), FL-38–FL-43 |
+| BR-06 | Protect people's records and their permission to act | A single breach or wrong disclosure could end the business | FL-03, FL-04, FL-05, FL-18, FL-19, FL-23, FL-24, FL-45–FL-49 |
 | BR-07 | Deliver a usable, reliable and measurable service | We must prove value and cost with real numbers, not claims | FL-50–FL-54 |
-| BR-08 | Expand only within accepted scope and validated procedures | Unsafe expansion creates legal and reputational risk | FL-44, FL-55 |
+| BR-08 | Expand only within accepted scope and validated procedures | Unsafe expansion creates legal and reputational risk | FL-44, FL-55, FL-56 (Later) |
 
 ---
 
@@ -396,7 +396,8 @@ There is **one decision register: [PRD §16](PRD.md#16-open-decisions)**. The de
 
 ### 15.4 Changes in this version (0.3)
 
-- Rewritten in plain language with [ONE_PAGER.md](ONE_PAGER.md) as the source of truth and aligned to [PRD v0.6](PRD.md).
+- Rewritten in plain language with [ONE_PAGER.md](ONE_PAGER.md) as the source of truth and aligned to [PRD v0.6.2](PRD.md).
+- **0.3.1:** Verify console named under revenue stream 3; paid assisted discovery reconciled with the one-pager; BR mapping completed (FL-05, FL-21, FL-56).
 - **Audience:** the product serves everyone; the earlier "mainly HNI/UHNI/NRI millennials" targeting becomes a later segment. **Pilot focus: bereaved families.**
 - **Added:** cited market figures, competitor research (including Yellow and the 2026 government portal), value proposition, the four revenue hypotheses with tests, go-to-market, unit-economics template, regulatory considerations and roadmap.
 - **Kept:** business requirements BR-01 to BR-08, now mapped to PRD IDs.
