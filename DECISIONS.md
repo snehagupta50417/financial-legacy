@@ -100,4 +100,6 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 - **Will drafting:** the Estate Planning tab's AI will draft becomes "Notes for your lawyer"; the product does not draft binding wills (PRD §3.3).
 - **Claim submission:** the user approves the exact pack and submits it; the product records the receipt. `claim-packs/:id/submit` is replaced by `/approve` plus a receipt.
 - **Running without a key:** add `AI_PROVIDER=fixture` so the reference build runs locally without cloud credentials (LLD §17.3).
-- **Open:** standard visual theme (DESIGN §3.1).
+- **Theme:** the app's current navy/teal theme is the standard (DESIGN §3.1); three contrast fixes are required (teal text on accent, gold as text, input borders).
+- **Pre-Pilot documents** added in `docs/`: threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix.
+- **Claim rules verified (17 Oct 2026):** bank claims follow RBI Directions 2025 (₹15 lakh / ₹5 lakh simplified thresholds, 15 days, Bank Rate + 4%); mutual fund transmission follows SEBI's 23 Jul 2026 circular (quick ≤ ₹10,000, simplified ≤ ₹10 lakh, 21 days). Mutual funds gain a `quick` claim path (LLD §11.1).

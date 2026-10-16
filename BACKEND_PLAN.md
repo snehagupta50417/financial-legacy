@@ -7,7 +7,7 @@
 > - **Segments:** the pilot starts with **bereaved families** (D-01); NRI families are a later segment. **Trace** and **Protect** are not in the one-pager or PRD; treat them as unreviewed ideas.
 > - **Claim submission:** the product never marks a claim as "sent" on the user's behalf. The user approves the exact pack and submits it; the product records the receipt ([LLD §11.3](LLD.md#113-claim-lifecycle)). `POST /api/claim-packs/:id/submit` (§6.2) is replaced by `/approve` plus a receipt.
 > - **Claim packs:** the MVP needs bank/FD, mutual fund and life-insurance packs; IEPF is Later (§9's three v0 templates are a demo subset).
-> - **Regulatory figures** in §1 and §9 (₹15 lakh / ₹5 lakh simplified-settlement thresholds, 15-day settlement, Bank Rate + 4% compensation) must be checked against the current RBI directions and cited before use; the LLD keeps them in versioned, sourced configuration.
+> - **Regulatory figures** in §1 and §9 (₹15 lakh / ₹5 lakh simplified-settlement thresholds, 15-day settlement, Bank Rate + 4% compensation) are now **verified** against *RBI (Settlement of Claims in respect of Deceased Customers of Banks) Directions, 2025* (RBI/2025-26/82, 26 Sep 2025) — see [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3.1. The LLD keeps them in versioned, sourced configuration.
 > - **Q2 below is out of date:** [LLD.md](LLD.md) v0.5 now describes this codebase. The old Python/FastAPI LLD and `contracts/` are superseded.
 
 > **Status:** Approved plan (v2). Supersedes the Phase 1 read-only analysis.
