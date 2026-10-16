@@ -15,15 +15,21 @@ const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 45_000);
 let provider: AiProvider | null | undefined;
 
 function providerFromEnv(): AiProvider | null {
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+  const models = [
+    process.env.GEMINI_MODEL || "gemini-flash-latest",
+    ...(process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.5-flash,gemini-flash-lite-latest")
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean),
+  ];
   if (process.env.GEMINI_API_KEY) {
-    return new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, model });
+    return new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, models });
   }
   if (process.env.GOOGLE_CLOUD_PROJECT) {
     return new GeminiProvider({
       project: process.env.GOOGLE_CLOUD_PROJECT,
       location: process.env.GOOGLE_CLOUD_LOCATION,
-      model,
+      models,
     });
   }
   return null;
