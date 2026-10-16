@@ -3,7 +3,7 @@
 **An AI-native financial asset discovery, legacy planning and recovery platform.**  
 **Find what’s yours. Make sure nothing gets left behind.**
 
-Version 0.4 · Consolidated product scope · Application not yet built
+Version 0.5 · Consolidated product scope · Application not yet built
 
 This is the product contract. [BRD.md](BRD.md) explains the business case and outcomes; it does not authorize additional product scope. [README.md](README.md) is the short overview; [LLD.md](LLD.md) defines implementation and tests; [DESIGN.md](DESIGN.md) defines UI/UX under this scope. Every feature must map to a requirement below. Technical choices may refine an existing requirement; new behavior, data use, access or promises require a PRD change first.
 
@@ -35,7 +35,7 @@ A **case** is one goal concerning one **subject**. A **holding** is an account/i
 
 **P** marks first-pilot requirements; the reference build implements their specified synthetic behavior. A real pilot additionally needs accepted policies, accurate institution procedures and operational review. **F** marks the full vision, disabled until its own gates pass. **P/F** means an in-app first-release behavior with a later external extension.
 
-First release: responsive web, text conversation, reviewed uploads, bank/FD and mutual-fund inventory, guided discovery, legacy checklist/contact intent/approved export, manually tracked claims, tasks, assigned reviews and lifecycle controls. Later: voice/languages, other asset groups, family sharing/release, live connectors, direct submissions and permitted automated follow-ups. Native mobile needs its own decision; mobile web is first release.
+First release: responsive web, voice and text conversation, reviewed uploads, bank/FD and mutual-fund inventory, guided discovery, legacy checklist/contact intent/approved export, manually tracked claims, tasks, assigned reviews and lifecycle controls. Later: additional evaluated languages, other asset groups, family sharing/release, live connectors, direct submissions and permitted automated follow-ups. Native mobile needs its own decision; mobile web is first release.
 
 ### Feasibility and honest product status
 
@@ -102,7 +102,7 @@ These findings describe the inspected sources, not approved startup access or a 
 
 ## 7. Experience and case workflow
 
-**Talk by chat/voice → verify identity and authority → discover through permitted sources → consolidate/review → prepare a legacy or claim → track to a documented outcome.** Voice is later, with text always available.
+**Talk by chat/voice → verify identity and authority → discover through permitted sources → consolidate/review → prepare a legacy or claim → track to a documented outcome.** Voice input and spoken assistant replies are first-release requirements, with text always available.
 
 The assistant is the starting point; structured screens support decisions. Users can inspect verification/consent, cited documents, source coverage, holdings, legacy records, claims, tasks/activity and privacy settings. Operators see assigned work only. Every screen explains subject/state, what is saved, what is missing, next action and help. Include loading, empty, failed, blocked, expired/revoked, conflicting and retry states. Consequential actions use structured previews, not ambiguous chat approval.
 
@@ -170,13 +170,15 @@ A claim’s rejection cannot reject another claim. Case closure requires a revie
 
 ## 12. AI, voice and operations
 
+**Voice is core first-release scope:** users can speak their situation, review/correct the transcript, hear the assistant reply, stop playback and continue the same case in text. This applies to onboarding and all three journeys. Start listening only after an explicit user action and microphone permission; never infer consent from opening a case. Spoken input does not approve a disclosure, verify identity or change accepted financial facts. Names, references and amounts require visible correction/review. Disclose the evaluated launch languages; no claim of universal Indian-language support. Automated telephone calls remain later scope. The synthetic reference build must demonstrate actual speech input/output using synthetic scripts; a decorative microphone or prerecorded success is not completion. D-09 provider/transport/language decisions are first-release dependencies, not reasons to move voice to F.
+
 | ID / release | Required behavior and completion check |
 | --- | --- |
 | FL-38 · P | Use one case manager to coordinate bounded discovery, document, reconciliation, legacy, claim and follow-up tools from saved facts. Backend rules enforce authority and exact approvals. |
 | FL-39 · P | Explain why information is needed, cite evidence/procedures and admit uncertainty. Conflicting or missing evidence leads to questions or help; document instructions cannot grant tool access. |
 | FL-40 · P | Preserve saved work when AI or sources fail. Support safe retry, correction, cancellation and human help; show the next usable step instead of losing progress. |
-| FL-20 · F | Disclose supported Indian languages and evaluate voice/chat quality. Allow correction of names/numbers/transcripts, text fallback and structured approval of consequential actions. |
-| FL-41 · F | Make microphone/recording state and consent visible. Honor stop/text choices; approve processing, provider and retention policy before recording or using voice. |
+| FL-20 · P | Disclose supported Indian languages and evaluate voice/chat quality. Allow correction of names/numbers/transcripts, text fallback and structured approval of consequential actions. |
+| FL-41 · P | Make microphone/recording state and consent visible. Honor stop/text choices; approve processing, provider and retention policy before recording or using voice. |
 | FL-21 · F | Automated institutional follow-ups need permitted channels, disclosure, recipient/purpose, current authority/consent and logs. Block unsupported calls and review ambiguous responses. |
 | FL-42 · P/F | Provide owned in-app tasks and duplicate-safe reminders respecting due dates, preferences and time zone. External email/SMS/voice later requires opt-in, minimal content and opt-out. |
 | FL-43 · P | Show assigned operator queues for verification, extraction, claims, disputes and overdue work. Restrict actions to assignment/scope; privileged reviews require reasons and audit. |
@@ -205,7 +207,7 @@ Retention duration, identity strength and legally sufficient authority are appro
 | FL-50 · P | Provide readable, resumable responsive web with keyboard, screen-reader and large-text support. Test labels, focus, errors and a non-voice path; target WCAG 2.2 AA. |
 | FL-51 · P | Show durable job progress and bounded retries. Restart, outage, cancellation and duplicate-delivery tests preserve work and prevent duplicate effects; unknown outside outcomes require reconciliation. |
 | FL-52 · P | Measure performance, capacity, cost and recovery against the LLD reference workload. Accept D-07 production budgets before launch; written targets are not measured results or customer SLAs. |
-| FL-53 · P | Evaluate extraction and assistant behavior on representative labeled and adversarial records. Report critical fields separately; block false verification, unauthorized tools and disclosure. Voice has a separate gate. |
+| FL-53 · P | Evaluate extraction and assistant behavior on representative labeled and adversarial records. Report critical fields separately; block false verification, unauthorized tools and disclosure. Voice must pass its own first-release quality and privacy checks; it cannot be deferred while claiming the first release complete. |
 | FL-54 · P | Measure activation, coverage, time, effort and outcomes using explicit definitions. Separate institution waiting/human work; exclude document text, identifiers and balances from analytics. |
 | FL-55 · P | Map each feature, screen, API, job, tool, schema change and relevant test to these IDs. Amend the PRD before new product behavior; update LLD/contracts together and preserve IDs. |
 
@@ -235,7 +237,7 @@ These gates do not block the isolated reference build. Named owners and accepted
 | D-06 | Product + operations: evidence support/freshness and category-specific amount/total rules |
 | D-07 | Engineering + operations: workload/cost/capacity, recovery, support hours/case limits and service targets |
 | D-08 | Founder: distribution, pricing and professional-service model; billing needs a PRD amendment |
-| D-09 | Product + AI: launch languages, recording/consent and evaluated quality thresholds |
+| D-09 | Product + AI: voice is required in the first release; select speech provider/transport, initial languages, recording/consent/retention and evaluated quality/latency thresholds before implementing the provider-dependent voice slice |
 | D-10 | Operations: current institution procedures, template ownership/review cadence, legal/fraud escalation and complaints |
 | D-11 | Product + engineering: native-client need and device/session/storage/accessibility rules |
 
