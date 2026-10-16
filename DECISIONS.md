@@ -31,3 +31,44 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
 - **Model:** `GEMINI_MODEL` (default `gemini-flash-latest`) plus `GEMINI_FALLBACK_MODELS` (default `gemini-3.5-flash,gemini-flash-lite-latest`). On 16 Oct the `*-latest` aliases often returned 503 "high demand" and `gemini-2.5-flash` returned 404 (retired); `gemini-3.5-flash` answered in about 1s.
 - **Retry policy:** transient errors (429/5xx/UNAVAILABLE) get one retry after 800 ms, then the next model; 404 skips straight to the next model; anything else fails fast. All of it stays inside the 45s timeout.
 - **Verified live:** `test/live-ai.test.ts` (runs only with `LIVE_AI=1`) passed against the Gemini API for both text and JSON. Normal test runs never call a model.
+
+## M2 — Schema and trust gates
+
+- **Layout:** server-only code moved to `src/server/` (plan §12). `src/lib/` keeps only client-shared code (`types.ts`, `client.ts`, `utils.ts`).
+- **Schema:** all §5 models were added in one migration: `DeceasedPerson`, `Claimant`, `Proof`, `Signal`, `Institution`, `ClaimPack`, `Draft`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`. Later milestones add no further schema churn. Enums are documented in the schema and enforced by Zod at the API.
+- **Journey kinds:** `living_individual` and `estate_planning` are **personal**; they need only G1, and the user's own assets are shown in full. `caregiver` needs G1 and then G3, where G3 is the relative's recorded consent (`method: relative_consent`, which also writes a `ConsentRecord`). Everything else, including unclassified `general`, takes the strict G1 → G2 → G3 path.
+- **Guard:** `src/server/core/access.ts` (`caseAccess` / `assetAccess` / `documentAccess` with `owner | discovery`).
+  - Foreign IDs return 404.
+  - Locked gates return **403** `{error, nextGate}`.
+  - Frozen cases return **423** `{error, frozen: true}`.
+- **What "no asset data below G3" means:**
+  - The workspace returns `assets: []` and `documents: []`.
+  - Asset and document write routes return 403.
+  - AI prompts (ask, draft, checklist) only see the masked, visible view.
+  - Intake no longer creates asset clues before discovery; institutions mentioned in chat are appended to `assumptions` ("to be checked once discovery is unlocked").
+- **Masking below G4:** the API keeps institution, category, value band, last-4, statuses and confidence. `maskedRef` becomes `••••1234` and `holderName` is hidden. `evidence` has identifiers and exact amounts redacted. `notes` (the user's own text) is kept.
+- **Read, extract, forget:**
+  - Document `rawText`, extracted field values/excerpts and clue references are passed through `redactIdentifiers` **before storage**.
+  - What gets redacted: digit runs of 6+, grouped numbers of 8+ digits, Aadhaar, and PAN.
+  - What is kept: dates.
+- **PAN:** stored only as an HMAC (`PAN_HASH_SECRET`, required in production).
+- **One case per deceased:**
+  - The same person means the same PAN hash, or the same DOB plus a name match.
+  - A different session's case for the same person freezes **both** cases and links them (`linkedCaseId`). The same session re-submitting does not freeze.
+  - **Demo cases are excluded** from cross-session matching; otherwise every visitor replaying the demo persona would freeze everyone else. The impostor story is shown in the Verify console instead (§8).
+  - Unfreezing needs a reviewer action. That's not built yet and is planned with the M5 console.
+- **Mock providers:**
+  - Identity: DigiLocker and passport + selfie, both simulated.
+  - Death: the mock DigiLocker looks up a synthetic civil registry in `server/data/death-registry.ts`. Names not in that registry get a clearly-labelled simulated record built from the user's input. Scanned certificates are read by Gemini vision and compared by code.
+  - Relationship: the heir's own document naming the deceased, checked with the name matcher. A legal-heir certificate or relative consent is simulated.
+  - Entitlement: a simulated nominee or joint-holder record.
+  - Every proof row stores its `provider` and a note saying it was simulated.
+- **Name matching:** honorifics are dropped; initials, phonetic folding (sh/s, ee/i, w/v, doubled letters, trailing "a") and abbreviations (Mohd) are handled. A non-match always goes to `needs_review` and is never rejected.
+- **Living-person guard:** `livingPersonActivity()` is implemented and tested (person-initiated events only). It gets wired to connector signals in M4.
+- **Demos A/B/C** are seeded with their gates passed, using `demo_seed` proofs and a claimant, so they stay fully explorable.
+- **Bugs fixed here instead of in their scheduled milestone:**
+  - Bug 1 (history leak): history is now per case, and the reply uses the 6 *most recent* turns.
+  - Bug 3: document PATCH responses now return parsed `extractedFields`.
+  - Bug 5 (demo crash when all tasks are done).
+  - Half of bug 7: magic-byte upload validation (`server/core/upload.ts`).
+- **Images (Q9):** document uploads accept PNG, JPEG and WebP and are extracted by Gemini vision. Content type comes from sniffing the bytes, not from the client's MIME type.
