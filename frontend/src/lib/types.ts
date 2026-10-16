@@ -86,7 +86,41 @@ export interface ExtractedDocumentData {
   warnings: string[];
 }
 
+export type GateId = "G0" | "G1" | "G2" | "G3" | "G4";
+
+export interface GateSummary {
+  reached: GateId;
+  next: GateId | null;
+  nextLabel: string | null;
+  journeyKind: "personal" | "third_party" | "caregiver";
+  discoveryUnlocked: boolean;
+  frozenReason: string | null;
+  linkedCaseId: string | null;
+}
+
+export interface ProofView {
+  id: string;
+  kind: "identity" | "death" | "relationship" | "entitlement";
+  assetId: string | null;
+  provider: string;
+  status: "verified" | "needs_review" | "failed";
+  matchedFields: Record<string, { expected?: string | null; found?: string | null; match: boolean | "review" }>;
+  note: string | null;
+  createdAt: string;
+}
+
 export interface CaseWorkspace {
+  gate: GateSummary;
+  claimants: {
+    id: string;
+    fullName: string | null;
+    relationship: string | null;
+    role: string;
+    identityStatus: string;
+    relationshipStatus: string;
+  }[];
+  proofs: ProofView[];
+  deceased: { name: string; dob: string | null; dateOfDeath: string | null; deathProofStatus: string } | null;
   case: {
     id: string;
     caseType: string;
@@ -104,6 +138,8 @@ export interface CaseWorkspace {
     assumptions: string[];
     isDemo: boolean;
     demoKey: string | null;
+    gateReached: string;
+    frozenReason: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -119,6 +155,11 @@ export interface CaseWorkspace {
     confidence: number;
     notes: string | null;
     sourceDocumentId: string | null;
+    entitled: boolean;
+    valueBand: string | null;
+    last4: string | null;
+    /** true when shown below G4 (institution, category, value band, last-4 only) */
+    masked: boolean;
   }[];
   documents: {
     id: string;

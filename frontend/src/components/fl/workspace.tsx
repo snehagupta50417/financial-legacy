@@ -15,6 +15,7 @@ import JourneyTab from "./journey-tab";
 import EstateTab from "./estate-tab";
 import ExpertTab from "./expert-tab";
 import AskPanel from "./ask-panel";
+import GatePanel, { LockedNotice } from "./gate-panel";
 import {
   ArrowLeft,
   Bot,
@@ -26,6 +27,7 @@ import {
   FileSignature,
   Scale,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 const TABS = [
@@ -125,6 +127,11 @@ export default function Workspace({
               <Badge variant="outline" className="rounded-full border-[#7cc5c4]/40 bg-[#7cc5c4]/10 text-[10.5px] text-[#7cc5c4]">
                 {c.scenarioLabel ?? c.caseType}
               </Badge>
+              {ws.gate.discoveryUnlocked && ws.gate.journeyKind !== "personal" && (
+                <Badge variant="outline" className="rounded-full border-[#7cc5c4]/40 text-[10.5px] text-[#7cc5c4]">
+                  <ShieldCheck className="mr-1 h-3 w-3" /> Verified heir · assets masked until entitlement
+                </Badge>
+              )}
               {c.holderLiving === false && (
                 <Badge variant="outline" className="rounded-full border-white/20 text-[10.5px] text-white/70">
                   Holder deceased
@@ -158,6 +165,13 @@ export default function Workspace({
         </div>
       </div>
 
+      {/* Trust gates: shown until discovery is unlocked (or while frozen) */}
+      {!ws.gate.discoveryUnlocked && (
+        <div className="mt-5">
+          <GatePanel ws={ws} reload={reload} />
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="mt-5 flex gap-1.5 overflow-x-auto pb-1 nice-scroll">
         {TABS.map((t) => (
@@ -189,8 +203,8 @@ export default function Workspace({
       {/* Tab content */}
       <div className="mt-4">
         {tab === "overview" && <OverviewTab ws={ws} onGoto={(t2) => setTab(t2 as TabKey)} onResources={onResources} />}
-        {tab === "assets" && <AssetsTab ws={ws} reload={reload} />}
-        {tab === "documents" && <DocumentsTab ws={ws} reload={reload} />}
+        {tab === "assets" && (ws.gate.discoveryUnlocked ? <AssetsTab ws={ws} reload={reload} /> : <LockedNotice ws={ws} what="Assets" />)}
+        {tab === "documents" && (ws.gate.discoveryUnlocked ? <DocumentsTab ws={ws} reload={reload} /> : <LockedNotice ws={ws} what="Documents" />)}
         {tab === "journey" && <JourneyTab ws={ws} reload={reload} />}
         {tab === "estate" && <EstateTab ws={ws} />}
         {tab === "expert" && <ExpertTab ws={ws} />}
