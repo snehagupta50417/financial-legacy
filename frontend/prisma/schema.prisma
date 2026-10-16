@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Demo-grade identity: a client-generated session key. All records are scoped
+// by sessionId so one visitor can never read another visitor's cases.
+model Session {
+  id        String   @id
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  profile   UserProfile?
+  cases     LegacyCase[]
+  consents  ConsentRecord[]
+  messages  IntakeMessage[]
+}
+
+model UserProfile {
+  id             String   @id @default(cuid())
+  sessionId      String   @unique
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  preferredName  String?
+  country        String   @default("India")
+  state          String?
+  language       String   @default("English")
+  relationship   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model LegacyCase {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  caseType        String // living_individual | family_death | nominee_heir | estate_planning | rejected_claim | caregiver | nri_cross_border | general
+  assetHolderName String?
+  relationship    String?
+  holderLiving    Boolean?
+  jurisdiction    String   @default("India")
+  summary         String
+  stage           String   @default("understanding") // understanding | discovery | documentation | action | resolution
+  progress        Float    @default(0)
+  nextBestAction  String?
+  scenarioLabel   String?
+  confidence      Float?
+  confirmedFacts  String? // JSON array
+  assumptions     String? // JSON array
+  isDemo          Boolean  @default(false)
+  demoKey         String? // demo-a | demo-b | demo-c
+  assets          AssetRecord[]
+  documents       DocumentRecord[]
+  tasks           JourneyTask[]
+  events          CaseEvent[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssetRecord {
+  id                String   @id @default(cuid())
+  caseId            String
+  case              LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  category          String // bank_deposit | bank_account | insurance | mutual_fund | shares | provident_fund | other | unknown
+  institution       String
+  maskedRef         String?
+  holderName        String?
+  evidence          String?
+  sourceDocumentId  String?
+  discoveryStatus   String   @default("possible") // possible | confirmed | dismissed
+  verificationStatus String  @default("unverified") // unverified | user_confirmed | institution_verified
+  confidence        Float    @default(0.5)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DocumentRecord {
+  id               String   @id @default(cuid())
+  caseId           String
+  case             LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  category         String   @default("other") // bank_statement | policy_document | death_certificate | will | claim_letter | receipt | other
+  fileName         String
+  fileType         String
+  sizeLabel        String?
+  extractionStatus String   @default("pending") // pending | processing | extracted | failed
+  extractionNote   String?
+  rawText          String?
+  extractedFields  String? // JSON object
+  userVerified     Boolean  @default(false)
+  isSynthetic      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model JourneyTask {
+  id               String   @id @default(cuid())
+  caseId           String
+  case             LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title            String
+  instructions     String
+  rationale        String?
+  institution      String?
+  assetCategory    String?
+  officialUrl      String?
+  officialName     String?
+  integrationType  String   @default("guided_workflow") // guided_workflow | official_website | public_api
+  requiredDocs     String? // JSON array
+  missingInfo      String? // JSON array
+  dependencies     String? // JSON array of task ids
+  status           String   @default("ready") // not_started | ready | in_progress | waiting_institution | needs_expert | completed
+  priority         Int      @default(50)
+  isNextBest       Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  completionEvidence String?
+  completedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CaseEvent {
+  id          String   @id @default(cuid())
+  caseId      String
+  case        LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  eventType   String // created | document | asset | task | ai | consent | evidence | status
+  description String
+  actor       String   @default("ai") // ai | user | system
+  refId       String?
+  createdAt   DateTime @default(now())
+}
+
+model ConsentRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  purpose   String
+  status    String   @default("granted") // granted | revoked
+  createdAt DateTime @default(now())
+}
+
+model IntakeMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  caseId    String?
+  role      String // user | assistant
+  content   String
+  meta      String? // JSON: classification, follow-up questions, suggestions
+  createdAt DateTime @default(now())
+}
