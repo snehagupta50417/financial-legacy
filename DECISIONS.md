@@ -72,3 +72,13 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
   - Bug 5 (demo crash when all tasks are done).
   - Half of bug 7: magic-byte upload validation (`server/core/upload.ts`).
 - **Images (Q9):** document uploads accept PNG, JPEG and WebP and are extracted by Gemini vision. Content type comes from sniffing the bytes, not from the client's MIME type.
+
+## M3 — Gate UI
+
+- **`components/fl/gate-panel.tsx`:** a stepper with Identity (DigiLocker, or passport + selfie for NRIs) → Death (DigiLocker fetch, or certificate scan) → Relationship (own document or legal-heir certificate; relative consent for caregivers).
+  - Each step shows its latest proof. A review shows a "You entered / Record says" table.
+  - Every mock is labelled "Simulated".
+- **Workspace:** the gate panel sits above the tabs until discovery is unlocked. The Assets and Documents tabs show a locked state; a frozen case shows a "paused for review" card.
+- **Asset cards:** masked assets show "Masked — full details after you prove you may claim this asset" and a **Prove entitlement** dialog (G4).
+- **Intake:** the side panel shows the next gate as soon as the case opens.
+- **Verified in a browser (Playwright, live Gemini):** intake → G1 → wrong date of death (manual review with a field table) → corrected → relationship via "R. K. Sharma" → discovery unlocked.

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/lib/client";
 import { ConfidenceMeter, LeafLogo, DemoBadge } from "./ui-bits";
-import type { ClassifiedSituation } from "@/lib/types";
+import type { ClassifiedSituation, GateSummary } from "@/lib/types";
 import {
   ArrowRight,
   Bot,
@@ -57,6 +57,7 @@ export default function Intake({
   const [caseId, setCaseId] = useState<string | null>(initialCaseId ?? null);
   const [latest, setLatest] = useState<ClassifiedSituation | null>(null);
   const [aiDegraded, setAiDegraded] = useState(false);
+  const [gate, setGate] = useState<GateSummary | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +77,9 @@ export default function Intake({
         classification: ClassifiedSituation;
         caseId: string;
         aiDegraded: boolean;
+        gate: GateSummary;
       }>("/api/intake", { message: trimmed, caseId });
+      setGate(res.gate);
       setMessages((m) => [
         ...m,
         { role: "assistant", content: res.reply, classification: res.classification, aiDegraded: res.aiDegraded },
@@ -275,6 +278,15 @@ export default function Intake({
             </div>
           )}
         </div>
+
+        {gate && !gate.discoveryUnlocked && gate.nextLabel && (
+          <div className="rounded-2xl border border-navy/15 bg-card p-4 text-[12.5px] leading-relaxed text-ink/80 shadow-sm">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-navy">Next: {gate.nextLabel}</div>
+            {gate.journeyKind === "personal"
+              ? "One quick identity check, then we start looking for your assets."
+              : "Before anything about the assets is looked up, you'll verify your identity, the death and your relationship. Name, date of birth and PAN alone unlock nothing."}
+          </div>
+        )}
 
         {caseId && (
           <Button onClick={() => onWorkspace(caseId)} className="w-full bg-teal-brand text-white hover:bg-[#0c6a69]">
