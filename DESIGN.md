@@ -1,6 +1,6 @@
 # Financial Legacy — Product Design
 
-Version 0.1 · 16 October 2026 · UI/UX specification for the first reference build
+Version 0.2 · 16 October 2026 · UI/UX specification for the first reference build
 
 **Purpose:** make the product understandable and consistent before writing screens. [PRD.md](PRD.md) owns behavior and scope; [LLD.md](LLD.md) owns data, APIs, permissions and workflow rules. This document defines presentation and interaction under those rules, not new features. No application or visual prototype has been built.
 
@@ -15,7 +15,7 @@ Calm, readable and practical. The user should always understand **whose records 
 - Use respectful language after a death. Do not repeatedly ask for the same sensitive fact or celebrate a disputed/rejected outcome.
 - The reference banner stays visible on every case screen and appears in every export/pack: **“Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.”**
 
-Applies to PRD FL-01/02/07/09/17/22/39/40/50. Future voice, family sharing and real connectors remain disabled; do not show an active microphone, send button or success state for them.
+Applies to PRD FL-01/02/07/09/17/22/39/40/50. Voice is first-release scope (FL-20/41). Family sharing and real connectors remain disabled; do not show active sends or success states for them.
 
 ## 2. Navigation and page structure
 
@@ -138,10 +138,16 @@ Use “We need a clearer copy to read this field,” “This is a possible match
 
 Target the PRD’s WCAG 2.2 AA review. Normal text must meet 4.5:1 contrast, large text 3:1, and required control/state visuals 3:1. The 44px target is our usability default; WCAG 2.2 AA’s target-size minimum is 24 CSS px with defined exceptions, not a claim that 44px is that criterion.
 
-Provide semantic headings/landmarks, a skip link, persistent labels, announced status/error messages, keyboard-only operation and visible focus that is not hidden by sticky notices/navigation. Do not use color alone, placeholder-only labels, hover-only instructions or inaccessible custom selects. Retain browser zoom, reflow and text resize; honor reduced motion. No auto-playing speech or simulated microphone activity. Reference UI is text-first; later language/voice needs separate text expansion, number/name correction and quality checks.
+Provide semantic headings/landmarks, a skip link, persistent labels, announced status/error messages, keyboard-only operation and visible focus that is not hidden by sticky notices/navigation. Do not use color alone, placeholder-only labels, hover-only instructions or inaccessible custom selects. Retain browser zoom, reflow and text resize; honor reduced motion. No auto-playing speech or simulated microphone activity. Reference UI supports voice and text together; test launch-language text expansion, name/number correction and speech quality before first-release completion.
 
 Before accepting the first UI increment, demonstrate the complete owner/statement/review/inventory/resume path at **1280×800 and 375×812**, keyboard-only core operation, screen-reader spot checks and the LLD automated accessibility threshold. Check the same failure, revoked-access, changed-approval, empty-total and duplicate-request cases as the LLD. Verify actual component contrast and all focus/disabled/error states; token calculations alone are not accessibility certification.
 
 Design implements FL-01/02/03/04/05/06/07/08/09/10/11/12/13/14/15/16/17/18/19/22/23/25/26/28/29/31/34/36/37/39/40/42/43/47/48/49/50/51/55. It does not enable gated F capabilities or change the contract. Product behavior changes enter the PRD before design/code; implementation corrections update the LLD/contracts as needed.
 
 References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast guidance](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html), [focus not obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum), [target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum). These inform acceptance; no conformance audit has run.
+
+## 10. Voice in the first version
+
+Conversation offers equally clear **Speak** and **Type** controls, supported-language selection and a short processing/privacy explanation before first microphone use. Never start recording on page load. Show explicit states: idle, permission requested, listening, stopped, transcribing, transcript review, assistant thinking, speaking and failed. Listening shows an accessible status and prominent Stop; a waveform alone is insufficient.
+
+The user reviews/corrects recognized text before sending it into the saved conversation. Spoken replies also appear as text. Provide Stop playback and replay only on explicit action; financial details must not be read aloud automatically. Stop microphone and playback on case switch, sign-out or permission revocation. Permission denial, unsupported device, silence, network/provider failure or unsupported language preserves work and offers retry or Type. No simulated recording or fabricated transcription. Consequential approvals stay in the structured review screen. Voice calls to institutions are not part of this control.
