@@ -35,7 +35,7 @@ The product serves **everyone with Indian financial assets**. The first pilot fo
 
 - All three journeys, by **voice and chat**, on responsive web.
 - **Bank accounts and FDs, mutual funds, and life insurance.**
-- Discovery from **uploaded documents** and **guided use of official searches** (UDGAM, MITRA, insurer searches, IEPF, the government's common portal).
+- Discovery from **uploaded documents** and **guided use of official searches** (UDGAM, MITRA / MFCentral, insurer searches, the government's common portal).
 - Claim packs prepared for review; **the family submits them**; the product tracks the outcome.
 - **Synthetic data only** until the pilot's privacy, authority and provider policies are approved.
 
@@ -61,19 +61,31 @@ Read in this order. Each document follows the one above it; if they disagree, th
 | [BRD.md](BRD.md) | Why the business should exist: market figures, competitors, value proposition, revenue hypotheses, go-to-market, risks |
 | [LLD.md](LLD.md) | How it is built: architecture, data model, trust gates, AI, voice, API, security, testing, gap analysis, build plan |
 | [DESIGN.md](DESIGN.md) | How it looks and behaves: navigation, visual style, screens, states, accessibility, voice |
-| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build |
+| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build. **Hackathon only** — superseded wherever it conflicts with the PRD, BRD or LLD (see its header note) |
 | [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
-| [contracts/](contracts/openapi.json) | Superseded engineering contracts from an earlier design; reference only (LLD §23) |
+| [contracts/](contracts/README.md) | Superseded engineering contracts from an earlier design; reference only (LLD §23) |
 
 ## Running it
 
-**Product app** (`frontend/`, Node ≥ 22):
+**Product app** (`frontend/`, Node ≥ 22). From the `frontend/` folder:
 
 ```bash
-cd frontend && npm install && npm run dev
+npm install
 ```
 
-Opens on http://localhost:3000. Copy `frontend/.env.example` to `frontend/.env` and set `GEMINI_API_KEY` (or Vertex AI settings) for AI features; without a key, AI features say they are unavailable. Deployed to Google Cloud Run from source — no Docker (LLD §17).
+```bash
+cp .env.example .env
+```
+
+```bash
+npm run db:push
+```
+
+```bash
+npm run dev
+```
+
+Opens on http://localhost:3000 (health check: `/api/health`). Use `.env` rather than `.env.local` so both Next.js and Prisma read it. `npm run db:push` creates the local SQLite database in `frontend/prisma/db/`. Set `GEMINI_API_KEY` (or Vertex AI settings) in `.env` for AI features; without a key, AI features say they are unavailable. The target deployment is Google Cloud Run from source, with no Docker (LLD §17); it is not deployed yet.
 
 **Hackathon demo** (`demo/`):
 

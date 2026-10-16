@@ -2,6 +2,8 @@
 
 Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest last.
 
+> **Note (17 Oct 2026):** the tests described under M1–M3 (Vitest route tests with a temporary SQLite DB, `test/live-ai.test.ts`, the Playwright run) were **not committed** — `frontend/test/` does not exist in the repository. Treat those results as unverified until the tests are committed (LLD §19, build step B1).
+
 ## M0 — Security cleanup
 
 - **Plan v2 replaces the Phase 1 plan** at `BACKEND_PLAN.md` (same path, so there's one source of truth).
@@ -35,7 +37,7 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
 ## M2 — Schema and trust gates
 
 - **Layout:** server-only code moved to `src/server/` (plan §12). `src/lib/` keeps only client-shared code (`types.ts`, `client.ts`, `utils.ts`).
-- **Schema:** all §5 models were added in one migration: `DeceasedPerson`, `Claimant`, `Proof`, `Signal`, `Institution`, `ClaimPack`, `Draft`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`. Later milestones add no further schema churn. Enums are documented in the schema and enforced by Zod at the API.
+- **Schema:** all §5 models were added in one migration: `DeceasedPerson`, `Claimant`, `Proof`, `Signal`, `Institution`, `ClaimPack`, `Draft`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`. Later milestones add no further schema churn. *(Superseded 17 Oct 2026: LLD §5.2 adds `Observation`, `FieldReview`, `Approval`, `Claim`, `Hold`, `LegacySnapshot`, `TrustedContact`, `User` and `AssetRecord.evidenceStatus` for the PRD MVP.)* Enums are documented in the schema and enforced by Zod at the API.
 - **Journey kinds:** `living_individual` and `estate_planning` are **personal**; they need only G1, and the user's own assets are shown in full. `caregiver` needs G1 and then G3, where G3 is the relative's recorded consent (`method: relative_consent`, which also writes a `ConsentRecord`). Everything else, including unclassified `general`, takes the strict G1 → G2 → G3 path.
 - **Guard:** `src/server/core/access.ts` (`caseAccess` / `assetAccess` / `documentAccess` with `owner | discovery`).
   - Foreign IDs return 404.
@@ -56,7 +58,7 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
   - The same person means the same PAN hash, or the same DOB plus a name match.
   - A different session's case for the same person freezes **both** cases and links them (`linkedCaseId`). The same session re-submitting does not freeze.
   - **Demo cases are excluded** from cross-session matching; otherwise every visitor replaying the demo persona would freeze everyone else. The impostor story is shown in the Verify console instead (§8).
-  - Unfreezing needs a reviewer action. That's not built yet and is planned with the M5 console.
+  - Unfreezing needs a reviewer action. That's not built yet and is planned with the M5 console. *(Updated 17 Oct 2026: unfreezing is an MVP operator action — LLD build step B9 — not part of the Later Verify console.)*
 - **Mock providers:**
   - Identity: DigiLocker and passport + selfie, both simulated.
   - Death: the mock DigiLocker looks up a synthetic civil registry in `server/data/death-registry.ts`. Names not in that registry get a clearly-labelled simulated record built from the user's input. Scanned certificates are read by Gemini vision and compared by code.
@@ -82,3 +84,20 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
 - **Asset cards:** masked assets show "Masked — full details after you prove you may claim this asset" and a **Prove entitlement** dialog (G4).
 - **Intake:** the side panel shows the next gate as soon as the case opens.
 - **Verified in a browser (Playwright, live Gemini):** intake → G1 → wrong date of death (manual review with a field table) → corrected → relationship via "R. K. Sharma" → discovery unlocked.
+
+## Documentation alignment — 17 Oct 2026
+
+Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → BRD v0.3.1 / LLD v0.5.1 → DESIGN v0.3.1):
+
+- **Source of truth:** `ONE_PAGER.md`. The PRD defines product behaviour; the LLD defines how it is built and now describes this Next.js codebase. The old Python/FastAPI LLD and `contracts/` are superseded.
+- **Audience:** everyone with Indian financial assets. **Pilot:** bereaved families (PRD D-01). HNI/UHNI/NRI families are a later segment.
+- **MVP assets:** bank accounts and FDs, mutual funds, and life insurance. IEPF, shares, EPF, NPS, PPF and lockers are Later.
+- **MVP discovery:** uploaded documents plus guided official searches (UDGAM, MITRA/MFCentral, insurer searches, the government common portal). Email, tax-record and SMS connectors are Later; mock connectors only in demos, labelled "Simulated".
+- **Verify console:** Later (PRD FL-56); demo-only for the hackathon.
+- **G3:** accepts any evidenced claimant role (relative, nominee, legal heir, executor, surviving joint holder) or a living person's consent.
+- **Evidence statuses:** four statuses (`SELF_DECLARED`, `POTENTIAL_MATCH`, `DOCUMENT_BACKED`, `INSTITUTION_VERIFIED`) replace the current two fields (LLD §10.1).
+- **Full identifiers:** stored as separately encrypted fields, readable only through the G4 guard (LLD §7.3) — to build.
+- **Will drafting:** the Estate Planning tab's AI will draft becomes "Notes for your lawyer"; the product does not draft binding wills (PRD §3.3).
+- **Claim submission:** the user approves the exact pack and submits it; the product records the receipt. `claim-packs/:id/submit` is replaced by `/approve` plus a receipt.
+- **Running without a key:** add `AI_PROVIDER=fixture` so the reference build runs locally without cloud credentials (LLD §17.3).
+- **Open:** standard visual theme (DESIGN §3.1).

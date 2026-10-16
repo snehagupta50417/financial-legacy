@@ -4,10 +4,10 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.5 (draft for review) |
+| **Version** | 0.5.1 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
-| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, deployed on Google Cloud Run. |
+| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, targeting Google Cloud Run (deployment is milestone M7, not yet done). |
 | **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. [BACKEND_PLAN.md](BACKEND_PLAN.md) remains the milestone plan for the hackathon build and is referenced from §21. |
 | **Status** | Milestones M0–M3 of BACKEND_PLAN are built. Large parts of the PRD MVP are not built yet — see the gap analysis in §20. |
 
@@ -213,9 +213,9 @@ The code has seven case types (plus `general`), each driven by the deterministic
 | `nominee_heir` | About a deceased person | C | G1 → G2 → G3; G4 per asset |
 | `rejected_claim` | About a deceased person | C (claim already rejected) | G1 → G2 → G3; G4 per asset |
 | `nri_cross_border` | About a deceased person | C (claimant abroad) | G1 → G2 → G3; G4 per asset |
-| `general` | Unclassified | Routed after intake | Strict path G1 → G3 |
+| `general` | Unclassified | Routed after intake | Strict path G1 → G2 → G3 |
 
-**Intake** (`POST /api/intake`): Gemini classifies the user's situation; a rule-based classifier is the fallback when AI is unavailable. The user can correct the classification (FL-01). A known-asset claimant is never forced into discovery.
+**Intake** (`POST /api/intake`): Gemini classifies the user's situation; a rule-based classifier is the fallback when AI is unavailable. Letting the user correct the classification (FL-01) is **to build**. A known-asset claimant is never forced into discovery.
 
 ---
 
@@ -230,7 +230,7 @@ The code has seven case types (plus `general`), each driven by the deterministic
 | **G0 Account** | Control of a session | Anonymous `x-session-id` | Intake chat, guides, official resources, demos |
 | **G1 Identity** | The user is a specific real person | Mock DigiLocker; passport + selfie for NRIs | Personal cases; opening a case about someone else |
 | **G2 Death** | The named person has died | Mock DigiLocker civil-registry lookup, or certificate scan read by Gemini vision and matched by code | Case active — **still no discovery** |
-| **G3 Relationship** | The user is a close relative (or has the living person's consent) | Heir's own document naming the deceased; legal-heir certificate or relative consent (mock) | Discovery; assets visible **masked** |
+| **G3 Relationship or role** | The user has an evidenced claimant role for this person — close relative, nominee, legal heir, executor or surviving joint holder — or, for a living person, that person's consent | Heir's own document naming the deceased; legal-heir certificate; nominee or joint-holder record; executor named in a will; or relative consent (mock). **Today only the relative and consent routes are built; nominee, executor and joint-holder routes are to build** | Discovery; assets visible **masked** |
 | **G4 Entitlement** (per asset) | The user may claim *this* asset | Nominee / joint-holder record, legal-heir or succession certificate (mock) | Full details and claim pack for that asset |
 
 Gates are pure functions; every case-scoped route calls the guard (`caseAccess`, `assetAccess`, `documentAccess`). The UI cannot skip a gate.
@@ -249,6 +249,7 @@ Gates are pure functions; every case-scoped route calls the guard (`caseAccess`,
 - **One case per deceased person:** a second claimant's case for the same person (same PAN hash, or same DOB + name match) **freezes both cases** and links them until an operator reviews. Demo cases are excluded.
 - **Living-person guard:** activity by the "deceased" after the date of death freezes the case (implemented; to be wired to sources).
 - **Masking below G4** (`masking.ts`): institution, category, value band, last-4 and statuses only; holder name hidden; identifiers and exact amounts redacted from evidence. Every asset leaving the API passes through masking.
+- **Where full details come from at G4:** v0 redacts identifiers before storage, so G4 today reveals only what was kept (institution, amounts, last-4). **To build for the MVP:** store full account/policy/folio numbers and holder names as **separately encrypted fields** (application-level encryption, key in Secret Manager), readable only through the G4 guard and only for the asset the user is entitled to; and keep encrypted originals (§8.2). Claim packs need these values.
 
 ### 7.4 How gates map to the PRD's authority model
 
@@ -294,10 +295,10 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
 ### 9.1 MVP discovery
 
 1. **Documents** the user uploads (statements, CAS, policy bonds, passbooks) → extraction (§8) → holdings.
-2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, IEPF, the government common landing portal). The product:
+2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build** — today only the resources directory exists and `ResourceVisit` is unused. The product will:
    - proposes which searches fit this case (discovery plan, FL-10);
    - opens the official portal for the user (`ResourceVisit` created);
-   - asks the user to log the outcome (found / not found / partial), recorded on the visit;
+   - asks the user to log the outcome — **found / not found / partial / blocked** (e.g. the portal needs an identifier the family doesn't have) **/ failed** (portal unavailable) — recorded on the visit;
    - turns a "found" outcome into a `POTENTIAL_MATCH` holding for review.
 3. **Inference** from documents (e.g. recurring interest credits suggesting an FD) creates `POTENTIAL_MATCH` holdings only — never confirmed.
 
@@ -336,9 +337,9 @@ interface Connector {
 
 Migration from today's fields: `discoveryStatus=possible` → `POTENTIAL_MATCH`; `confirmed` + `verificationStatus=user_confirmed` → `DOCUMENT_BACKED` if a reviewed document is linked, else `SELF_DECLARED`; `institution_verified` → `INSTITUTION_VERIFIED` only with linked institution evidence. `dismissed` stays as a separate lifecycle flag. AI confidence and name similarity can **never** set `INSTITUTION_VERIFIED`.
 
-### 10.2 Duplicates
+### 10.2 Duplicates (to build)
 
-Same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
+Today documents merge into an existing asset by a loose institution-name match (BACKEND_PLAN bug 6, not yet fixed). Target: same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
 
 ### 10.3 Totals (to build, `rules/totals.ts`)
 
@@ -561,7 +562,15 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 - Long operations (extraction, pack generation) show progress; move to a job table with retries when they exceed request time limits (FL-51).
 - Working targets (to confirm under D-07): assistant reply starts within ~2 s; a typical statement extracted within ~30 s.
 
-### 17.3 Demo operations
+### 17.3 Running without a cloud key
+
+For the reference build, `AI_PROVIDER=fixture` (to add) makes the app use the fixture provider at runtime, so all three journeys run locally on sample data without any cloud credentials (PRD §15.1). The UI labels fixture answers "Sample AI response". In production, the fixture provider is refused at startup.
+
+### 17.4 Reference workload
+
+Used to measure FL-52 before agreeing production targets (D-07): one Cloud Run instance (1 vCPU, 2 GB), 5 concurrent synthetic users, 20 cases, 200 holdings, 100 documents of up to 20 pages. Record p95 latency for ordinary requests (working target < 1 s), time to first assistant token (< 2 s), extraction time per document (< 30 s for a typical statement), AI cost per case, and recovery after an instance restart. These are engineering acceptance targets, not customer promises.
+
+### 17.5 Demo operations
 
 `/api/admin/reset` (planned) wipes and reseeds demo data; disabled in production unless `DEMO_MODE=true`. Every demo and mock is visibly labelled "Simulated".
 
@@ -622,7 +631,7 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | Insurance in MVP | PRD §8.1 | Category exists in demos | Insurance claim procedure and pack |
 | Claims | FL-12–FL-17, FL-36, FL-37 | Journey tasks only | **Claim model, procedures, packs, approval, receipts, outcomes** |
 | Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
-| AI | FL-38–FL-40, FL-53 | Gemini, fallbacks, grounding | Case-manager coordinator; injection hardening; evaluation set |
+| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks, grounding; synthetic data only | Case-manager coordinator; injection hardening; evaluation set; fixture provider at runtime; approved provider terms before real data (FL-46) |
 | Voice | FL-20, FL-41 | — | **Not started** |
 | Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks | Reminders; operator queue; holds; help/complaints; procedure versioning |
 | Audit, deletion | FL-18, FL-19 | `CaseEvent` timeline | User-visible audit; delete endpoints; retention |
@@ -642,16 +651,17 @@ Ordered so that each step leaves a working product:
 
 | # | Work | PRD |
 | --- | --- | --- |
-| B1 | Tests + CI for what exists (gates, masking, routes); remove leftovers | FL-55 |
+| B1 | Tests + CI for what exists (gates, masking, routes); remove leftovers; `AI_PROVIDER=fixture` for running without a key | FL-55 |
 | B2 | Postgres on Cloud SQL with migrations; environments | FL-51 |
-| B3 | Real sign-in; cases owned by users; re-authentication for sensitive actions | FL-45, FL-48 |
+| B3 | Real sign-in; cases owned by users; re-authentication for sensitive actions; chat restore; journey-type correction | FL-01, FL-02, FL-45, FL-48 |
+| B3a | Gate completion: proof expiry, reviewer and reason on proofs, nominee/executor/joint-holder routes to G3, encrypted full identifiers for G4 | FL-03, FL-04 |
 | B4 | Evidence statuses, observations, field review, totals | FL-06–FL-09, FL-26, FL-28, FL-29 |
 | B5 | Guided discovery plan and `ResourceVisit` outcomes | FL-10 |
-| B6 | Claims: model, procedures (bank/FD, MF, life insurance), packs, approval, manual submission, outcomes | FL-12–FL-16, FL-36, FL-37 |
+| B6 | Claims: model, versioned procedures (bank/FD, MF, life insurance), packs, approval, manual submission, outcomes | FL-12–FL-16, FL-36, FL-37, FL-44 |
 | B7 | Legacy record, trusted contacts (intent), snapshot, export | FL-11, FL-31, FL-34 |
-| B8 | Voice (after D-09) | FL-20, FL-41 |
-| B9 | Audit view, deletion, holds, operator queue, help | FL-17–FL-19, FL-43, FL-47, FL-49 |
-| B10 | AI evaluation set, accessibility pass, metrics | FL-50, FL-53, FL-54 |
+| B8 | Voice (after D-09); case-manager coordinator and prompt-injection hardening | FL-20, FL-38, FL-39, FL-41 |
+| B9 | Audit view, deletion, holds, operator queue (including unfreezing a case), help, in-app reminders | FL-17–FL-19, FL-42, FL-43, FL-47, FL-49 |
+| B10 | AI evaluation set, accessibility pass, metrics, reference-workload measurement (§17.4) | FL-46, FL-50, FL-52, FL-53, FL-54 |
 
 ### Phase C — Pilot readiness
 
@@ -687,8 +697,9 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 - **[contracts/](contracts/openapi.json)** (`openapi.json`, `schema.sql`, `fixtures.json`) describe the superseded Python/FastAPI design. They are kept for reference only and are **not** the contract for the current code. Replace them with an OpenAPI spec generated from the Zod schemas once the MVP API stabilises.
 - **LLD v0.4** (Python/FastAPI, Keycloak, Docker Compose, PostgreSQL RLS) is superseded by this version. Its useful rules — exact approvals, unknown-outcome reconciliation, append-only evidence, honest totals, deletion markers — are carried forward above.
 
-### Changes in this version (0.5)
+### Changes in versions 0.5 – 0.5.1
 
 - Rewritten to describe the real codebase (Next.js/TypeScript, Prisma, Gemini, Cloud Run, no Docker), aligned to PRD v0.6 and BRD v0.3.
 - Adds trust gates G0–G4 as the implementation of the PRD's authority model; four evidence statuses; claim lifecycle; voice design; API inventory with built/to-build status; gap analysis; phased build plan.
 - MVP discovery is upload + guided official searches; connectors and the Verify console are Later.
+- **0.5.1:** G3 accepts any evidenced claimant role (nominee, heir, executor, joint holder), not only close relatives; encrypted full identifiers designed for G4 and claim packs; IEPF moved to Later; discovery outcomes include blocked and failed; built vs to-build marked in §6, §9.1, §10.2; fixture provider at runtime and a reference workload (§17.3–17.4); every MVP requirement now has a build step in Phase B; Cloud Run described as the target, not current state.

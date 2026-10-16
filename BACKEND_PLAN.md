@@ -1,9 +1,19 @@
 # Backend Plan — FinLegacy AI
 
+> **Read this first (17 Oct 2026).** This is the **hackathon milestone plan** (AI Builder Cup, Phase A in [LLD §21](LLD.md#21-build-plan)). The product is now defined by [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) → [BRD.md](BRD.md) / [LLD.md](LLD.md), and **they win wherever this plan disagrees**. In particular:
+>
+> - **Discovery:** the MVP is document upload + guided official searches ([PRD §8.3](PRD.md#83-releases), [LLD §9](LLD.md#9-discovery)). "Connect, don't upload" (principle 4, §4) applies to Later connectors only; mock connectors may be used in the hackathon demo, labelled "Simulated".
+> - **Verify console** (§7, M5) is a **Later** capability (PRD FL-56), built for the demo only. It is not "the main future revenue line": no revenue stream is chosen yet ([BRD §7](BRD.md#7-business-model), decision D-08). The business model in §1 (flat fee per estate, per verified claim) is a hackathon assumption, not a decision.
+> - **Segments:** the pilot starts with **bereaved families** (D-01); NRI families are a later segment. **Trace** and **Protect** are not in the one-pager or PRD; treat them as unreviewed ideas.
+> - **Claim submission:** the product never marks a claim as "sent" on the user's behalf. The user approves the exact pack and submits it; the product records the receipt ([LLD §11.3](LLD.md#113-claim-lifecycle)). `POST /api/claim-packs/:id/submit` (§6.2) is replaced by `/approve` plus a receipt.
+> - **Claim packs:** the MVP needs bank/FD, mutual fund and life-insurance packs; IEPF is Later (§9's three v0 templates are a demo subset).
+> - **Regulatory figures** in §1 and §9 (₹15 lakh / ₹5 lakh simplified-settlement thresholds, 15-day settlement, Bank Rate + 4% compensation) must be checked against the current RBI directions and cited before use; the LLD keeps them in versioned, sourced configuration.
+> - **Q2 below is out of date:** [LLD.md](LLD.md) v0.5 now describes this codebase. The old Python/FastAPI LLD and `contracts/` are superseded.
+
 > **Status:** Approved plan (v2). Supersedes the Phase 1 read-only analysis.
 > **Repo:** new repo containing the existing Next.js `frontend/` (originally from `tash149/financial-legacy`).
 > **Deadline:** AI Builder Cup 2026 (Google Cloud, BFSI theme) prototype due **18 Oct 2026**. After that, this same codebase becomes the real MVP.
-> **Rule for the coding agent:** build in the order of §11. Finish and verify one milestone before starting the next. If anything here conflicts with the existing code, this file wins; note the decision in `DECISIONS.md`.
+> **Rule for the coding agent:** build in the order of §11. Finish and verify one milestone before starting the next. If anything here conflicts with the existing code, this file wins over the code (not over the PRD or LLD); note the decision in `DECISIONS.md`.
 
 ---
 
@@ -37,7 +47,7 @@
 | # | Question | Decision |
 |---|---|---|
 | Q1 | What is "the backend"? | **v0 (until 18 Oct): option (b) — harden the existing Next.js API routes in place.** After the hackathon: option (a) — extract `src/server/**` into a standalone service with the same contract. |
-| Q2 | Do `LLD.md` / `contracts/` constrain this? | **No.** Separate future track. Don't implement Keycloak, RLS or `/v1/*` now. |
+| Q2 | Do `LLD.md` / `contracts/` constrain this? | ~~**No.** Separate future track.~~ **Updated 17 Oct 2026:** LLD v0.5 now describes this codebase and the PRD wins; `contracts/` and Keycloak/RLS/`/v1/*` are superseded and not to be built. |
 | Q3 | Language / framework | **TypeScript** inside Next.js (existing logic is TS). Zod for validation. |
 | Q4 | Database | **SQLite via Prisma for v0** (reseeded for the demo; enums enforced with Zod since Prisma+SQLite lacks native enums). **Cloud SQL Postgres for the MVP** (provider switch). |
 | Q5 | Deployment | **Google Cloud Run, deployed from source with Google Cloud buildpacks — no Docker.** Do not add a Dockerfile, docker-compose or Caddy config; remove any that exist. The app must build with `npm run build` and start with `npm start`, listening on `$PORT`. Secrets via Secret Manager. |
