@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
-import { requireSession, unauthorized } from "@/server/core/session";
-import { logEvent } from "@/server/domain/case-service";
+import { documentAccess, isDenied } from "@/server/core/access";
+import { redactIdentifiers } from "@/server/core/masking";
+import { logEvent, parseFields } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,25 +10,21 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireSession(req);
-  if (!session) return unauthorized();
   const { id } = await params;
+  const access = await documentAccess(req, id, "discovery");
+  if (isDenied(access)) return access;
+  const { doc } = access;
   const body = await req.json().catch(() => null);
-
-  const doc = await db.documentRecord.findFirst({
-    where: { id, case: { sessionId: session.id } },
-    include: { case: true },
-  });
-  if (!doc) return Response.json({ error: "Document not found" }, { status: 404 });
 
   const data: Record<string, unknown> = {};
   if (typeof body?.extractedFields !== "undefined") {
     const fields = Array.isArray(body.extractedFields)
       ? body.extractedFields.map((f: { label?: string; value?: string; confidence?: number; sourceExcerpt?: string }) => ({
           label: String(f?.label ?? ""),
-          value: String(f?.value ?? ""),
+          // Full identifiers are never stored (plan §5)
+          value: redactIdentifiers(String(f?.value ?? "")).slice(0, 500),
           confidence: typeof f?.confidence === "number" ? f.confidence : 0.9,
-          sourceExcerpt: String(f?.sourceExcerpt ?? "Corrected by user"),
+          sourceExcerpt: redactIdentifiers(String(f?.sourceExcerpt ?? "Corrected by user")).slice(0, 300),
         }))
       : [];
     data.extractedFields = JSON.stringify(fields);
@@ -47,5 +44,5 @@ export async function PATCH(
     );
   }
 
-  return Response.json({ document: updated });
+  return Response.json({ document: { ...updated, extractedFields: parseFields(updated.extractedFields) } });
 }

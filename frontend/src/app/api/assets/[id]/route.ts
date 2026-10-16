@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
-import { requireSession, unauthorized } from "@/server/core/session";
+import { assetAccess, isDenied } from "@/server/core/access";
+import { last4Of, maskAsset } from "@/server/core/masking";
 import { logEvent } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
@@ -20,20 +21,18 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireSession(req);
-  if (!session) return unauthorized();
   const { id } = await params;
+  const access = await assetAccess(req, id, "discovery");
+  if (isDenied(access)) return access;
+  const { asset, legacyCase } = access;
   const body = await req.json().catch(() => null);
-
-  const asset = await db.assetRecord.findFirst({
-    where: { id, case: { sessionId: session.id } },
-    include: { case: true },
-  });
-  if (!asset) return Response.json({ error: "Asset not found" }, { status: 404 });
 
   const data: Record<string, unknown> = {};
   if (typeof body?.institution === "string") data.institution = body.institution.slice(0, 120);
-  if (typeof body?.maskedRef === "string") data.maskedRef = body.maskedRef.slice(0, 60);
+  if (typeof body?.maskedRef === "string") {
+    data.maskedRef = body.maskedRef.slice(0, 60);
+    data.last4 = last4Of(body.maskedRef);
+  }
   if (typeof body?.notes === "string") data.notes = body.notes.slice(0, 500);
   if (typeof body?.category === "string" && ASSET_CATEGORIES_SET.has(body.category))
     data.category = body.category;
@@ -55,5 +54,5 @@ export async function PATCH(
   const updated = await db.assetRecord.update({ where: { id: asset.id }, data });
   if (eventDesc) await logEvent(asset.caseId, "asset", eventDesc, "user", asset.id);
 
-  return Response.json({ asset: updated });
+  return Response.json({ asset: maskAsset(legacyCase, updated) });
 }

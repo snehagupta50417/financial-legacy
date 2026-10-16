@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
       nextBestAction: true,
       isDemo: true,
       demoKey: true,
+      gateReached: true,
+      frozenReason: true,
       updatedAt: true,
     },
   });

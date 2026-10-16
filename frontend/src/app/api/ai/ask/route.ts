@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { requireSession, unauthorized } from "@/server/core/session";
 import { complete } from "@/server/ai";
+import { canDiscover } from "@/server/core/gate-engine";
+import { maskAsset } from "@/server/core/masking";
 import { aiRateLimit } from "@/server/core/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,12 @@ export async function POST(req: NextRequest) {
   });
   if (!legacyCase) return Response.json({ error: "Case not found" }, { status: 404 });
 
+  // Prompts only ever see what the user may see: nothing below the discovery
+  // gate, and masked assets below G4.
+  const unlocked = canDiscover(legacyCase);
+  const visibleDocs = unlocked ? legacyCase.documents : [];
+  const visibleAssets = unlocked ? legacyCase.assets.map((a) => maskAsset(legacyCase, a)) : [];
+
   const context = `
 CASE FILE
 Summary: ${legacyCase.summary}
@@ -35,9 +43,9 @@ Progress: ${legacyCase.progress}% | stage: ${legacyCase.stage}
 Confirmed facts: ${legacyCase.confirmedFacts ?? "[]"}
 Assumptions: ${legacyCase.assumptions ?? "[]"}
 Assets:
-${legacyCase.assets.map((a) => `- ${a.category} @ ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""} — ${a.verificationStatus}, confidence ${a.confidence}`).join("\n") || "(none)"}
+${visibleAssets.map((a) => `- ${a.category} @ ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""} — ${a.verificationStatus}, confidence ${a.confidence}`).join("\n") || "(none)"}
 Documents:
-${legacyCase.documents.map((d) => `- ${d.fileName} (${d.category}, ${d.extractionStatus})`).join("\n") || "(none)"}
+${visibleDocs.map((d) => `- ${d.fileName} (${d.category}, ${d.extractionStatus})`).join("\n") || "(none)"}
 Tasks:
 ${legacyCase.tasks.map((t) => `- [${t.status}] ${t.title}`).join("\n") || "(none)"}`;
 

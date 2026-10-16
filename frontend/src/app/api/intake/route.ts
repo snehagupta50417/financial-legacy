@@ -4,7 +4,9 @@ import { requireSession, unauthorized } from "@/server/core/session";
 import { completeJson, completeWithHistory } from "@/server/ai";
 import { aiRateLimit } from "@/server/core/rate-limit";
 import { buildJourney, recalcProgress } from "@/server/domain/journey-engine";
-import { logEvent, officialLinkFor } from "@/server/domain/case-service";
+import { logEvent, officialLinkFor, parseJsonArray } from "@/server/domain/case-service";
+import { gateSummary } from "@/server/domain/gates";
+import { canDiscover, nextGate } from "@/server/core/gate-engine";
 import {
   ASSET_CATEGORIES,
   CASE_TYPES,
@@ -110,18 +112,21 @@ export async function POST(req: NextRequest) {
   const caseId: string | undefined = body?.caseId;
   if (!message) return Response.json({ error: "Message required" }, { status: 400 });
 
-  await db.intakeMessage.create({
-    data: { sessionId: session.id, role: "user", content: message, caseId: caseId ?? null },
-  });
-
   // Previous classification context (journey continuity)
   const existingCase = caseId
     ? await db.legacyCase.findFirst({ where: { id: caseId, sessionId: session.id } })
     : null;
-  const history = await db.intakeMessage.findMany({
-    where: { sessionId: session.id },
-    orderBy: { createdAt: "desc" },
-    take: 8,
+  // History is scoped to THIS case only (bug 1: it used to mix every case in the session).
+  const history = existingCase
+    ? await db.intakeMessage.findMany({
+        where: { sessionId: session.id, caseId: existingCase.id },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      })
+    : [];
+
+  const userMessage = await db.intakeMessage.create({
+    data: { sessionId: session.id, role: "user", content: message, caseId: existingCase?.id ?? null },
   });
 
   const priorContext = existingCase
@@ -210,6 +215,7 @@ export async function POST(req: NextRequest) {
         stage: "discovery",
       },
     });
+    await db.intakeMessage.update({ where: { id: userMessage.id }, data: { caseId: legacyCase.id } });
     await logEvent(
       legacyCase.id,
       "created",
@@ -218,23 +224,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist any newly-mentioned institutions as potential asset clues
-  for (const inst of cls.institutions) {
-    const exists = await db.assetRecord.findFirst({
-      where: { caseId: legacyCase.id, institution: { contains: inst }, discoveryStatus: "possible" },
-    });
-    if (!exists && inst.trim().length > 2) {
-      await db.assetRecord.create({
-        data: {
-          caseId: legacyCase.id,
-          category: inferInstitutionCategory(inst, cls.assetCategories[0] ?? "unknown"),
-          institution: inst,
-          evidence: `Mentioned during AI intake conversation`,
-          confidence: 0.4,
-        },
+  // Persist newly-mentioned institutions. Before the discovery gate nothing
+  // about the asset holder's assets is created — mentions are kept as
+  // unverified assumptions and checked once discovery is unlocked (plan §6.1).
+  if (canDiscover(legacyCase)) {
+    for (const inst of cls.institutions) {
+      const exists = await db.assetRecord.findFirst({
+        where: { caseId: legacyCase.id, institution: { contains: inst }, discoveryStatus: "possible" },
       });
-      await logEvent(legacyCase.id, "asset", `Potential asset clue recorded: ${inst}`, "ai");
+      if (!exists && inst.trim().length > 2) {
+        await db.assetRecord.create({
+          data: {
+            caseId: legacyCase.id,
+            category: inferInstitutionCategory(inst, cls.assetCategories[0] ?? "unknown"),
+            institution: inst,
+            evidence: `Mentioned during AI intake conversation`,
+            confidence: 0.4,
+          },
+        });
+        await logEvent(legacyCase.id, "asset", `Potential asset clue recorded: ${inst}`, "ai");
+      }
     }
+  } else if (cls.institutions.length) {
+    const mentions = cls.institutions
+      .filter((i) => i.trim().length > 2)
+      .map((i) => `You mentioned ${i} — to be checked once discovery is unlocked`);
+    const assumptions = [...new Set([...parseJsonArray(legacyCase.assumptions), ...mentions])].slice(0, 12);
+    legacyCase = await db.legacyCase.update({
+      where: { id: legacyCase.id },
+      data: { assumptions: JSON.stringify(assumptions) },
+    });
   }
 
   // Generate journey tasks only once per case (unless empty)
@@ -306,7 +325,8 @@ export async function POST(req: NextRequest) {
 
   const replyRes = await completeWithHistory(
     `You are FinLegacy AI's intake companion. Tone: calm, empathetic, precise, never salesy. Acknowledge the user's situation in 2-4 sentences, state the journey type you opened, and surface the most important next step. Never invent facts, balances, or eligibility. Never promise outcomes. If the situation involves a death, express brief, sincere condolence first.`,
-    history.slice(-6).reverse().map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
+    // history is newest-first: take the 6 most recent turns, oldest first
+    history.slice(0, 6).reverse().map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
     `User said: "${message}"\nClassification: ${cls.scenarioLabel}.\nWrite the acknowledgement.`
   );
 
@@ -319,6 +339,8 @@ export async function POST(req: NextRequest) {
     classification: cls,
     caseId: legacyCase.id,
     aiDegraded,
+    gate: gateSummary(legacyCase),
+    nextGate: nextGate(legacyCase),
   };
   await db.intakeMessage.create({
     data: {

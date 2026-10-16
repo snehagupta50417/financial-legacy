@@ -1,5 +1,8 @@
 import { db } from "@/server/db";
 import type { CaseWorkspace } from "@/lib/types";
+import { canDiscover } from "@/server/core/gate-engine";
+import { maskAsset } from "@/server/core/masking";
+import { gateSummary, proofView } from "./gates";
 
 export function parseJsonArray(s: string | null | undefined): string[] {
   if (!s) return [];
@@ -44,10 +47,33 @@ export async function getWorkspacePayload(
       documents: { orderBy: { createdAt: "asc" } },
       tasks: { orderBy: [{ priority: "asc" }, { sortOrder: "asc" }] },
       events: { orderBy: { createdAt: "desc" } },
+      claimants: { orderBy: { createdAt: "asc" } },
+      proofs: { orderBy: { createdAt: "asc" } },
+      deceasedPerson: true,
     },
   });
   if (!c) return null;
+  // No asset or document data below the discovery gate (G3 for third-party journeys).
+  const unlocked = canDiscover(c);
   return {
+    gate: gateSummary(c),
+    claimants: c.claimants.map((cl) => ({
+      id: cl.id,
+      fullName: cl.fullName,
+      relationship: cl.relationship,
+      role: cl.role,
+      identityStatus: cl.identityStatus,
+      relationshipStatus: cl.relationshipStatus,
+    })),
+    proofs: c.proofs.map(proofView),
+    deceased: c.deceasedPerson
+      ? {
+          name: c.deceasedPerson.name,
+          dob: c.deceasedPerson.dob,
+          dateOfDeath: c.deceasedPerson.dateOfDeath,
+          deathProofStatus: c.deceasedPerson.deathProofStatus,
+        }
+      : null,
     case: {
       id: c.id,
       caseType: c.caseType,
@@ -65,23 +91,13 @@ export async function getWorkspacePayload(
       assumptions: parseJsonArray(c.assumptions),
       isDemo: c.isDemo,
       demoKey: c.demoKey,
+      gateReached: c.gateReached,
+      frozenReason: c.frozenReason,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
     },
-    assets: c.assets.map((a) => ({
-      id: a.id,
-      category: a.category,
-      institution: a.institution,
-      maskedRef: a.maskedRef,
-      holderName: a.holderName,
-      evidence: a.evidence,
-      discoveryStatus: a.discoveryStatus,
-      verificationStatus: a.verificationStatus,
-      confidence: a.confidence,
-      notes: a.notes,
-      sourceDocumentId: a.sourceDocumentId,
-    })),
-    documents: c.documents.map((d) => ({
+    assets: unlocked ? c.assets.map((a) => maskAsset(c, a)) : [],
+    documents: (unlocked ? c.documents : []).map((d) => ({
       id: d.id,
       category: d.category,
       fileName: d.fileName,
