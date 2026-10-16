@@ -1,153 +1,237 @@
 # Financial Legacy — Product Design
 
-Version 0.2 · 16 October 2026 · UI/UX specification for the first reference build
+*How the product looks, reads and behaves.*
 
-**Purpose:** make the product understandable and consistent before writing screens. [PRD.md](PRD.md) owns behavior and scope; [LLD.md](LLD.md) owns data, APIs, permissions and workflow rules. This document defines presentation and interaction under those rules, not new features. No application or visual prototype has been built.
+| | |
+| --- | --- |
+| **Version** | 0.3 (draft for review) |
+| **Date** | 17 October 2026 |
+| **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) (behaviour and scope) → [LLD.md](LLD.md) (data, permissions, workflow) → this document (presentation and interaction). Design never adds features or bypasses a permission. |
+| **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a single-page Next.js app). Where the app differs today, this document says so. |
+
+---
 
 ## 1. Design direction
 
-Calm, readable and practical. The user should always understand **whose records they are viewing, what is known, what needs review, and the next useful action**.
+Calm, readable and practical. At every moment the person should understand **whose records they are looking at, what is known, what still needs checking, and what to do next**.
 
-- Start with conversation and the current task, not charts or a wealth score.
-- Use plain language and one main action per task area. Put technical detail behind a clearly named disclosure.
-- Distinguish evidence, authority and outcome. No single “verified case” badge.
-- Show progress as saved steps and open tasks, never a percentage suggesting all assets have been found.
-- Use respectful language after a death. Do not repeatedly ask for the same sensitive fact or celebrate a disputed/rejected outcome.
-- The reference banner stays visible on every case screen and appears in every export/pack: **“Demonstration — synthetic records. No real identity verification, asset discovery or claim submission.”**
+- **Conversation and the next task come first** — not charts or a wealth score.
+- **Plain language.** One main action per area; technical detail behind a clearly named "More detail".
+- **Evidence, authority and outcome are different things.** Never a single "verified case" badge.
+- **Progress means saved steps and open tasks**, never a percentage implying every asset has been found.
+- **Respect after a death.** Gentle wording; never celebrate a rejected or disputed outcome; never ask for the same sensitive fact twice.
+- **Designed for older users and Indian-language speakers** as a priority, by voice or text.
+- **Honest labelling.** Anything simulated (mock identity checks, demo data) is visibly labelled **"Simulated"**. Until real data is allowed, every case screen and every export or pack shows: **"Demonstration — synthetic records. No real identity verification, asset discovery or claim submission."**
 
-Applies to PRD FL-01/02/07/09/17/22/39/40/50. Voice is first-release scope (FL-20/41). Family sharing and real connectors remain disabled; do not show active sends or success states for them.
+Implements PRD FL-01, FL-02, FL-07, FL-09, FL-17, FL-22, FL-39, FL-40, FL-50; voice FL-20, FL-41.
+
+---
 
 ## 2. Navigation and page structure
 
-### Case selection
+### 2.1 Today's app
 
-/cases shows only authorized cases: subject, goal, current state and next owned task. Provide **New case** and **Continue**. Do not expose balances or document previews in another case’s card.
+`frontend/` is a single page with four views: **landing → intake (chat) → case workspace → official resources**. The workspace has a trust-gate panel above six tabs: Overview, Asset Inventory, Documents, Journey Tracker, Estate Planning, Expert Escalation.
 
-New case asks: goal → subject → confirm. For a deceased-claim case, ask whether the assets are already known; that route skips discovery. Explain the next step before requesting documents.
+### 2.2 Target structure for the MVP
 
-### Case workspace
+| Area | Purpose | Today's equivalent |
+| --- | --- | --- |
+| **My cases** | List of the person's cases: subject, goal, state and next task. **New case** and **Continue**. No balances or document previews in another case's card. | Landing / "my cases" dialog |
+| **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | Intake view; Ask panel |
+| **Records** | Documents, discovery plan and assets as labelled sub-views | Documents, Asset Inventory tabs |
+| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | Estate Planning; Journey Tracker (partly) |
+| **Tasks** | Owner, due date, waiting-on, blocked state, next action | Journey Tracker |
+| Case menu | Verification (trust gates), activity history, privacy and consent | Gate panel; no activity/privacy screens yet |
+| Help | Talk to a person; official resources | Expert Escalation; Resources view |
 
-Header: case title, subject, goal and current state; a clearly labeled case switcher; a case menu for verification/permissions, activity and privacy. Synthetic notice is below the header and does not cover focused controls.
+Only the destination that fits the case's goal is shown (Plan **or** Claims). A blocked action links straight to the step that unblocks it. Moving to separate URLs per area (e.g. `/cases/{id}/records`) is recommended so pages can be bookmarked, shared with support and tested; until then the single-page views are acceptable.
 
-Primary navigation has four destinations:
+### 2.3 Layout
 
-| Destination | Existing routes and content |
-| --- | --- |
-| Conversation | /cases/{id}/chat; saved messages, reviewed fact summary, next task and action cards |
-| Records | Documents, discovery plan and assets as labeled subviews; existing /documents, /discovery and /assets routes |
-| Plan or Claims | /legacy for the planner path; /claims and claim detail for deceased claims; show only the supported case-mode destination |
-| Tasks | /tasks; task owner, due date, blocked/waiting state and next action |
+- **Desktop:** sidebar about 224 px; main content up to 1280 px; 24–32 px padding. Conversation column up to 760 px, with evidence or tasks beside it when there's room.
+- **Mobile:** single column, 16 px padding, the four main areas in a bottom navigation; secondary actions in the case menu. Bottom controls must never cover content or the focused element.
+- Switching case or signing out clears the old case from the screen before showing the next one.
 
-Verification, activity and privacy use the existing /verification, /activity and /privacy routes. A blocked action links directly to the relevant prerequisite. Staff use /operations and assigned case review routes; a staff role never implies access to all evidence.
-
-Desktop: 224px sidebar, flexible main workspace, maximum content width 1280px, 24–32px page padding. Conversation is at most 760px wide; optional evidence/task context sits beside it when space permits. Mobile: single column, 16px padding, the same four destinations in a bottom navigation; secondary actions live in the case menu. Ensure bottom controls never hide content or focus.
-
-Case switch/sign-out cancels stale responses and clears the old case view before rendering the next case. Conversation is the default workspace entry; there is no additional dashboard or marketing page to implement.
+---
 
 ## 3. Visual foundations
 
-Use the navy, cream and restrained gold of the repository header. System fonts avoid a required external font service. Gold is decorative, not body text or a status signal.
+### 3.1 Tokens
 
-| Token | Value / use |
-| --- | --- |
-| page | #F5F2E9; page background |
-| surface | #FFFFFF; forms, document/review panels and task cards |
-| text | #102E32; main text/headings |
-| muted | #475569; secondary text |
-| primary | #145D55; main action, with white text |
-| border | #64748B for control boundaries; pale #D6DDD8 only for nonessential dividers |
-| focus | #2563EB; visible 3px outline with 2px light separation |
-| accent | #D6C39A; decorative rule/illustration only |
-| info | #1D4ED8 on #EFF6FF; pending/informational label |
-| caution | #92400E on #FFFBEB; review needed or incomplete |
-| danger | #B91C1C on #FEF2F2; blocked/error/destructive action |
-| success | #166534 on #F0FDF4; a specific completed step only |
+These are the **target** tokens: navy, cream and restrained gold, matching the repository banner. The current app uses a different theme (navy `#0a2540` on `#f7f8fa`, teal accent, with a dark mode). **Decision needed:** adopt these tokens, or document the app's current theme as the standard. Either way, every colour pair must pass the contrast checks in §8.
 
-Typography: system-ui stack; body 17px/1.55; labels 16px; noncritical helper text at least 14px; page title 28–36px; section title 20–24px. Use sentence case and restrained font weights. Keep text in real HTML, not screenshots.
-
-Spacing: 4/8/12/16/24/32/48px. Cards use 12px radius, 24px desktop/16px mobile padding and a subtle divider/border. Avoid dense grids, large decorative illustrations and nested cards. Primary buttons are filled teal; secondary buttons are outlined; links remain underlined in prose. Buttons/inputs have at least 44px height and comfortable separation. Do not infer contrast from a color name; verify actual foreground/background combinations and interactive states.
-
-## 4. The first journey, screen by screen
-
-Use the LLD intake profile and supplied synthetic PDFs; no real document intake or extra sample-generation UI.
-
-| Screen / state | What the person sees | Main action and result |
+| Token | Value | Use |
 | --- | --- | --- |
-| Empty case | Subject/goal, synthetic notice, “No reviewed value available” and next prerequisite | Open verification; no inferred ₹0 balance |
-| Verification | Separate identity, relationship where applicable, authority and consent sections; requested purpose, scope, reviewer state and expiry | Upload the prerequisite fixture, inspect it and request review; assigned operator accepts/rejects with rationale |
-| Documents | File name, stage and safe next step; upload → quarantine/scan → extraction → review | Choose supplied PDF; unsupported/unknown/unsafe input gets a clear error, not a completed state |
-| Field review | Source page and proposed fields with citations; accepted, corrected and rejected states remain distinct | Accept/correct/reject each critical field; review source/ownership separately from transcription |
-| Inventory | Reviewed holdings, separate possible matches, dated amounts, exclusions and next tasks | Open the holding/evidence; ₹42,000.00 appears only after its qualifying review |
-| Resume | Saved records and open tasks after sign-out/sign-in | Continue without re-entering accepted facts; repeated actions do not create duplicate holdings |
+| page | `#F5F2E9` | Page background |
+| surface | `#FFFFFF` | Forms, review panels, task cards |
+| text | `#102E32` | Main text and headings |
+| muted | `#475569` | Secondary text |
+| primary | `#145D55` | Main action, white text |
+| border | `#64748B` (controls), `#D6DDD8` (non-essential dividers) | Boundaries |
+| focus | `#2563EB` | 3 px visible outline with 2 px light gap |
+| accent | `#D6C39A` | Decorative only — never text or status |
+| info | `#1D4ED8` on `#EFF6FF` | Pending, informational |
+| caution | `#92400E` on `#FFFBEB` | Needs review, incomplete, potential match |
+| danger | `#B91C1C` on `#FEF2F2` | Blocked, error, destructive |
+| success | `#166534` on `#F0FDF4` | One specific completed step only |
 
-Desktop field review uses two columns: document/page on the left, field label/value/source/review controls on the right. Mobile stacks source and fields with a clear source reference beside each field and an easy return to the preview. Never make drag-and-drop the only upload/review method.
+### 3.2 Type and spacing
 
-Example field block:
+- System font stack. Body 17 px / 1.55; labels 16 px; helper text at least 14 px; page title 28–36 px; section title 20–24 px. Sentence case.
+- Spacing scale 4 / 8 / 12 / 16 / 24 / 32 / 48 px. Cards: 12 px radius, 24 px padding (16 px on mobile). Avoid dense grids and nested cards.
+- Primary buttons filled; secondary outlined; links underlined in text. Buttons and inputs at least 44 px tall.
 
-    Statement amount                 Source: bank-current.pdf, page 1
-    Proposed: ₹42,000.00             As of: 10 Oct 2026
-    [Accept] [Correct] [Reject]      Review status: not reviewed
+---
 
-Correction shows the original and edited value, with a reason when material. Submission feedback says “Review saved” only after the server confirms. Preserve entered values on recoverable validation errors; do not store financial drafts in browser local storage or an offline cache.
+## 4. Trust gates — what the person sees
 
-## 5. Inventory and discovery
+**LLD §7. Built** in `components/fl/gate-panel.tsx`.
 
-Holding rows/cards show institution, category, masked reference, evidence status, dated value and next action. Detail shows the underlying observations, citations, nomination information and review history. On narrow screens use readable labeled cards rather than compressing a wide table.
+A stepper shows the gates the case needs, each with its current state and latest proof:
 
-Display the four evidence labels in text: **Self-declared, Potential match, Document-backed, Institution-verified**. In reference mode, institution support remains visibly synthetic. Never replace these with a confidence percentage, green check alone, or “ownership confirmed” copy.
+| Step | What the person does | What they see after |
+| --- | --- | --- |
+| **Identity** (G1) | Verify with DigiLocker, or passport + selfie if abroad *(both "Simulated" in v0)* | "Identity confirmed" with method and date |
+| **Death** (G2) | Fetch the death record, or scan the certificate | If details differ: a **"You entered / Record says"** table and "Sent for review" — never an automatic rejection |
+| **Relationship** (G3) | Upload own document naming the deceased, or a legal-heir certificate; for a living parent, the parent's consent | "Discovery unlocked" |
+| **Entitlement** (G4, per asset) | On a masked asset card: **Prove entitlement** (nominee / joint holder / heir certificate) | Full details and the claim pack for that asset |
 
-The summary title is **“Reviewed value from dated sources.”** Show the policy/as-of context and excluded holdings with reasons. No qualifying observations: “No reviewed value available,” total null. A qualifying evidenced zero can be ₹0.00. Format INR using Indian grouping; units have no currency sign. FD principal, maturity, insurance benefit and past settlement stay distinct from qualifying cash/current value.
+States and copy:
 
-Discovery lists sources considered/checked, permitted method, coverage, prerequisite and next owner. Use “No results from the sources checked,” not “No assets exist.” Show potential matches separately with **Review match**; duplicate/conflict resolution uses the existing reviewed flow, never an automatic name-only merge.
+- **Before G3:** Records tabs show a locked state — *"Assets and documents unlock once you've confirmed your relationship. This protects the family's privacy."*
+- **Masked asset (below G4):** institution, type, value band and last 4 digits only — *"Masked — full details after you prove you may claim this asset."*
+- **Frozen case:** *"This case is paused for review. Someone else has opened a case for the same person. Our team will contact you."* No bypass button.
+- Gates explain **why** each proof is needed, in one sentence, before asking.
 
-## 6. Legacy and claims
+---
 
-### Legacy
+## 5. The pilot journey, screen by screen
 
-Show reviewed record date, missing documents, unknown nomination information, stale records and next review. Trusted contacts are labeled **“Contact intent — no access granted.”** Adding one sends nothing. Snapshot/export preview lists the exact scope, date and gaps; approval/download uses the existing short-lived access rules. Explain that downloaded copies cannot be recalled. Do not offer enabled family invites or post-death release in reference mode.
+The pilot focuses on bereaved families ([PRD Journey C](PRD.md#53-journey-c--find-and-claim-after-a-death)). This is the first journey to make complete.
 
-### Claims
+| Screen | What the person sees | Main action → result |
+| --- | --- | --- |
+| **Start** | "Tell us what happened, in your own words" — Speak or Type | Describe the situation → the assistant confirms the goal and whose assets these are; the person can correct it |
+| **Known assets?** | "Do you already know which accounts or policies to claim?" | Yes → straight to Claims (no discovery). Not sure → discovery after the gates |
+| **Gates** | Identity → Death → Relationship stepper (§4) | Each step saved; mismatches go to review |
+| **Documents** | Upload with stages: received → checking → reading → ready for review | Unsupported or unreadable file → clear reason and retry, never a fake success |
+| **Field review** | Document page beside proposed fields, each citing its page | Accept / Correct / Reject each critical field |
+| **Discovery plan** | Which official searches fit this case, what each covers and doesn't | Open the official portal → come back and log the outcome |
+| **Inventory** | Holdings by evidence status; potential matches separate; dated values | Open a holding to see evidence and next step |
+| **Claims** | One card per asset: path (nominee / joint / simplified / succession), procedure, missing items, owner | Prove entitlement → build pack → review → approve → download |
+| **Tracking** | Timeline per claim; tasks showing who it's waiting on | Record receipt, institution requests, outcome |
 
-Each claim has its own institution, holding, procedure version, status, owner, missing requirements and next action. The known-asset route opens this workspace without forcing discovery. Claim detail has requirements, pack versions, approval, receipt, institution requests and outcomes.
+**Field review layout:** desktop two columns (document left; fields with source and controls right). Mobile stacks them, with a source reference beside each field and an easy way back to the page. Drag-and-drop is never the only way to upload.
 
-Before handoff, show exact recipient, channel, purpose, documents/versions, declarations and expiry. The owner/claimant approves; an operator cannot approve on their behalf. Changed inputs, expired approval or revoked authority show **“Approval no longer valid — review the updated pack.”** Do not silently reuse the old approval.
+```
+Sum assured                        Source: LIC_policy.pdf, page 1
+Proposed: ₹5,00,000                Nominee: Sunita Sharma
+[Accept] [Correct] [Reject]        Review status: not reviewed
+```
 
-Reference button copy is **“Approve manual handoff”** or **“Download approved pack”**, according to the existing command stage. Never “Submit to bank” when the platform is not submitting. Record a receipt/reference or an explicit unknown outcome; show reconciliation as the next task before any resubmission. Partial settlement shows settled amount and known remaining amount, or **“Remaining amount not confirmed.”** Rejection/dispute has neutral factual copy and help, not success styling. Procedure/authority exceptions link to the assigned review or qualified handoff.
+A correction shows the original and the new value and asks for a reason when it matters. "Saved" appears only after the server confirms. Financial drafts are never kept in browser storage.
 
-## 7. Shared components and interaction states
+---
 
-Use shared buttons, labeled inputs, evidence badges, status notices, task rows, action cards, document preview/review controls, approval previews and confirmation dialogs. Components receive server-permitted actions and render their states; UI hiding is not authorization.
+## 6. Inventory and discovery
 
-| State | Presentation and behavior |
+- Each holding shows **institution, type, masked reference, evidence status, dated value and next action**. Detail shows observations, citations, nominee information and review history. On narrow screens use labelled cards, not a squeezed table.
+- **Evidence status is always written in words:** *Self-declared · Potential match · Document-backed · Institution-verified*. Never only a colour, a tick or a confidence percentage. Potential matches use the caution style and a **Review match** button.
+- **Summary title:** "Reviewed value from dated sources", with the as-of context and a list of excluded holdings and why. No qualifying values: **"No reviewed value available"** — never ₹0.
+- **Amounts mean different things:** FD principal and maturity, insurance **sum assured**, fund **units** and past settlements are shown with their own labels and are not added to the cash/current-value total. Indian digit grouping (₹5,00,000); units have no ₹ sign.
+- **Discovery** lists each source considered: method, what it covers, what it needs, who acts next, and its outcome. Wording: **"No results from the sources checked"** — never "No assets exist".
+- Duplicates are offered for review; never merged automatically on name alone.
+
+---
+
+## 7. Legacy and claims
+
+### 7.1 Legacy (living person)
+
+- Show the record date, missing documents, unknown or outdated nominees, stale records and the next review date.
+- Trusted contacts are labelled **"Contact intent — no access granted"**. Adding one sends nothing.
+- Snapshot and export preview list the exact contents, date and gaps; export needs approval; the download link is short-lived. Explain that downloaded copies can't be recalled.
+- **Change from today:** the current Estate Planning tab drafts a will with AI. The PRD rules out drafting legally binding wills, so this becomes **"Notes for your lawyer"**: a structured summary of assets and wishes, clearly marked as not a will.
+- No family invites or after-death release in the MVP.
+
+### 7.2 Claims (deceased person)
+
+- Each claim card: institution, holding, claim path, procedure version and date checked, status, owner, missing items, next action. A known-asset claim opens here directly.
+- Insurance claims use insurance wording (policy, sum assured, nominee, claim form); bank and fund claims use theirs.
+- **Before handoff:** show exact recipient, channel, purpose, documents and versions, declarations and expiry. Only the claimant approves.
+- Changed inputs, expiry or revoked authority: **"Approval no longer valid — review the updated pack."**
+- Button copy: **"Approve manual handoff"**, then **"Download approved pack"**. Never "Submit to bank" — the family submits.
+- After handoff: record a receipt or reference, or mark **"We don't have a confirmed receipt yet"** — reconcile before re-sending.
+- Partial settlement shows the settled amount and the known remainder, or **"Remaining amount not confirmed"**. Rejection or dispute uses neutral wording with help, never success styling.
+
+---
+
+## 8. Shared states, accessibility and acceptance
+
+### 8.1 States every screen handles
+
+| State | Behaviour |
 | --- | --- |
-| Loading | Stable layout with text such as “Loading your case”; no fabricated values or progress percentage |
-| Processing | Real saved stage/job status; show that work may continue; avoid duplicate command creation on repeated clicks |
-| Empty | Explain what is absent and offer the supported next step |
-| Validation error | Inline field message plus linked error summary; retain safe inputs and focus the first error |
-| Dependency failure | Say what was saved, what is blocked and whether Retry or Help is appropriate |
-| Permission expired/revoked | Remove protected content/actions, explain the needed review/sign-in step; never show another case’s existence |
-| Hold | Visible restricted scope, safe reason, next owner and help; no bypass button |
-| Unsaved / saving / saved | Distinguish local edits from server-confirmed saved records; do not promise persistence of an unsent draft |
-| Stale version | Explain that the record changed and require current review; never silently overwrite |
+| Loading | Stable layout, "Loading your case"; no made-up values or percentages |
+| Processing | Real saved stage; repeated clicks don't create duplicates |
+| Empty | Say what's missing and offer the next step |
+| Validation error | Inline message plus summary; keep safe input; focus the first error |
+| Something failed | Say what was saved, what's blocked, and offer Retry or Help |
+| Locked by a gate | Explain which proof unlocks it and link to it (§4) |
+| Permission expired or revoked | Remove protected content; explain the step needed; never reveal another case exists |
+| On hold / frozen | Show what is restricted, a safe reason, who acts next and Help; no bypass |
+| Stale version | "This record changed — please review the latest version"; never silently overwrite |
 
-Dialogs identify the exact effect, use descriptive buttons, support keyboard focus/escape where safe, and return focus to the trigger. A privacy revocation/deletion dialog explains future access/work and already-downloaded-copy limits. Status toasts may confirm routine saves; important errors, holds and approvals stay visible in the page. Staff queues show only assigned items, with reasons/evidence for privileged review.
+Dialogs name the exact effect, use descriptive buttons, support keyboard and Escape where safe, and return focus. Toasts only for routine saves; errors, holds and approvals stay on the page. Dates show the time zone when it matters; suggested deadlines are labelled differently from institution deadlines.
 
-Use “We need a clearer copy to read this field,” “This is a possible match; review the source,” and “We do not have a confirmed receipt yet.” Do not blame the user or imply guaranteed recovery. UI dates include the date and time zone when time matters; task dates distinguish suggested deadlines from institution-supplied deadlines.
+**Tone examples:** "We need a clearer copy to read this field." · "This is a possible match — please check the source." · "We don't have a confirmed receipt yet." Never blame the user; never imply guaranteed recovery.
 
-## 8. Accessibility, responsive behavior and design acceptance
+### 8.2 Accessibility
 
-Target the PRD’s WCAG 2.2 AA review. Normal text must meet 4.5:1 contrast, large text 3:1, and required control/state visuals 3:1. The 44px target is our usability default; WCAG 2.2 AA’s target-size minimum is 24 CSS px with defined exceptions, not a claim that 44px is that criterion.
+- Target **WCAG 2.2 AA** (PRD FL-50): text contrast 4.5:1 (large text 3:1), control and state visuals 3:1. Our 44 px target size is a usability default above WCAG's 24 px minimum.
+- Semantic headings and landmarks, skip link, persistent labels, announced status and errors, full keyboard use, visible focus never hidden by sticky bars. No colour-only meaning, placeholder-only labels or hover-only instructions. Support zoom, reflow, text resize and reduced motion.
 
-Provide semantic headings/landmarks, a skip link, persistent labels, announced status/error messages, keyboard-only operation and visible focus that is not hidden by sticky notices/navigation. Do not use color alone, placeholder-only labels, hover-only instructions or inaccessible custom selects. Retain browser zoom, reflow and text resize; honor reduced motion. No auto-playing speech or simulated microphone activity. Reference UI supports voice and text together; test launch-language text expansion, name/number correction and speech quality before first-release completion.
+### 8.3 Design acceptance
 
-Before accepting the first UI increment, demonstrate the complete owner/statement/review/inventory/resume path at **1280×800 and 375×812**, keyboard-only core operation, screen-reader spot checks and the LLD automated accessibility threshold. Check the same failure, revoked-access, changed-approval, empty-total and duplicate-request cases as the LLD. Verify actual component contrast and all focus/disabled/error states; token calculations alone are not accessibility certification.
+Before accepting an increment, demonstrate the pilot journey (§5) at **1280×800 and 375×812**: keyboard-only, screen-reader spot checks, automated accessibility checks with no critical or serious issues, and the failure states in §8.1 (gate mismatch, frozen case, unreadable file, changed approval, empty total, duplicate click). Check real component contrast, not just token values.
 
-Design implements FL-01/02/03/04/05/06/07/08/09/10/11/12/13/14/15/16/17/18/19/22/23/25/26/28/29/31/34/36/37/39/40/42/43/47/48/49/50/51/55. It does not enable gated F capabilities or change the contract. Product behavior changes enter the PRD before design/code; implementation corrections update the LLD/contracts as needed.
+---
 
-References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast guidance](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html), [focus not obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum), [target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum). These inform acceptance; no conformance audit has run.
+## 9. Voice
 
-## 10. Voice in the first version
+**PRD FL-20, FL-41; LLD §14. Not built yet.**
 
-Conversation offers equally clear **Speak** and **Type** controls, supported-language selection and a short processing/privacy explanation before first microphone use. Never start recording on page load. Show explicit states: idle, permission requested, listening, stopped, transcribing, transcript review, assistant thinking, speaking and failed. Listening shows an accessible status and prominent Stop; a waveform alone is insufficient.
+- Conversation offers equally clear **Speak** and **Type** buttons, a language choice and a short privacy note before the first microphone use. Never record on page load.
+- Visible states: idle · asking permission · listening (with a prominent **Stop**) · transcribing · review transcript · thinking · speaking · failed. A waveform alone is not enough.
+- The person reviews and corrects the transcript before it is sent. Names, account numbers and amounts are highlighted for checking.
+- Replies appear as text and can be spoken; **Stop** and **Replay** only on request. Financial details are not read aloud automatically.
+- Case switch, sign-out or revoked permission stops listening and playback.
+- Permission denied, unsupported device, silence, network failure or unsupported language keeps the person's work and offers **Retry** or **Type**.
+- Approvals always happen on the structured review screen, never by voice.
 
-The user reviews/corrects recognized text before sending it into the saved conversation. Spoken replies also appear as text. Provide Stop playback and replay only on explicit action; financial details must not be read aloud automatically. Stop microphone and playback on case switch, sign-out or permission revocation. Permission denial, unsupported device, silence, network/provider failure or unsupported language preserves work and offers retry or Type. No simulated recording or fabricated transcription. Consequential approvals stay in the structured review screen. Voice calls to institutions are not part of this control.
+---
+
+## 10. Later capabilities — design notes
+
+Not in the MVP; don't show enabled controls or success states for them.
+
+- **Connectors** (email, tax record, SMS): a "Connect a source" screen with per-source consent, what will be read and what won't, and Disconnect. Mock connectors labelled "Simulated".
+- **Verify console** (PRD FL-56) for banks and insurers: a desktop claims queue; claim detail with each check (consistency, authenticity signals, duplicates, completeness) and its evidence; a risk level with reasons; Approve / Request documents / Escalate. Authenticity findings are labelled "signal", never "fake".
+- **Family sharing and release:** verified recipients, exact scope and expiry, revocation.
+
+---
+
+## 11. References and changes
+
+References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html), [focus not obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum), [target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum). No conformance audit has been run.
+
+**Changes in 0.3:**
+- Aligned to PRD v0.6.1, BRD v0.3 and LLD v0.5.
+- Maps the target structure onto the real single-page app.
+- Adds the trust-gate screens and masked-asset states.
+- Makes the bereaved-family pilot journey the first journey, adds insurance claims, and replaces AI will drafting with "Notes for your lawyer".
+- Adds design notes for Later capabilities and fixes section numbering.
+- Removes references to the superseded LLD v0.4 sample data.
+
+Open design decision: which visual theme is standard (§3.1).

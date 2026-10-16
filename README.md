@@ -2,45 +2,83 @@
 
 <p><img src="assets/financial-legacy-banner.svg" alt="Financial Legacy — find what’s yours, make sure nothing gets left behind" width="100%"></p>
 
-**An AI-native financial asset discovery, legacy planning and recovery platform.**  
+**An AI-native financial asset discovery, legacy planning and recovery platform.**
 **Find what’s yours. Make sure nothing gets left behind.**
 
 ## The problem
 
-People accumulate bank accounts, fixed deposits, mutual funds, shares, insurance policies and retirement benefits across institutions. Over time, records get lost, investments are forgotten and nomination information becomes incomplete. After a death, families face two different problems: finding the assets and navigating each institution’s claim process.
+People spread their money across banks, fund houses, insurers and government schemes, then change jobs, cities and phone numbers, lose documents and forget to update nominees. When someone dies, their family faces two problems: **discovering** what existed, and **recovering** each asset through a separate institutional process. India has useful pieces — RBI UDGAM, SEBI MITRA, DigiLocker, Account Aggregator, IEPF — but no single process that ties them together.
 
 ## What we are building
 
-**Our initial audience is mainly millennials across HNI, UHNI and NRI segments**, helping them organize Indian financial assets and prepare for their families. These audiences overlap; supported cases depend on permission and institution procedures, including for NRIs.
+An **AI assistant that manages the whole case**, not a dashboard. It does three things, together or on their own:
 
-One assistant that helps individuals and families discover financial assets, organize them and pursue supported recovery workflows. It remembers the case, gathers relevant information, coordinates permitted tools, and tracks work through a documented outcome.
-
-| User need | What the platform helps deliver |
+| Capability | What the person gets |
 | --- | --- |
-| **Discover my assets** | A reviewed inventory, separate possible matches and remaining discovery gaps |
-| **Prepare my legacy** | A dated financial record, missing-information checklist and controlled instructions for family sharing |
-| **Find or claim after a death** | Authority-reviewed discovery and institution-specific claims with documents, follow-ups and outcomes |
+| **Discover** | A reviewed inventory, with confirmed holdings, possible matches and open leads kept separate |
+| **Plan a legacy** | A dated record of their assets, a checklist of missing nominees and documents, and a safe way to share it when they choose |
+| **Claim and recover** | Help claiming a deceased person's assets: authority checks, institution-specific claim packs, tracking to a documented outcome |
 
-These paths work independently. A family that knows the asset can skip discovery and start claims assistance.
+**Talk to AI → verify identity and authority → discover through permitted sources → consolidate and verify → prepare or claim → track to completion.**
 
-## How it works
+The product serves **everyone with Indian financial assets**. The first pilot focuses on **bereaved families**.
 
-**Talk to AI → verify identity and authority → discover through permitted sources → consolidate and review → prepare a legacy or claim → track completion.**
+## Principles
 
-The AI manages work, not just answers. Its capabilities cover conversation, discovery planning, document reading, matching and duplicate review, legacy preparation, claims and follow-ups. Structured screens let people inspect evidence and approve important actions. Voice is part of the first version: speak to the assistant, review or correct what it heard, and hear its reply. Chat remains available alongside it. Initial languages and speech processing need selection and testing before release.
+- **Evidence before claims.** Every asset is labelled *self-declared*, *potential match*, *document-backed* or *institution-verified*. A possible match is never shown as confirmed ownership.
+- **Honest coverage.** We say what we checked and what we didn't. We never promise to find everything.
+- **Authority before access.** Identity, death, relationship and per-asset entitlement are proven before sensitive details are shown (trust gates G0–G4).
+- **The user approves anything consequential.** The AI prepares; the person decides. We never hold or move money, and never sell data.
+- **AI assists; people and institutions decide.** Access, entitlement and risk are decided by deterministic code and reviewers, not by the AI.
 
-## Coverage
+## First version (MVP)
 
-The full vision includes bank accounts/FDs, mutual funds, shares/demat, unclaimed dividends and shares, life insurance, EPF benefits, NPS, PPF/small savings, and bank lockers. Each category has different discovery and recovery procedures. UDGAM, MITRA, DigiLocker, Account Aggregator and IEPF are potential parts of permitted workflows—not proof of unrestricted access or a universal financial database.
+- All three journeys, by **voice and chat**, on responsive web.
+- **Bank accounts and FDs, mutual funds, and life insurance.**
+- Discovery from **uploaded documents** and **guided use of official searches** (UDGAM, MITRA, insurer searches, IEPF, the government's common portal).
+- Claim packs prepared for review; **the family submits them**; the product tracks the outcome.
+- **Synthetic data only** until the pilot's privacy, authority and provider policies are approved.
 
-## Trust and control
+Later: more asset types (shares, IEPF, EPF, NPS, PPF, lockers), approved live connectors, direct submission, family sharing, and a Verify console for banks and insurers.
 
-Every holding has an evidence status; every important amount has a type, source and date. A possible match does not establish ownership or inheritance. Identity, relationship, authority, consent and legal entitlement stay separate.
+## Status
 
-Users review the exact content, recipient and purpose before a consequential handoff or disclosure. Adding a trusted contact grants no access. Inactivity cannot release records. Institutions retain verification and settlement decisions; complete discovery and successful recovery are not guaranteed.
+**Not live.** No real users, data, partners or integrations.
 
-## Where we start
+| Part | State |
+| --- | --- |
+| `frontend/` — the product | Next.js app with intake chat, case workspace, trust gates G0–G4 (simulated providers), document extraction with Gemini, masking. Voice, claims, real sign-in and tests are not built yet — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| `demo/` — hackathon demo | Standalone front-end demo with hardcoded data and an 80-second scripted Demo Mode. Not connected to `frontend/`. |
 
-First, build and test the three paths with **generated sample records**, starting with bank/FD and mutual-fund workflows. The assistant and extractor initially use labeled stand-ins. Voice input/output must work in this first version; speech-provider, language, privacy and quality decisions are first-release dependencies. Real data, external financial AI processing, live connectors, family release and automated institutional actions need their specified permissions, policies and quality gates. No application or live integration is operating yet.
+## Documents
 
-**[BRD.md](BRD.md)** defines the business case, customers, operating outcomes and commercial assumptions. **[PRD.md](PRD.md)** defines product scope and research. **[LLD.md](LLD.md)** defines architecture, implementation and tests. **[DESIGN.md](DESIGN.md)** defines screens, visual style, navigation and interaction states. This README remains the one-pager. The [contracts](contracts/openapi.json) are supporting engineering files.
+Read in this order. Each document follows the one above it; if they disagree, the higher one wins.
+
+| Document | What it covers |
+| --- | --- |
+| [ONE_PAGER.md](ONE_PAGER.md) | **Source of truth.** The vision, use cases, coverage, feasibility and business model |
+| [PRD.md](PRD.md) | What the product does: personas, journeys, principles, requirements FL-01 to FL-56, metrics, release plan, open decisions |
+| [BRD.md](BRD.md) | Why the business should exist: market figures, competitors, value proposition, revenue hypotheses, go-to-market, risks |
+| [LLD.md](LLD.md) | How it is built: architecture, data model, trust gates, AI, voice, API, security, testing, gap analysis, build plan |
+| [DESIGN.md](DESIGN.md) | How it looks and behaves: navigation, visual style, screens, states, accessibility, voice |
+| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build |
+| [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
+| [contracts/](contracts/openapi.json) | Superseded engineering contracts from an earlier design; reference only (LLD §23) |
+
+## Running it
+
+**Product app** (`frontend/`, Node ≥ 22):
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+Opens on http://localhost:3000. Copy `frontend/.env.example` to `frontend/.env` and set `GEMINI_API_KEY` (or Vertex AI settings) for AI features; without a key, AI features say they are unavailable. Deployed to Google Cloud Run from source — no Docker (LLD §17).
+
+**Hackathon demo** (`demo/`):
+
+```bash
+cd demo && npm install && npm run dev
+```
+
+Opens on http://localhost:5173. See [demo/README.md](demo/README.md) for presenter controls.
