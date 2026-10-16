@@ -60,22 +60,39 @@ Only the destination that fits the case's goal is shown (Plan **or** Claims). A 
 
 ### 3.1 Tokens
 
-These are the **target** tokens: navy, cream and restrained gold, matching the repository banner. The current app uses a different theme (navy `#0a2540` on `#f7f8fa`, teal accent, with a dark mode). **Decision needed:** adopt these tokens, or document the app's current theme as the standard. Either way, every colour pair must pass the contrast checks in §8.
+**Decision (17 Oct 2026):** the app's current theme is the standard — deep navy and teal with a restrained gold, in light and dark modes. It is already built (`frontend/src/app/globals.css`), so there is no redesign cost. The earlier cream/teal proposal is dropped. Every pair below was contrast-checked against WCAG 2.2 AA.
 
-| Token | Value | Use |
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| background | `#f7f8fa` | `#071a2f` | Page |
+| card | `#ffffff` | `#0d2338` | Forms, review panels, task cards |
+| foreground | `#14283c` | `#e8edf3` | Main text and headings |
+| muted-foreground | `#5a6b7d` | `#9db0c2` | Secondary text |
+| primary | `#0a2540` (text `#f7f8fa`) | `#7cc5c4` (text `#071a2f`) | Main action |
+| teal-brand / ring | `#0e7c7b` | `#7cc5c4` | Links, focus ring, active states |
+| accent | `#e3f1f0` | `#123635` | Soft highlight backgrounds |
+| gold | `#b98a2f` | `#d9b45e` | Decorative only — never body text or a status signal |
+| destructive | `#b3403a` | `#e07b74` | Blocked, error, destructive action |
+| border / input | `#dfe5ec` / `#d3dbe4` | white 12% / 16% | Dividers and control outlines |
+
+Status colours (info, caution, success) use the shadcn defaults in the app. Each must be checked the same way before use.
+
+**Contrast results:**
+
+| Pair | Ratio | Result |
 | --- | --- | --- |
-| page | `#F5F2E9` | Page background |
-| surface | `#FFFFFF` | Forms, review panels, task cards |
-| text | `#102E32` | Main text and headings |
-| muted | `#475569` | Secondary text |
-| primary | `#145D55` | Main action, white text |
-| border | `#64748B` (controls), `#D6DDD8` (non-essential dividers) | Boundaries |
-| focus | `#2563EB` | 3 px visible outline with 2 px light gap |
-| accent | `#D6C39A` | Decorative only — never text or status |
-| info | `#1D4ED8` on `#EFF6FF` | Pending, informational |
-| caution | `#92400E` on `#FFFBEB` | Needs review, incomplete, potential match |
-| danger | `#B91C1C` on `#FEF2F2` | Blocked, error, destructive |
-| success | `#166534` on `#F0FDF4` | One specific completed step only |
+| Text on page (light / dark) | 14.13 / 14.89 | Pass |
+| Muted text on page or card (light) | 5.15 / 5.48 | Pass |
+| Muted text on page or card (dark) | 7.87 / 7.17 | Pass |
+| Primary button text (light) | 14.62 | Pass |
+| Dark primary on page | 8.88 | Pass |
+| Teal `#0e7c7b` on white | 5.01 | Pass |
+| Destructive on card (light / dark) | 5.66 / 5.52 | Pass |
+| **Teal text on accent `#e3f1f0`** | **4.32** | **Fails for normal text.** Fix: darken teal text on accent to about `#0b6b6a`, or use it only for 18 px+ / bold text |
+| **Gold `#b98a2f` as text** | **3.12** | **Fails for normal text.** Keep it decorative, as the table says |
+| **Input border `#d3dbe4` on white** | **1.40** | **Fails the 3:1 rule for control boundaries.** Fix: use about `#8a9aab` for input outlines, or add another visible cue |
+
+The three fixes are small CSS changes in `globals.css`; they are part of design acceptance (§8.3).
 
 ### 3.2 Type and spacing
 
@@ -265,4 +282,4 @@ References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://ww
 
 - **0.3.1:** status row added; G3 accepts any evidenced claimant role; "known assets" skips discovery, never the gates; screen flows added for Journeys A and B.
 
-Open design decision: which visual theme is standard (§3.1).
+- **Theme decided:** the app's current navy/teal theme is the standard; three contrast fixes are listed in §3.1.
