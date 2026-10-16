@@ -815,7 +815,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - Added: personas, product principles, non-functional requirements, data model overview, success metrics with guardrails, risks and assumptions, launch criteria.
 - All 55 original requirement IDs (FL-01 to FL-55) and decisions D-01 to D-11 are preserved. v0.6.1 adds FL-56 (Verify console, Later) and records that the MVP uses Gemini on synthetic data, matching [LLD.md](LLD.md) v0.5.
 
-**Knock-on updates still needed:** [README.md](README.md) (audience) and [DESIGN.md](DESIGN.md) (insurance in the MVP). BRD v0.3 and LLD v0.5 are aligned; [contracts/](contracts/openapi.json) are superseded (LLD §23).
+**Alignment:** README, BRD v0.3, LLD v0.5 and DESIGN v0.3 are aligned with this version; [contracts/](contracts/openapi.json) are superseded (LLD §23).
 
 ### 17.4 References
 
