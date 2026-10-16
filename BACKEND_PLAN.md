@@ -1,331 +1,290 @@
-# Backend Plan — FinLegacy AI (`frontend/`)
+# Backend Plan — FinLegacy AI
 
-> Phase 1 deliverable (read-only analysis). No backend code has been written.
-> Scope: the `frontend/` folder of `tash149/financial-legacy`, plus the root docs where they conflict with it.
-
----
-
-## 0. The key finding: a backend already exists inside `frontend/`
-
-`frontend/` is not frontend-only. It's a Next.js 16 full-stack app that already has:
-
-- **15 route handlers** under `frontend/src/app/api/**/route.ts` (intake, cases, documents, assets, tasks, AI drafts/Q&A/checklist, demo seeding, consent, resources).
-- **Prisma + SQLite** (`frontend/prisma/schema.prisma`, DB file `frontend/db/custom.db`, **committed to git with test data**).
-- **An AI layer** (`frontend/src/lib/ai.ts`) built on `z-ai-web-dev-sdk`, a sandbox-vendor SDK whose credentials come from a git-ignored `.z-ai-config`.
-- **Domain logic** in `src/lib/journey-engine.ts` (task plans for 7 personas, next-best-action computation) and `src/lib/case-service.ts`.
-
-The frontend calls same-origin `/api/*` URLs only. Nothing is mocked on the client. Every screen reads from and writes to these routes.
-
-The repo root also has a **different, much larger target design**: `LLD.md`, `contracts/openapi.json` (v0.3, about 85 paths under `http://localhost:8000/v1`), and `contracts/schema.sql` (PostgreSQL 18 with RLS, Keycloak OIDC, FastAPI, a worker and ClamAV). **The current frontend calls none of those endpoints.** Section 8 starts with this, because it decides what "build the backend" means.
-
-This plan's default: build a standalone backend that serves the **exact `/api/*` contract the frontend already uses**, so the frontend barely changes. Then harden it (real auth, Postgres, file storage) step by step. LLD alignment is an optional later track.
+> **Status:** Approved plan (v2). Supersedes the Phase 1 read-only analysis.
+> **Repo:** new repo containing the existing Next.js `frontend/` (originally from `tash149/financial-legacy`).
+> **Deadline:** AI Builder Cup 2026 (Google Cloud, BFSI theme) prototype due **18 Oct 2026**. After that, this same codebase becomes the real MVP.
+> **Rule for the coding agent:** build in the order of §11. Finish and verify one milestone before starting the next. If anything here conflicts with the existing code, this file wins; note the decision in `DECISIONS.md`.
 
 ---
 
-## 1. App overview
+## 1. Product context (read first)
 
-**What it does:** FinLegacy AI helps Indian families find forgotten financial assets (bank deposits, insurance, mutual funds, shares), handle claims after a death, resolve rejected claims, and plan wills. An AI intake agent classifies the user's situation and opens a "case". A rule-based journey engine generates a dependency-aware task plan with links to official portals (RBI UDGAM, IRDAI Bima Bharosa, SEBI MITRA, IEPF, Income Tax AIS). Uploaded documents are text-extracted and AI-analysed into evidence-linked "asset clues" that the user confirms or dismisses. AI drafts wills, follow-up letters and expert briefing packs. Nothing is ever submitted to an institution.
+**What FinLegacy AI is.** India holds well over ₹1 lakh crore in unclaimed financial assets (bank deposits in RBI's DEA Fund, unclaimed insurance, mutual funds, IEPF shares/dividends). Most of it belongs to people who have died and whose families don't know what existed or how to claim it. At the same time, banks and insurers struggle to pay death claims to the right person: RBI's 2025 Directions require deceased-customer claims to be settled within 15 days of complete documents (with Bank Rate + 4% compensation for delay), and insurers face fake-death and impostor claims with no shared way to detect them.
 
-**Frontend stack:** Next.js 16 (App Router, `output: "standalone"`), React 19, TypeScript (`ignoreBuildErrors: true`), Tailwind 4, shadcn/ui (Radix), lucide icons, `react-markdown`, toasts via `use-toast`. The app is a **single route `/`** with client-side view state (`landing | intake | workspace | resources`) in `src/app/page.tsx`. There's no router-based navigation and no deep links. Installed but **unused**: next-auth, zustand, react-query, react-hook-form, next-intl, `examples/websocket`.
+**Two sides, one engine.**
+- **Heirs (B2C, "Recover"):** prove who they are and who died, connect sources, see the deceased's assets appear (masked, evidence-linked), get a per-asset claim plan and pre-filled claim packs. NRI heirs are a priority segment.
+- **Institutions (B2B, "Verify"):** a claims console where a bank/insurer checks a death claim's documents, cross-document consistency, duplicates and risk, and decides. This is the fraud/risk piece the hackathon theme asks for, and the main future revenue line.
+- Later products on the same engine: **Trace** (find heirs for dormant accounts before transfer to DEA/IEPF) and **Protect** (living family asset map, bundled by institutions).
 
-**Main user flows:**
+**Business model (for context, not built in v0):** heirs pay a flat fee per estate (charged to the estate, never a % of recovered money); banks/insurers pay per verified claim or annually; Trace is per heir found; Protect is free to families, funded by institutions.
 
-| # | Flow | Screens | API calls |
-|---|------|---------|-----------|
-| F1 | Start journey: describe situation in chat, case gets classified and created, journey generated | `intake.tsx` | `POST /api/intake` (repeated per message) |
-| F2 | Load demo case (A/B/C synthetic scenarios) | `dialogs.tsx` DemoDialog | `POST /api/demo`, then workspace load |
-| F3 | Reopen a case ("My cases") | `dialogs.tsx` CasesDialog, `page.tsx` | `GET /api/cases` |
-| F4 | Case workspace: overview, stats, facts/assumptions, timeline | `workspace.tsx`, `overview-tab.tsx` | `GET /api/cases/:id` (reloaded after every mutation) |
-| F5 | Asset inventory: filter, confirm/dismiss/reopen clues, add manually | `assets-tab.tsx` | `PATCH /api/assets/:id`, `POST /api/assets` |
-| F6 | Document centre: upload, extract, review, correct/verify fields | `documents-tab.tsx` | `POST /api/documents` (multipart), `PATCH /api/documents/:id` |
-| F7 | Journey tracker: start / waiting / complete with evidence; progress and next-best recalculated | `journey-tab.tsx` | `PATCH /api/tasks/:id` |
-| F8 | Estate planning: inventory snapshot, then generate draft will | `estate-tab.tsx` | `POST /api/ai/draft` (`kind: "will"`) |
-| F9 | Expert escalation: generate briefing pack, copy to clipboard | `expert-tab.tsx` | `POST /api/ai/draft` (`kind: "expert"`) |
-| F10 | Ask about this case (grounded Q&A) | `ask-panel.tsx` | `POST /api/ai/ask` |
-| F11 | Official portals directory | `resources-page.tsx` | `GET /api/resources` (raw `fetch`, no session header) |
+**Product principles (non-negotiable):**
+1. **Prove before you see.** Name + DOB + PAN alone unlock nothing. No discovery and no asset data before gate G3 (§3).
+2. **Access decisions are deterministic code.** The LLM extracts, explains and drafts; it never decides access, entitlement or risk.
+3. **Mask by default.** Below G4 (per asset): institution, category, value band, last-4 only.
+4. **Connect, don't upload.** Discovery comes from connected sources (email, tax record, SMS via a future Android companion). Upload/camera scan is a fallback for old paper only.
+5. **Read, extract, forget.** Store extracted fields and short evidence snippets; never store raw email/SMS bodies.
+6. **Everything is logged** in an append-only audit trail visible to the user.
+7. **Humans confirm.** Separate confirmed facts, user-provided information and AI hypotheses. Never present an inferred asset as verified.
+8. **v0 uses synthetic data only.** No real personal documents are sent to any model in v0.
+
+**Platform:** one responsive web app (heirs on phone or laptop, institution console on desktop). No native app. Reading phone SMS will later need a small Android companion; in v0 the SMS source is simulated and labelled as such.
 
 ---
 
-## 2. Every data touchpoint
+## 2. Key decisions (answers to the Phase 1 questions)
 
-### 2.1 Client storage
+| # | Question | Decision |
+|---|---|---|
+| Q1 | What is "the backend"? | **v0 (until 18 Oct): option (b) — harden the existing Next.js API routes in place.** After the hackathon: option (a) — extract `src/server/**` into a standalone service with the same contract. |
+| Q2 | Do `LLD.md` / `contracts/` constrain this? | **No.** Separate future track. Don't implement Keycloak, RLS or `/v1/*` now. |
+| Q3 | Language / framework | **TypeScript** inside Next.js (existing logic is TS). Zod for validation. |
+| Q4 | Database | **SQLite via Prisma for v0** (reseeded for the demo; enums enforced with Zod since Prisma+SQLite lacks native enums). **Cloud SQL Postgres for the MVP** (provider switch). |
+| Q5 | Deployment | **Google Cloud Run, deployed from source with Google Cloud buildpacks — no Docker.** Do not add a Dockerfile, docker-compose or Caddy config; remove any that exist. The app must build with `npm run build` and start with `npm start`, listening on `$PORT`. Secrets via Secret Manager. |
+| Q6 | LLM provider | **Gemini** via `@google/genai` (AI Studio key or Vertex AI). Remove `z-ai-web-dev-sdk`. Keep a provider interface + `FixtureProvider` for tests. Synthetic data only in v0. |
+| Q7 | Auth | Anonymous `x-session-id` stays **only for G0** features (intake chat, resources, guides). Anything about a deceased person requires the trust gates (§3). Real sign-in (email OTP / OAuth) after the hackathon. |
+| Q8 | Store original uploads? | **No** in v0 (extracted text + fields only). MVP: encrypted Cloud Storage. |
+| Q9 | Images | **Keep and make them work** with Gemini vision (camera-scan fallback for share certificates, passbooks). |
+| Q10 | Deletion endpoints | **Yes:** delete case, delete session. |
+| Q11 | Committed `frontend/db/custom.db` | **Remove from git and purge from history** (it contains non-synthetic uploads). Add `*.db` to `.gitignore`. Check repo visibility. Do this before any other work. |
+| Q12 | Checklist / followup / consent / UserProfile | Keep checklist and followup (expose in UI later if time). **Consent becomes per-case and per-source** (§5). UserProfile: keep, unused. |
+| Q13 | Persist drafts and Q&A | **Yes** (new `Draft` and `QaMessage` records). |
+| Q14 | Restore intake chat | **Yes:** `GET /api/cases/:id/messages`. |
+| Q15 | Reminders / notifications | **No** in v0. |
+| — | Bugs listed in Phase 1 | **Fix all seven** (§10). |
 
-| Where | What |
+---
+
+## 3. Trust gates (new — the core security model)
+
+Gate state is stored per case (`gateReached`) and, for G4, per asset (`entitled`).
+
+| Gate | Proof | How (v0) | Unlocks |
+|---|---|---|---|
+| **G0 Account** | control of a session (OTP later) | anonymous `x-session-id` | intake chat, resources directory, guides, demo loader |
+| **G1 Identity** | user is a real, specific person | `IdentityProvider` (mock: "Verify with DigiLocker"; NRI: passport + selfie, simulated) | create a case about a deceased person |
+| **G2 Death** | the named person has died | `DeathProofProvider` (mock DigiLocker fetch, or scan + Gemini read + name/DOB match) | case active; **still no discovery** |
+| **G3 Relationship** | user is a close relative | heir's own document naming the parent/spouse (mock), else legal-heir certificate | connectors + discovery; assets visible **masked** |
+| **G4 Entitlement** (per asset) | user may claim this asset | nominee/joint-holder confirmation or legal-heir/succession certificate (mock) | full details + claim pack for that asset |
+
+Rules:
+- Implemented in `src/server/core/gate-engine.ts` as pure functions; enforced by a `requireGate(caseId, level)` guard used in every case-scoped route handler. The UI cannot skip a gate.
+- **Masking** in `src/server/core/masking.ts`: every asset leaving the API passes through it.
+- **Name matching:** transliteration-aware fuzzy match ("Rajesh Kumar Sharma" ≈ "R. K. Sharma"); mismatches go to manual review, never auto-reject.
+- **One case per deceased:** a second claimant opening a case for the same person (matched on name + DOB + PAN hash) links both cases and sets `frozenReason`; disclosure pauses until reviewed.
+- **Living-person guard:** if any source shows activity by the "deceased" after the date of death, freeze the case.
+- **Existing 7 journeys:** the journey engine stays. Journeys about a living person's own assets (`living_individual`, `estate_planning`) need only G1 and no death/relationship proof. Journeys about someone else's assets (`family_death`, `nominee_heir`, `rejected_claim`, `nri_cross_border`) go through G1–G3. `caregiver` (helping an elderly relative) requires G1 plus a recorded consent from the relative (mock) — never discovery without it.
+
+---
+
+## 4. Discovery: connectors (new)
+
+Every external source sits behind one interface so real sources replace mocks without rewrites.
+
+```ts
+interface Connector {
+  id: "email" | "tax_record" | "sms" | "statement" | "registry" | "scan";
+  connect(caseId: string, consent: ConsentInput): Promise<void>;
+  fetchSignals(caseId: string): Promise<Signal[]>;
+  disconnect(caseId: string): Promise<void>;
+}
+```
+
+- Mode per source via env: `CONNECTOR_MODE_EMAIL=mock|real`, etc. v0 = all `mock` except `scan` (real Gemini vision on synthetic images).
+- **Pipeline** (`src/server/agents/`): filter (financial senders only; OTP messages dropped) → Gemini structured extraction into `Signal` → match to `Institution` reference table → merge into `AssetRecord` (same institution + category + last4 = one asset) → infer hidden assets (always `possible`/suggested) → confidence → masked output.
+- **Confidence:** High = 2+ independent sources or an official statement; Medium = one direct source; Suggested = inferred.
+- **Registries** (UDGAM, MITRA, IEPF, Bima Bharosa): no public APIs. v0 = mock lookup. Real = guided workflow using the existing resources directory: open the official portal, then log the outcome back (`ResourceVisit`).
+- Real connectors planned next, in order: Gmail (OAuth read-only, ≤100 test users before Google's security review), tax record (heir-provided AIS/26AS file parsed), consolidated MF/demat statement (arrives via connected email), Android SMS companion.
+- Existing document upload (`POST /api/documents`) stays as the **fallback path** and feeds the same pipeline.
+
+---
+
+## 5. Data model
+
+Existing models are kept (see the Phase 1 field list, preserved in Appendix A). Changes and additions:
+
+| Model | Change |
 |---|---|
-| `src/lib/client.ts:7-10` | `localStorage["finlegacy_session"]`: random UUID generated on first use. This is the **only identity**. |
-| `src/lib/client.ts:28` | Sent on every `api.*` call as header `x-session-id`. |
-| `expert-tab.tsx:97` | `navigator.clipboard.writeText(pack)`: copy only, no server call. |
+| `LegacyCase` | add `gateReached` (`G0..G4`), `frozenReason?`, `deceasedPersonId?`, `linkedCaseId?` |
+| `AssetRecord` | add `entitled` bool, `valueBand?`, `last4?`, `sourceSignalIds` JSON; keep `discoveryStatus` (`possible\|confirmed\|dismissed`) and `verificationStatus` |
+| `ConsentRecord` | add `caseId?`, `source?` (connector id), `scope`, `expiresAt?`, `revokedAt?` |
+| **`DeceasedPerson`** (new) | `name`, `nameVariants` JSON, `dob?`, `panHash?`, `dateOfDeath?`, `deathProofStatus` |
+| **`Claimant`** (new) | `caseId`, `sessionId`, `relationship`, `role` (`lead\|co_heir`), `identityStatus`, `relationshipStatus` |
+| **`Proof`** (new) | `caseId`, `kind` (`identity\|death\|relationship\|entitlement`), `assetId?`, `provider`, `status`, `matchedFields` JSON |
+| **`Signal`** (new) | `caseId`, `source`, `extractedFields` JSON, `snippet` (≤300 chars), `createdAt` — no raw bodies |
+| **`Institution`** (new, reference) | `name`, `aliases`, `smsSenderIds`, `emailDomains`, `category`, `claimFormTemplate?` |
+| **`ClaimPack`** (new) | `assetId`, `claimPath` (`nominee\|joint\|simplified\|succession`), `checklist` JSON, `formsGenerated` JSON, `status` |
+| **`Draft`** (new) | `caseId`, `kind` (`will\|expert\|followup\|checklist`), `content`, `createdAt` |
+| **`QaMessage`** (new) | `caseId`, `question`, `answer`, `createdAt` |
+| **`ResourceVisit`** (new) | `caseId`, `resourceId`, `openedAt`, `outcome?`, `notes?` |
+| **`InstitutionClaim`** (new, Verify) | `institutionName`, `policyOrAccountRef`, `deceasedName`, `claimantName`, `relationship`, `documents` JSON, `status` (`received\|checking\|needs_docs\|approved\|flagged\|escalated`), `riskLevel?`, `sourceCaseId?` |
+| **`CheckResult`** (new, Verify) | `claimId`, `check` (`consistency\|authenticity\|duplicate\|completeness`), `passed`, `reason`, `evidence` JSON |
+| `CaseEvent` | add event types `gate`, `connector`, `discovery`, `claim_pack`, `verify`; add `actor` value `staff` |
 
-No cookies, no sessionStorage, no other localStorage keys. Drafts (will, expert pack), Q&A history and the intake chat transcript live only in React state and are **lost on navigation or refresh**.
-
-### 2.2 API calls (all via `api` wrapper in `src/lib/client.ts` unless noted)
-
-| # | File:line | Call | Sends | Expects |
-|---|---|---|---|---|
-| 1 | `app/page.tsx:25` | `GET /api/cases` | — | `{ cases: unknown[] }`, uses `.length` only (dot on "My cases") |
-| 2 | `components/fl/dialogs.tsx:110` | `GET /api/cases` | — | `{ cases: {id, scenarioLabel, assetHolderName, progress, isDemo, updatedAt}[] }` |
-| 3 | `components/fl/dialogs.tsx:49` | `POST /api/demo` | `{ scenario: "demo-a"\|"demo-b"\|"demo-c" }` | `{ caseId }` |
-| 4 | `components/fl/intake.tsx:79` | `POST /api/intake` | `{ message, caseId: string\|null }` | `{ reply, classification: ClassifiedSituation, caseId, aiDegraded }` |
-| 5 | `components/fl/workspace.tsx:60` | `GET /api/cases/:id` | — | `CaseWorkspace` (`src/lib/types.ts:89`). Error message shown on failure. |
-| 6 | `components/fl/assets-tab.tsx:44` | `PATCH /api/assets/:id` | `{ action: "confirm"\|"dismiss"\|"reopen" }` | ignored (reloads workspace) |
-| 7 | `components/fl/assets-tab.tsx:65` | `POST /api/assets` | `{ caseId, institution, category, maskedRef }` | ignored |
-| 8 | `components/fl/documents-tab.tsx:41` | `POST /api/documents` (multipart) | `caseId`, `file` (UI accepts `.pdf,.txt,.csv,.md,.jpg,.jpeg,.png`) | `{ document: {extractionStatus, extractionNote, ...}, cluesAdded }` |
-| 9 | `components/fl/documents-tab.tsx:75` | `PATCH /api/documents/:id` | `{ extractedFields: {label,value,confidence,sourceExcerpt}[], userVerified: true }` | ignored |
-| 10 | `components/fl/journey-tab.tsx:38` | `PATCH /api/tasks/:id` | `{ status }` (`in_progress`, `waiting_institution`) | ignored (server returns full workspace) |
-| 11 | `components/fl/journey-tab.tsx:53` | `PATCH /api/tasks/:id` | `{ status: "completed", completionEvidence }` | ignored |
-| 12 | `components/fl/estate-tab.tsx:37` | `POST /api/ai/draft` | `{ caseId, kind: "will", context }` | `{ draft (markdown), label }` |
-| 13 | `components/fl/expert-tab.tsx:31` | `POST /api/ai/draft` | `{ caseId, kind: "expert", expertType, context }` | `{ draft, label }` |
-| 14 | `components/fl/ask-panel.tsx:29` | `POST /api/ai/ask` | `{ caseId, question }` | `{ answer }` |
-| 15 | `components/fl/resources-page.tsx:43` | `GET /api/resources` (**raw `fetch`**) | — | `{ resources: OfficialResource[] }` |
-
-Error contract the client relies on (`client.ts:30-33`): non-2xx means read `body.error` (string) and throw `ApiError(message, status)`. Every endpoint must return `{ "error": "<human message>" }` on failure.
-
-### 2.3 Endpoints the backend has but the frontend never calls
-
-| Endpoint | Status |
-|---|---|
-| `POST /api/ai/checklist` | Implemented, **no UI** |
-| `POST /api/ai/draft` with `kind: "followup"` | Implemented, **no UI** (journey tasks reference "AI-drafted follow-up") |
-| `GET/POST /api/consent` | Implemented, **no UI** (the caregiver task says "record it in Consent settings", but no such screen exists) |
-| `GET /api` | Template "Hello, world!" |
-| `UserProfile` model | In schema, never read or written |
-
-### 2.4 Hardcoded / static data in the frontend bundle
-
-| File | Data |
-|---|---|
-| `components/fl/dialogs.tsx:11-33` | Demo scenario cards (copy only; keys must match server seeds) |
-| `components/fl/intake.tsx:22-31` | 8 example prompts |
-| `components/fl/expert-tab.tsx:15-21` | Expert type list |
-| `components/fl/assets-tab.tsx:16-23, 110` | Asset filter keys and category list (must match `ASSET_CATEGORIES`) |
-| `components/fl/estate-tab.tsx:15` | Default beneficiary text |
-| `components/fl/landing.tsx` | Marketing copy only, no data |
-| `lib/demo-data.ts` (server) | 3 synthetic case seeds with documents, extracted fields and assets |
-| `lib/resources.ts` (server) | 7 official portal entries |
-| `lib/case-service.ts:officialLinkFor` | Category-to-portal URL map (duplicates `resources.ts`) |
+All enums enforced with Zod at the API boundary. Never store full account numbers, full PAN or raw message bodies.
 
 ---
 
-## 3. API contract (match exactly)
+## 6. API contract
 
-Common rules:
-- **Auth header:** `x-session-id: <8–128 chars>` on every endpoint marked "Auth: yes". It's missing on `/api/resources`, which is fine because that endpoint is public.
-- **Errors:** `{ "error": string }`. `401` is returned when the session header is missing or invalid, with the message "Missing or invalid session. Start a new journey from the home page."
-- **Ownership:** every case-scoped lookup filters by owner, so a foreign ID gets `404`, never `403`. This prevents ID probing.
-- **JSON-in-string fields** in the DB (facts, docs, fields) are **always parsed to arrays/objects** in responses.
+### 6.1 Existing endpoints (keep the contract; add gates)
 
-| Method | Path | Request | Success response | Status codes | Auth |
-|---|---|---|---|---|---|
-| GET | `/api/cases` | — | `{ cases: [{ id, caseType, scenarioLabel, assetHolderName, summary, stage, progress, nextBestAction, isDemo, demoKey, updatedAt }] }`, sorted by `updatedAt desc` | 200, 401 | yes |
-| GET | `/api/cases/:id` | — | `CaseWorkspace` = `{ case, assets[], documents[], tasks[], events[] }` (shape in `types.ts:89-166`; assets/docs by `createdAt asc`, tasks by `priority, sortOrder`, events by `createdAt desc`) | 200, 401, 404 | yes |
-| POST | `/api/intake` | `{ message: string (required), caseId?: string\|null }` | `{ reply: string, classification: ClassifiedSituation, caseId: string, aiDegraded: boolean }`. Creates the case on first message; updates classification after; adds asset clues for mentioned institutions; generates tasks once. | 200, 400 (no message), 401 | yes |
-| POST | `/api/demo` | `{ scenario: "demo-a"\|"demo-b"\|"demo-c" }` | `{ caseId }`. Replaces any previous copy of the same demo for this session. | 200, 400, 401 | yes |
-| POST | `/api/assets` | `{ caseId, institution, category?, maskedRef?, holderName? }` | `{ asset }` (created as `confirmed` / `user_confirmed`, confidence 1) | 200, 401, 404 | yes |
-| PATCH | `/api/assets/:id` | `{ action?: "confirm"\|"dismiss"\|"reopen", institution?, maskedRef?, notes?, category? }` | `{ asset }` | 200, 401, 404 | yes |
-| POST | `/api/documents` | multipart: `caseId`, `file` (≤ 8 MB) | `{ document (fields parsed), extraction: ExtractedDocumentData\|null, cluesAdded? }`. Extraction failure still returns **200** with `extractionStatus: "failed"`. | 200, 400, 401, 404, 413 | yes |
-| PATCH | `/api/documents/:id` | `{ extractedFields?: Field[], userVerified?: boolean, category?: string }` | `{ document }`. Note: `extractedFields` comes back as a **raw JSON string** here; the frontend ignores it, but a new backend should parse it. | 200, 401, 404 | yes |
-| PATCH | `/api/tasks/:id` | `{ status?: TaskStatus, completionEvidence?: string (≤500) }` | full `CaseWorkspace`. Server recomputes progress, `isNextBest`, case `stage` and `nextBestAction`. | 200, 401, 404 | yes |
-| POST | `/api/ai/ask` | `{ caseId, question }` | `{ answer }` | 200, 400, 401, 404, 503 | yes |
-| POST | `/api/ai/draft` | `{ caseId, kind: "followup"\|"will"\|"expert", context?: string(≤2000), expertType?: string }` | `{ draft: markdown, label }` | 200, 400, 401, 404, 503 | yes |
-| POST | `/api/ai/checklist` | `{ caseId, institution, purpose? }` | `{ checklist: { institution, purpose, items:[{document, why, whereToGet, critical}], tips[] } }` | 200, 401, 404, 503 | yes |
-| GET | `/api/consent` | — | `{ consents: ConsentRecord[] }` (latest 50) | 200, 401 | yes |
-| POST | `/api/consent` | `{ purpose (≤120), status?: "granted"\|"revoked" }` | `{ consent }` | 200, 400, 401 | yes |
-| GET | `/api/resources` | — | `{ resources: OfficialResource[] }` | 200 | **no** |
-| GET | `/api/health` *(new)* | — | `{ status: "ok" }` | 200 | no |
+Common rules unchanged: `x-session-id` header; errors as `{ "error": string }`; foreign IDs return 404; JSON-in-string fields always parsed in responses.
 
-**Proposed additions** (only if you approve them, see §8). These fill gaps the UI already implies:
-
-| Method | Path | Why |
+| Method | Path | Change |
 |---|---|---|
-| GET | `/api/cases/:id/messages` | Restore the intake chat when returning to a case (`Intake` takes `initialCaseId` but starts with an empty transcript) |
-| DELETE | `/api/cases/:id` | Intake copy promises "you can delete your data anytime" |
-| DELETE | `/api/session` | Same, for the whole session |
-| GET | `/api/documents/:id/file` | Only needed if we start storing original files |
+| GET | `/api/cases` | unchanged; include `gateReached`, `frozenReason` |
+| GET | `/api/cases/:id` | `CaseWorkspace` now includes `gate`, `claimants`, `proofs`; assets pass through masking |
+| POST | `/api/intake` | unchanged contract; creating a case about someone else sets it to G0 and returns `nextGate`; **no asset clues are created from chat before G3** (store mentioned institutions as `assumptions` instead) |
+| POST | `/api/demo` | add `demo-reclaim` (the hackathon demo case, §8); existing demos stay |
+| POST/PATCH | `/api/assets`, `/api/assets/:id` | require G3 |
+| POST/PATCH | `/api/documents`, `/api/documents/:id` | require G3 for documents about the deceased; images now extracted with Gemini vision |
+| PATCH | `/api/tasks/:id` | unchanged |
+| POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | persist results (`QaMessage`, `Draft`); rate-limited |
+| GET/POST | `/api/consent` | now per case + source |
+| GET | `/api/resources` | unchanged (public) |
+| GET | `/api/health` | new: `{ status: "ok" }` |
+
+### 6.2 New endpoints
+
+| Method | Path | Purpose | Gate |
+|---|---|---|---|
+| POST | `/api/cases/:id/proofs/identity` | run `IdentityProvider` | → G1 |
+| POST | `/api/cases/:id/proofs/death` | run `DeathProofProvider` | → G2 |
+| POST | `/api/cases/:id/proofs/relationship` | relationship proof | → G3 |
+| POST | `/api/assets/:id/entitlement` | per-asset entitlement proof | → G4 (asset) |
+| POST | `/api/cases/:id/connectors/:source` | connect a source (consent recorded) | G3 |
+| DELETE | `/api/cases/:id/connectors/:source` | disconnect + delete unmerged signals | G3 |
+| POST | `/api/cases/:id/discover` | run discovery pipeline | G3 |
+| GET | `/api/cases/:id/discovery` | poll progress (assets appear incrementally) | G3 |
+| GET | `/api/cases/:id/plan` | claim-path per confirmed asset + ordered plan | G3 |
+| POST | `/api/assets/:id/claim-pack` | generate claim pack (checklist + PDFs) | G4 |
+| GET | `/api/claim-packs/:id/:form.pdf` | download a pre-filled form | G4 |
+| POST | `/api/claim-packs/:id/submit` | mark sent; creates an `InstitutionClaim` (feeds Verify) | G4 |
+| GET | `/api/cases/:id/messages` | restore intake chat | owner |
+| GET | `/api/cases/:id/audit` | audit trail | owner |
+| POST | `/api/resources/:id/visit` / `/api/visits/:id/outcome` | guided official-portal workflow | G0 |
+| DELETE | `/api/cases/:id`, `/api/session` | data deletion | owner |
+| GET | `/api/console/claims` | Verify queue | reviewer |
+| GET | `/api/console/claims/:id` | claim detail + check results | reviewer |
+| POST | `/api/console/claims/:id/verify` | run checks | reviewer |
+| POST | `/api/console/claims/:id/decision` | `approve \| request_docs \| escalate` (+ drafted message) | reviewer |
+| POST | `/api/admin/reset` | wipe + reseed demo data (disabled when `NODE_ENV=production` unless `DEMO_MODE=true`) | admin |
+
+Reviewer access in v0: a simple `x-console-key` header (env secret) and a "LIC claims desk" login screen. Real roles come with real auth.
 
 ---
 
-## 4. Data model
+## 7. Verify console (new — institution side)
 
-Derived from `prisma/schema.prisma`, `src/lib/types.ts` and route validation. Enum-like columns are free `String` today; the new backend should enforce them as enums or CHECK constraints.
+- **Checks** (each stored as a `CheckResult` with evidence):
+  1. **Consistency:** names, dates of death, ages and relationships agree across death certificate, IDs and claim form (Gemini compares; code records pass/fail).
+  2. **Authenticity signals:** layout/font/date-field mismatch against the genuine certificate template (Gemini vision; flagged as "signal", not proof).
+  3. **Duplicate:** same deceased + same asset already claimed by a different claimant (mock shared claims index in v0).
+  4. **Completeness:** required documents for the chosen claim path.
+- **Risk score** computed by code from check results: Low / Medium / High, each reason linked to evidence. The LLM never sets the score.
+- **Actions:** approve, request documents (drafts a message to the claimant), escalate. Every action logged.
+- **SLA display:** days left under the RBI 15-day rule for bank claims.
+
+---
+
+## 8. Demo case (`demo-reclaim`, synthetic)
+
+- Deceased: **Rajesh Kumar Sharma**, Delhi. Heir: daughter **Ananya Sharma**, Toronto (NRI).
+- Sources and what they reveal:
+  - Email: LIC premium reminders; CAMS consolidated MF statement.
+  - Tax record (AIS): SBI FD interest, HDFC savings interest, a **dividend from a company with no known holding → hidden shares (suggested)**.
+  - SMS (labelled "Needs Android companion · simulated"): SBI FD, HDFC savings alerts, plus 3 OTP messages that must be filtered out.
+  - Registry mock: one old dormant deposit.
+  - Camera scan: one old physical share certificate (generated image; real Gemini extraction).
+- Impostor: "nephew" **Vikram Sharma** claims the LIC policy with an **edited death certificate** (different date of death, mismatched font in the date field).
+- Expected result: ~7 assets (1 suggested); Ananya's LIC claim = Low risk; Vikram's = High (date mismatch + edited field + duplicate).
+- Seed files live in `src/server/data/demo-reclaim/` with a README listing every planted clue and the expected outcome. Seeds are only referenced by mock connectors and the demo loader.
+
+---
+
+## 9. Claim-path rules and claim packs (new)
+
+- `src/server/rules/claim-path.ts` (code, not LLM): per confirmed asset choose `nominee` / `joint` / `simplified` (deposit claims up to ₹15 lakh at commercial banks, ₹5 lakh at co-operative banks, per RBI 2025 Directions) / `succession` (above threshold or disputed). Gemini writes only the plain-language explanation.
+- Ordered recovery plan across assets (e.g. legal-heir certificate before bank claims), mapped onto the existing journey tasks.
+- PDF templates for v0 (3 only): bank deceased-claim form, IEPF-5 cover data sheet, indemnity letter — pre-filled from case data; full identifiers only at G4.
+
+**v1 (after hackathon, keep in mind):** RBI delay-compensation calculator (Bank Rate + 4% if a bank misses 15 days) with drafted letter; escalation ladder (bank → RBI ombudsman; insurer → Bima Bharosa → Insurance Ombudsman); co-heir invites and NOC e-sign; rejected/delayed-claim journey depth.
+
+---
+
+## 10. Bugs to fix while hardening
+
+1. Intake history not filtered by `caseId` (`intake/route.ts:118`) — leaks across cases.
+2. `POST /api/consent` attaches to "most recently updated case" — must take explicit `caseId`.
+3. `PATCH /api/documents/:id` returns `extractedFields` as a raw string — parse it.
+4. AI system prompt sent as `role: "assistant"` (`ai.ts:49, 97`) — use the system instruction field.
+5. Demo route crashes when all seeded tasks are completed (`demo/route.ts:151`).
+6. Asset de-dup by "institution contains first 12 chars" (`documents/route.ts:207`) — replace with `Institution` matching + category + last4.
+7. No rate limiting on AI endpoints; no upload MIME/magic-byte validation — add both.
+
+Also: `typescript.ignoreBuildErrors: true` — turn it off and fix type errors before deploy.
+
+---
+
+## 11. Build order (deadline-first)
+
+Each milestone ends with tests passing and the UI working.
+
+| # | Milestone | Must-have for 18 Oct |
+|---|---|---|
+| M0 | **Security cleanup:** purge `custom.db` from git history, `.gitignore`, check repo visibility; remove any Dockerfile / docker-compose / Caddy files; `/api/health`; `.env.example`; turn off `ignoreBuildErrors` | ✅ |
+| M1 | **Gemini swap:** provider interface, Gemini adapter, fixture provider, fallback behaviour, rate limits; fix bug 4 | ✅ |
+| M2 | **Schema + gates:** Prisma additions (§5), gate engine, masking, name matching, one-case-per-deceased, audit events; proof endpoints with mock providers; tests: no asset data below G3, no full identifiers below G4, duplicate case freezes both | ✅ |
+| M3 | **Gate UI:** proof screens (identity → death → relationship) and a "discovery locked" state in the workspace | ✅ |
+| M4 | **Connectors + discovery:** connector interface, mock connectors, `demo-reclaim` seeds, pipeline, Gemini vision for scans, incremental asset appearance; fix bugs 1, 3, 6 | ✅ |
+| M5 | **Verify console:** `InstitutionClaim`, `CheckResult`, checks, risk score, decisions, console UI | ✅ |
+| M6 | **Claim path + packs:** rules, plan, 3 PDFs, entitlement (G4), submit → `InstitutionClaim` | ✅ |
+| M7 | **Deploy (no Docker):** Cloud Run source deploy via buildpacks (Cloud Run "Continuously deploy from repository" or `gcloud run deploy --source .`); `npm start` honours `$PORT`; Secret Manager; demo reset; end-to-end run of the full story twice | ✅ |
+| M8 | Persist drafts/Q&A, chat restore, delete endpoints, consent per case; fix bugs 2, 5, 7 | if time |
+| M9 | **Post-hackathon:** extract `src/server/**` into a standalone service (Node/TS, same contract, also deployed from source without Docker); Postgres on Cloud SQL; real auth; real Gmail and tax-record connectors; encrypted file storage | after 18 Oct |
+
+**Cut line if behind:** drop will/expert draft polish → drop M8 → drop PDFs (show checklist only). Never drop M2 (gates) or M5 (Verify).
+
+---
+
+## 12. Code layout (inside Next.js for v0)
 
 ```
-Session 1───1 UserProfile (unused)
-   │ 1
-   ├──* LegacyCase 1──* AssetRecord ── (sourceDocumentId → DocumentRecord, soft link)
-   │        │      1──* DocumentRecord
-   │        │      1──* JourneyTask   ── dependencies: JSON array of task ids
-   │        │      1──* CaseEvent     ── refId: soft link to asset/doc/task/consent
-   ├──* ConsentRecord
-   └──* IntakeMessage ── caseId (soft link, nullable)
-```
-All child relations use `onDelete: Cascade`.
-
-| Entity | Fields (type, default) | Constraints / notes |
-|---|---|---|
-| **Session** | `id` string PK (client UUID), `isDemo` bool=false, `createdAt` | Upserted on every request. This is the de facto "user". |
-| **UserProfile** | `preferredName?`, `country`="India", `state?`, `language`="English", `relationship?`, timestamps | Unique `sessionId`. Unused. |
-| **LegacyCase** | `caseType` enum(8)¹, `assetHolderName?`, `relationship?`, `holderLiving?` bool, `jurisdiction`="India", `summary`, `stage` enum(`understanding\|discovery\|documentation\|action\|resolution`)="understanding", `progress` float 0–100, `nextBestAction?`, `scenarioLabel?`, `confidence?` 0–1, `confirmedFacts?` JSON string[], `assumptions?` JSON string[], `isDemo`, `demoKey?` (`demo-a\|b\|c`), timestamps | Unique (sessionId, demoKey) is effectively enforced by the demo route |
-| **AssetRecord** | `category` enum(8)², `institution` (≤120), `maskedRef?` (≤60), `holderName?` (≤120), `evidence?`, `sourceDocumentId?`, `discoveryStatus` enum(`possible\|confirmed\|dismissed`)="possible", `verificationStatus` enum(`unverified\|user_confirmed\|institution_verified`)="unverified", `confidence` 0–1 =0.5, `notes?` (≤500) | Must never hold full account numbers (masked only) |
-| **DocumentRecord** | `category` enum(`bank_statement\|policy_document\|death_certificate\|will\|claim_letter\|receipt\|other`), `fileName`, `fileType`, `sizeLabel?` ("12 KB"), `extractionStatus` enum(`pending\|processing\|extracted\|failed`), `extractionNote?`, `rawText?` (≤20k chars), `extractedFields?` JSON `[{label,value,confidence,sourceExcerpt}]`, `userVerified`, `isSynthetic` | **The original file is not stored**, only the extracted text |
-| **JourneyTask** | `title`, `instructions`, `rationale?`, `institution?`, `assetCategory?` (category or `multi`/`grievance`), `officialUrl?`, `officialName?`, `integrationType` enum(`guided_workflow\|official_website\|public_api`), `requiredDocs?`/`missingInfo?`/`dependencies?` JSON string[], `status` enum(6)³ ="ready", `priority` int (lower = earlier), `isNextBest`, `sortOrder`, `completionEvidence?` (≤500), `completedAt?` | Exactly one `isNextBest=true` per case (or none if all done) |
-| **CaseEvent** | `eventType` enum(`created\|document\|asset\|task\|ai\|consent\|evidence\|status`), `description`, `actor` enum(`ai\|user\|system`), `refId?`, `createdAt` | Append-only audit timeline |
-| **ConsentRecord** | `purpose` (≤120), `status` (`granted\|revoked`), `createdAt` | Append-only; scoped to session, not case |
-| **IntakeMessage** | `caseId?`, `role` (`user\|assistant`), `content`, `meta?` JSON `{classification, caseId, aiDegraded}` | |
-
-¹ `living_individual, family_death, nominee_heir, estate_planning, rejected_claim, caregiver, nri_cross_border, general`
-² `bank_deposit, bank_account, insurance, mutual_fund, shares, provident_fund, other, unknown`
-³ `not_started, ready, in_progress, waiting_institution, needs_expert, completed`
-
-Non-persisted DTOs: `ClassifiedSituation`, `ExtractedDocumentData`, `OfficialResource`, `CaseWorkspace` (all in `src/lib/types.ts`).
-
----
-
-## 5. Auth and permissions (as the frontend sees it)
-
-- **No login, no accounts, no tokens.** Identity is a client-generated UUID in `localStorage`, sent as `x-session-id`. The server **upserts** a `Session` for any 8–128 char value (`src/lib/session.ts`).
-- **Consequences:**
-  - Anyone who learns the ID (it's visible in DevTools and logs) owns those cases.
-  - Clearing browser storage or switching device means cases are lost.
-  - There's no rate limit, so any string creates a session row.
-- **Protection today:** every route except `/api/resources` requires the header. Every case, asset, document and task query is scoped through `case.sessionId`. Cross-session access returns 404 (verified in `worklog.md`).
-- **Actions that must stay protected:** everything in §3 marked "Auth: yes". The AI endpoints (`intake`, `ask`, `draft`, `checklist`, `documents` upload) are also **cost-bearing** and need rate limiting.
-- `next-auth` is installed but unused. The root `LLD.md` §5 specifies Keycloak OIDC through a Next.js BFF with HttpOnly cookies and CSRF, which is a very different model (see Q1–Q2).
-
-**Recommended path:** keep `x-session-id` working first so the frontend runs unchanged. Then add real auth behind the same ownership checks: the `sessionId` foreign key becomes `ownerId`, and there's an optional "claim this anonymous session" step on sign-up.
-
----
-
-## 6. Other needs
-
-| Need | Current state | Backend requirement |
-|---|---|---|
-| **File uploads** | Multipart, ≤8 MB, synchronous. Text/CSV/MD read directly; PDF via `unpdf` text layer; **images accepted by the UI (`.jpg/.png`) but always fail** (no OCR). The original file is discarded. | Keep synchronous extraction for v1 (`maxDuration` 120s). Validate MIME type and magic bytes. Decide on OCR and on storing originals (Q6, Q7). |
-| **AI / LLM** | `z-ai-web-dev-sdk` (sandbox vendor), used for classify, extract, reply, ask, draft and checklist. Graceful degradation: intake falls back to a regex classifier; other routes return 503 with a friendly message. Bug: the system prompt is sent with `role: "assistant"`. | A provider adapter with the same `complete / completeJson / completeWithHistory` interface. The provider needs a decision (Q4). Keep the fallback behaviour and timeouts. |
-| **Real-time** | None. The UI reloads the whole workspace after each mutation. | None needed. Upload is synchronous; a spinner covers it. |
-| **Pagination** | None. Workspace returns all events; consent is limited to 50. | Not needed at current volumes. Optionally cap events at 200. |
-| **Search / filter** | Asset category filter is client-side only. | None. |
-| **Emails / notifications** | None. Task copy mentions "yearly review reminder" and "follow-ups after 30 days". | Out of scope unless requested (Q10). |
-| **Third-party integrations** | Official portals are **links only** (no APIs). | None. Keep the static registry. |
-| **Background jobs** | None. Demo seeding and extraction are inline. | None for v1. A future async extraction or OCR worker is optional. |
-| **Clipboard / markdown** | Client-side only. | None. |
-| **Demo data** | 3 seeds, re-seed replaces. | Port as-is; keep the `isSynthetic` / DEMO labels. |
-
----
-
-## 7. Proposed backend architecture
-
-`[My preferences: language/framework = ___, database = ___, deployment target = ___]`. **Not filled in**, so these are recommendations pending your answers to Q3–Q5.
-
-### Recommendation (default if you have no preference)
-
-| Concern | Choice | Why |
-|---|---|---|
-| Runtime / framework | **Node 22 + TypeScript + Fastify** (or Hono) | About 70% of the logic already exists in TS (journey engine, prompts, validators, demo seeds) and can be ported nearly verbatim. Zod already exists in `package.json`. |
-| ORM | **Prisma** | The existing schema carries over; only the provider changes. |
-| Database | **PostgreSQL 16+** (SQLite allowed for local dev) | Concurrent writes, JSONB for facts/fields, real enums/CHECKs. Matches the LLD direction. |
-| Validation | Zod schemas per endpoint | Replaces the hand-rolled `typeof` checks |
-| AI | Provider adapter (`AiProvider` interface) + `FixtureProvider` for tests | Removes the vendor lock-in to `z-ai-web-dev-sdk` |
-| PDF text | `unpdf` (as today) | Proven in the current code |
-| Tests | Vitest + Supertest; contract tests asserting response shapes against `types.ts` | |
-| Deployment | One Docker image + managed Postgres (Render, Fly or Railway) | Simple. The frontend's Caddy and standalone setup is sandbox-specific. |
-
-**Alternative (if you want to follow `LLD.md`):** Python 3.13 + FastAPI + Pydantic 2 + SQLAlchemy/Alembic + Postgres. This is more work: all TS domain logic gets rewritten, and the frontend still calls `/api/*`, not `/v1/*`.
-
-### Folder structure (new top-level `backend/`)
-
-```
-backend/
-  src/
-    server.ts            # Fastify bootstrap, CORS, error handler → { error }
-    config.ts            # typed env (zod)
-    plugins/session.ts   # x-session-id → request.session (later: real auth)
-    plugins/rateLimit.ts
-    routes/              # cases, intake, demo, assets, documents, tasks, ai, consent, resources, health
-    domain/              # journey-engine.ts, case-service.ts, classification fallback (ported)
-    ai/                  # provider interface, prompts.ts, z-ai/openai/anthropic/fixture adapters
-    extraction/          # text + pdf extractors
-    data/                # resources.ts, demo-data.ts
-    db.ts
-  prisma/schema.prisma   # ported, provider=postgresql, enums, indexes
-  prisma/seed.ts
-  test/
-  Dockerfile
-  .env.example
+frontend/src/
+  app/api/...            # thin route handlers: validate (Zod) → call server/ → respond
+  server/
+    core/                # gate-engine, masking, audit, session, name-matching, rate-limit
+    rules/               # claim-path, confidence, risk-score
+    connectors/          # base.ts, mock/*, real/* (stubs)
+    providers/           # identity, death-proof, registry (mock now)
+    ai/                  # provider interface, gemini.ts, fixture.ts, prompts.ts
+    agents/              # intake, source-reader, reconciler, inference, verify, copilot
+    domain/              # journey-engine, case-service (existing, ported)
+    pdf/                 # claim-pack templates
+    data/                # resources, institutions, demo-reclaim/*, existing demos
+  prisma/schema.prisma
 ```
 
-### How the frontend connects (minimal change)
+`src/server/` must not import from `app/` or React code, so it can be lifted into a standalone service after the hackathon.
 
-**Option A, recommended: same-origin proxy (no CORS, no client code change).**
-- Add to `frontend/next.config.ts`: `rewrites: [{ source: "/api/:path*", destination: \`${process.env.BACKEND_URL}/api/:path*\` }]`.
-- Delete `frontend/src/app/api/**` and the server-only libs (`db.ts`, `ai.ts`, `session.ts`, `case-service.ts`, `journey-engine.ts`, `demo-data.ts`, `resources.ts`). `types.ts` and `client.ts` stay.
-- Env: `BACKEND_URL=http://localhost:4000` (server-side only).
-
-**Option B: direct calls.**
-- `client.ts`: prefix with `process.env.NEXT_PUBLIC_API_BASE_URL`. `resources-page.tsx:43` must switch to `api.get`.
-- Backend CORS: allow `WEB_ORIGIN` and header `x-session-id`.
-
-Backend env vars: `PORT=4000`, `DATABASE_URL`, `WEB_ORIGIN`, `AI_PROVIDER` (`zai|openai|anthropic|fixture`), provider API key, `MAX_UPLOAD_MB=8`, `RATE_LIMIT_*`, `LOG_LEVEL`.
+**Env vars:** `GEMINI_API_KEY` (or Vertex config), `DATABASE_URL`, `CONNECTOR_MODE_*`, `CONSOLE_KEY`, `DEMO_MODE`, `MAX_UPLOAD_MB=8`, `RATE_LIMIT_*`, `LOG_LEVEL`.
 
 ---
 
-## 8. Gaps and questions for you
+## Appendix A — Phase 1 reference (existing app, preserved)
 
-**Scope and direction**
-1. **What is "the backend"?** The frontend already ships a working backend (Next.js API routes + SQLite). Which do you want?
-   - (a) Extract it into a standalone service with the same `/api/*` contract (my default).
-   - (b) Harden it in place inside `frontend/`.
-   - (c) Implement the root `LLD.md` / `contracts/openapi.json` reference API (FastAPI, `/v1/*`, Postgres RLS, Keycloak). That would need major frontend rewiring, because none of those endpoints are called today.
-2. **Should `contracts/` and `LLD.md` constrain this work at all,** or are they a separate future track?
+### A.1 Existing frontend
+Next.js 16 (App Router, standalone), React 19, TS, Tailwind 4, shadcn/ui, lucide, react-markdown. Single route `/` with client view state (`landing | intake | workspace | resources`). Identity = `localStorage["finlegacy_session"]` UUID sent as `x-session-id`. Error contract: non-2xx → `{ error: string }` → `ApiError`.
 
-**Preferences (the blanks in your template)**
+### A.2 Existing user flows
+F1 intake chat → case; F2 load demo A/B/C; F3 my cases; F4 workspace overview; F5 asset inventory (confirm/dismiss/reopen/add); F6 document centre (upload/extract/verify fields); F7 journey tracker (status, evidence, next-best); F8 estate planning (draft will); F9 expert briefing pack; F10 ask about this case; F11 official portals directory.
 
-3. Language/framework: Node/TS (Fastify) or Python/FastAPI?
-4. Database: Postgres (recommended) or keep SQLite?
-5. Deployment target: Docker on Render/Fly/Railway, Vercel + managed DB, or something else?
+### A.3 Existing endpoints
+`GET /api/cases`, `GET /api/cases/:id`, `POST /api/intake`, `POST /api/demo`, `POST /api/assets`, `PATCH /api/assets/:id`, `POST /api/documents` (multipart ≤8 MB), `PATCH /api/documents/:id`, `PATCH /api/tasks/:id` (returns full workspace; recomputes progress/next-best/stage), `POST /api/ai/ask`, `POST /api/ai/draft` (`followup|will|expert`), `POST /api/ai/checklist`, `GET/POST /api/consent`, `GET /api/resources` (public). Response shapes: `src/lib/types.ts` (`CaseWorkspace` at line 89).
 
-**AI**
+### A.4 Existing models
+`Session`, `UserProfile` (unused), `LegacyCase` (8 case types; stages `understanding|discovery|documentation|action|resolution`), `AssetRecord` (8 categories; `possible|confirmed|dismissed`; `unverified|user_confirmed|institution_verified`; masked refs only), `DocumentRecord` (7 categories; extraction status; rawText ≤20k; extractedFields JSON; original file not stored), `JourneyTask` (dependencies, priority, `isNextBest`, 6 statuses, integration type), `CaseEvent` (append-only timeline), `ConsentRecord`, `IntakeMessage`. All child relations cascade on delete.
 
-6. **Which LLM provider?** `z-ai-web-dev-sdk` is a sandbox SDK with credentials in a git-ignored `.z-ai-config` that isn't in the repo. Should I switch to Anthropic, OpenAI, or keep z-ai? Also, may real user documents be sent to an external model? The README and LLD say "synthetic only".
-
-**Auth and data**
-
-7. Is the anonymous `x-session-id` model acceptable for this phase, or do you want real sign-in now (email OTP, OAuth, Keycloak)?
-8. Should original uploaded files be stored (and where: local disk or S3), or only the extracted text as today?
-9. Images: the upload accepts `.jpg/.png`, but extraction always fails. Should I add OCR, or remove images from the `accept` list?
-10. Should I add a data-deletion endpoint (case and/or session), as the UI copy promises?
-11. `frontend/db/custom.db` is **committed with data**: 6 sessions, 9 cases, and 2 non-synthetic uploaded documents. Should I remove it from git and add it to `.gitignore`?
-
-**Features with no UI**
-
-12. Should I keep, drop or expose `/api/ai/checklist`, `/api/ai/draft?kind=followup`, `/api/consent` and the `UserProfile` model? They have backend support but no screens.
-13. Should generated drafts (will, expert pack) and Ask Q&A be **persisted**? Today they're lost on refresh.
-14. Restoring the intake chat when you reopen a case needs `GET /api/cases/:id/messages` plus a small frontend change. Do you want that?
-15. Any reminders or notifications (the "follow up after 30 days" and "yearly review" tasks), or out of scope?
-
-**Bugs I'd fix while porting** (say if you want any left as-is)
-
-- Intake conversation history isn't filtered by `caseId` (`intake/route.ts:118`). History from one case leaks into another case's prompt.
-- `POST /api/consent` attaches the event to "most recently updated case", not a specified case.
-- `PATCH /api/documents/:id` returns `extractedFields` as an unparsed JSON string.
-- The AI system prompt is sent with `role: "assistant"` instead of `system` (`ai.ts:49, 97`).
-- Demo route crashes (`next.id` of undefined) if every seeded task is completed (`demo/route.ts:151`).
-- Asset de-duplication matches on `institution contains first 12 chars` (`documents/route.ts:207`), so different banks with the same prefix get merged.
-- No rate limiting on AI endpoints; no upload MIME or magic-byte validation.
-
----
-
-## 9. Build order (small milestones)
-
-Each milestone ends with tests passing and the frontend working against it.
-
-1. **M0 – Scaffold:** `backend/` project, config, `/api/health`, error handler (`{error}`), CORS/proxy decision, Dockerfile, `.env.example`, CI lint and tests.
-2. **M1 – Schema:** Port Prisma schema to Postgres with enums, indexes (`caseId`, `sessionId`, `updatedAt`) and JSONB. Migrations; seed script.
-3. **M2 – Session and read paths:** `x-session-id` plugin, `GET /api/resources`, `GET /api/cases`, `GET /api/cases/:id` (workspace payload). Contract tests vs `CaseWorkspace`.
-4. **M3 – Demo seeding:** port `demo-data` and `journey-engine`; `POST /api/demo`. This unblocks clicking through the whole UI with no AI key.
-5. **M4 – Mutations:** `PATCH /api/tasks/:id` (progress / next-best / stage recalculation), `POST /api/assets`, `PATCH /api/assets/:id`, `PATCH /api/documents/:id`, `GET/POST /api/consent`. Unit tests for `recalcProgress`.
-6. **M5 – AI adapter:** provider interface, fixture provider, chosen real provider, timeouts, rate limiting.
-7. **M6 – Intake:** `POST /api/intake` with classification, rule-based fallback, case create/update, clue creation and journey generation.
-8. **M7 – Documents:** `POST /api/documents` multipart, text/PDF extraction, AI extraction, clue de-duplication, honest failure states. Size and type validation.
-9. **M8 – AI drafting:** `/api/ai/ask`, `/api/ai/draft` (will / expert / followup), `/api/ai/checklist`.
-10. **M9 – Cut-over:** point the frontend at the backend (rewrite or base URL), delete `frontend/src/app/api` and server libs, remove Prisma/z-ai from frontend deps, run an end-to-end smoke test of flows F1–F11.
-11. **M10 – Hardening (per your answers):** real auth, deletion endpoints, file storage and OCR, persisted drafts, message history endpoint, deployment.
+### A.5 Static data
+Demo scenario cards (`dialogs.tsx`), example prompts (`intake.tsx`), expert types (`expert-tab.tsx`), asset filters (`assets-tab.tsx`), `lib/demo-data.ts` (3 seeds), `lib/resources.ts` (7 official portals; `officialLinkFor` duplicates it — consolidate into `server/data/resources.ts`).
