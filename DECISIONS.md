@@ -22,11 +22,12 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
 
 - **`z-ai-web-dev-sdk` removed; `@google/genai` added.** New layer in `src/server/ai/`: `provider.ts` (interface), `gemini.ts`, `fixture.ts` and `index.ts`. `index.ts` keeps the old `complete` / `completeJson` / `completeWithHistory` API so the routes barely changed.
 - **Auth order:** `GEMINI_API_KEY` first, else Vertex AI via `GOOGLE_CLOUD_PROJECT` (ADC on Cloud Run), else "not configured". "Not configured" returns `ok:false`, so the existing graceful degradation applies.
-- **Model:** `GEMINI_MODEL`, default `gemini-flash-latest` (the alias used in the SDK docs), so the model can change without a deploy.
 - **Bug 4 fixed:** the system prompt goes in `config.systemInstruction`. JSON calls also set `responseMimeType: application/json`.
 - **Vision-ready:** `completeJson(..., { images })` sends inline images on the last user turn (used in M4).
 - **Timeout:** `AI_TIMEOUT_MS`, default 45s, through `AbortSignal`.
 - **Rate limit:** in-memory fixed window per session (`RATE_LIMIT_AI_PER_MINUTE`, default 20). It covers intake, documents, ask, draft and checklist, and returns 429 `{error}`. It's per instance, which is acceptable for v0.
 - **Tests:** vitest with a throwaway SQLite DB (`test/.tmp`); route handlers are called directly.
 - **Fallback classifier bug fixed (found by the tests):** `\breject\b` never matched "rejected", so the built-in example "My insurance claim was rejected" was misclassified. Word stems now allow suffixes.
-- **Not verified live:** no Gemini key was available in the build environment. Only the fixture and degraded paths are tested.
+- **Model:** `GEMINI_MODEL` (default `gemini-flash-latest`) plus `GEMINI_FALLBACK_MODELS` (default `gemini-3.5-flash,gemini-flash-lite-latest`). On 16 Oct the `*-latest` aliases often returned 503 "high demand" and `gemini-2.5-flash` returned 404 (retired); `gemini-3.5-flash` answered in about 1s.
+- **Retry policy:** transient errors (429/5xx/UNAVAILABLE) get one retry after 800 ms, then the next model; 404 skips straight to the next model; anything else fails fast. All of it stays inside the 45s timeout.
+- **Verified live:** `test/live-ai.test.ts` (runs only with `LIVE_AI=1`) passed against the Gemini API for both text and JSON. Normal test runs never call a model.

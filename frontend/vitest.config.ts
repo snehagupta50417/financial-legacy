@@ -9,8 +9,9 @@ export default defineConfig({
     globalSetup: ["test/global-setup.ts"],
     env: {
       DATABASE_URL: `file:${path.resolve(__dirname, "test/.tmp/test.db")}`,
-      GEMINI_API_KEY: "",
-      GOOGLE_CLOUD_PROJECT: "",
+      // Tests never call a real model unless LIVE_AI=1 is set explicitly.
+      GEMINI_API_KEY: process.env.LIVE_AI ? (process.env.GEMINI_API_KEY ?? "") : "",
+      GOOGLE_CLOUD_PROJECT: process.env.LIVE_AI ? (process.env.GOOGLE_CLOUD_PROJECT ?? "") : "",
     },
     // Route tests share one SQLite file; run files serially.
     fileParallelism: false,
