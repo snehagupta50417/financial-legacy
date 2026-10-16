@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { DEMO_CASES, type DemoCaseSeed } from "@/lib/demo-data";
-import { buildJourney } from "@/lib/journey-engine";
-import { logEvent, officialLinkFor } from "@/lib/case-service";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { DEMO_CASES, type DemoCaseSeed } from "@/server/data/demo-data";
+import { buildJourney, recalcProgress } from "@/server/domain/journey-engine";
+import { journeyKind, requiredPath } from "@/server/core/gate-engine";
+import { last4Of } from "@/server/core/masking";
+import { logEvent, officialLinkFor } from "@/server/domain/case-service";
 import type { ClassifiedSituation, CaseType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -61,9 +63,35 @@ export async function POST(req: NextRequest) {
       assumptions: JSON.stringify(cls.assumptions),
       stage: "documentation",
       isDemo: true,
+      // Demos A/B/C start with their gates already passed (synthetic proofs),
+      // so the workspace is explorable end-to-end. demo-reclaim starts at G0.
+      gateReached: requiredPath(journeyKind(cls.caseType)).at(-1) ?? "G1",
       demoKey: seed.demoKey,
     },
   });
+
+  await db.claimant.create({
+    data: {
+      caseId: legacyCase.id,
+      sessionId: session.id,
+      fullName: "Demo user",
+      relationship: seed.relationship,
+      role: "lead",
+      identityStatus: "verified",
+      relationshipStatus: journeyKind(cls.caseType) === "personal" ? "not_required" : "verified",
+    },
+  });
+  for (const kind of requiredPath(journeyKind(cls.caseType)).map((g) => (g === "G1" ? "identity" : g === "G2" ? "death" : "relationship"))) {
+    await db.proof.create({
+      data: {
+        caseId: legacyCase.id,
+        kind,
+        provider: "demo_seed",
+        status: "verified",
+        note: "DEMO — synthetic proof created by the demo loader. No real verification happened.",
+      },
+    });
+  }
 
   await logEvent(
     legacyCase.id,
@@ -97,6 +125,7 @@ export async function POST(req: NextRequest) {
         category: a.category,
         institution: a.institution,
         maskedRef: a.maskedRef,
+        last4: last4Of(a.maskedRef),
         holderName: a.holderName,
         evidence: a.evidence,
         confidence: a.confidence,
@@ -143,17 +172,15 @@ export async function POST(req: NextRequest) {
     where: { caseId: legacyCase.id },
     select: { id: true, title: true, status: true, dependencies: true, priority: true },
   });
-  const completed = all.filter((t) => t.status === "completed").length;
-  const progress = all.length ? Math.round((completed / all.length) * 100) : 0;
-  const next = all
-    .filter((t) => t.status !== "completed")
-    .sort((a, b) => a.priority - b.priority)[0];
-  await db.journeyTask.update({ where: { id: next.id }, data: { isNextBest: true } });
+  // Bug 5: use the shared dependency-aware calculation; it returns null when every task is done.
+  const { progress, nextBestTaskId } = recalcProgress(all);
+  const next = all.find((t) => t.id === nextBestTaskId) ?? null;
+  if (next) await db.journeyTask.update({ where: { id: next.id }, data: { isNextBest: true } });
   await db.legacyCase.update({
     where: { id: legacyCase.id },
-    data: { progress, nextBestAction: next.title },
+    data: { progress, nextBestAction: next?.title ?? null },
   });
-  await logEvent(legacyCase.id, "ai", `Journey generated: ${seeds.length} personalised tasks. Next best action: ${next.title}`, "ai");
+  await logEvent(legacyCase.id, "ai", `Journey generated: ${seeds.length} personalised tasks. Next best action: ${next?.title ?? "none — all done"}`, "ai");
 
   return Response.json({ caseId: legacyCase.id });
 }

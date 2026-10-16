@@ -17,6 +17,7 @@ model Session {
   cases     LegacyCase[]
   consents  ConsentRecord[]
   messages  IntakeMessage[]
+  claimants Claimant[]
 }
 
 model UserProfile {
@@ -50,8 +51,21 @@ model LegacyCase {
   confirmedFacts  String? // JSON array
   assumptions     String? // JSON array
   isDemo          Boolean  @default(false)
-  demoKey         String? // demo-a | demo-b | demo-c
+  demoKey         String? // demo-a | demo-b | demo-c | demo-reclaim
+  // Trust gates (plan §3). Enforced in src/server/core/gate-engine.ts
+  gateReached     String   @default("G0") // G0 | G1 | G2 | G3 | G4
+  frozenReason    String?
+  deceasedPersonId String?
+  deceasedPerson  DeceasedPerson? @relation(fields: [deceasedPersonId], references: [id])
+  linkedCaseId    String?
   assets          AssetRecord[]
+  claimants       Claimant[]
+  proofs          Proof[]
+  signals         Signal[]
+  consents        ConsentRecord[]
+  drafts          Draft[]
+  qaMessages      QaMessage[]
+  resourceVisits  ResourceVisit[]
   documents       DocumentRecord[]
   tasks           JourneyTask[]
   events          CaseEvent[]
@@ -73,6 +87,12 @@ model AssetRecord {
   verificationStatus String  @default("unverified") // unverified | user_confirmed | institution_verified
   confidence        Float    @default(0.5)
   notes             String?
+  entitled          Boolean  @default(false) // G4 for this asset
+  valueBand         String?  // e.g. "₹1–5 lakh"
+  last4             String?
+  sourceSignalIds   String?  // JSON array of Signal ids
+  institutionId     String?
+  claimPacks        ClaimPack[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -124,9 +144,9 @@ model CaseEvent {
   id          String   @id @default(cuid())
   caseId      String
   case        LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  eventType   String // created | document | asset | task | ai | consent | evidence | status
+  eventType   String // created | document | asset | task | ai | consent | evidence | status | gate | connector | discovery | claim_pack | verify
   description String
-  actor       String   @default("ai") // ai | user | system
+  actor       String   @default("ai") // ai | user | system | staff
   refId       String?
   createdAt   DateTime @default(now())
 }
@@ -135,8 +155,14 @@ model ConsentRecord {
   id        String   @id @default(cuid())
   sessionId String
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  caseId    String?
+  case      LegacyCase? @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  source    String?  // connector id: email | tax_record | sms | statement | registry | scan
   purpose   String
+  scope     String   @default("")
   status    String   @default("granted") // granted | revoked
+  expiresAt DateTime?
+  revokedAt DateTime?
   createdAt DateTime @default(now())
 }
 
@@ -148,5 +174,146 @@ model IntakeMessage {
   role      String // user | assistant
   content   String
   meta      String? // JSON: classification, follow-up questions, suggestions
+  createdAt DateTime @default(now())
+}
+
+
+// ─── v2 additions (plan §5) ────────────────────────────────────────────────
+
+model DeceasedPerson {
+  id               String   @id @default(cuid())
+  name             String
+  nameVariants     String   @default("[]") // JSON array
+  dob              String?  // YYYY-MM-DD
+  panHash          String?  // HMAC of PAN; the PAN itself is never stored
+  dateOfDeath      String?  // YYYY-MM-DD
+  deathProofStatus String   @default("pending") // pending | verified | needs_review
+  cases            LegacyCase[]
+  createdAt        DateTime @default(now())
+
+  @@index([panHash])
+}
+
+model Claimant {
+  id                 String   @id @default(cuid())
+  caseId             String
+  case               LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sessionId          String
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fullName           String?
+  relationship       String?
+  role               String   @default("lead") // lead | co_heir
+  identityStatus     String   @default("pending") // pending | verified | needs_review
+  relationshipStatus String   @default("pending") // pending | verified | needs_review | not_required
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Proof {
+  id            String   @id @default(cuid())
+  caseId        String
+  case          LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  kind          String   // identity | death | relationship | entitlement
+  assetId       String?
+  provider      String   // mock_digilocker | mock_passport_selfie | gemini_scan | mock_registry | demo_seed ...
+  status        String   // verified | needs_review | failed
+  matchedFields String   @default("{}") // JSON: field → { expected, found, match }
+  note          String?
+  createdAt     DateTime @default(now())
+}
+
+model Signal {
+  id              String   @id @default(cuid())
+  caseId          String
+  case            LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  source          String   // email | tax_record | sms | statement | registry | scan
+  extractedFields String   @default("{}") // JSON
+  snippet         String   // ≤300 chars; raw bodies are never stored
+  merged          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model Institution {
+  id                String  @id @default(cuid())
+  name              String  @unique
+  aliases           String  @default("[]") // JSON array
+  smsSenderIds      String  @default("[]") // JSON array
+  emailDomains      String  @default("[]") // JSON array
+  category          String
+  claimFormTemplate String?
+}
+
+model ClaimPack {
+  id             String   @id @default(cuid())
+  assetId        String
+  asset          AssetRecord @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  claimPath      String   // nominee | joint | simplified | succession
+  checklist      String   @default("[]") // JSON
+  formsGenerated String   @default("[]") // JSON array of form ids
+  status         String   @default("draft") // draft | ready | submitted
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Draft {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  kind      String   // will | expert | followup | checklist
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model QaMessage {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+}
+
+model ResourceVisit {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  resourceId String
+  openedAt   DateTime @default(now())
+  outcome    String?  // found | not_found | submitted | other
+  notes      String?
+}
+
+// ─── Verify (institution side) ─────────────────────────────────────────────
+
+model InstitutionClaim {
+  id                 String   @id @default(cuid())
+  institutionName    String
+  policyOrAccountRef String   // masked
+  deceasedName       String
+  deceasedDob        String?
+  dateOfDeath        String?
+  claimantName       String
+  relationship       String
+  claimPath          String?
+  documents          String   @default("[]") // JSON array of { kind, fields, imageRef? }
+  status             String   @default("received") // received | checking | needs_docs | approved | flagged | escalated
+  riskLevel          String?  // low | medium | high
+  riskReasons        String   @default("[]") // JSON
+  decisionNote       String?
+  sourceCaseId       String?
+  isDemo             Boolean  @default(false)
+  checks             CheckResult[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model CheckResult {
+  id        String   @id @default(cuid())
+  claimId   String
+  claim     InstitutionClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  check     String   // consistency | authenticity | duplicate | completeness
+  passed    Boolean
+  reason    String
+  evidence  String   @default("[]") // JSON
   createdAt DateTime @default(now())
 }

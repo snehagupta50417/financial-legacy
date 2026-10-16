@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { completeJson } from "@/lib/ai";
-import { logEvent } from "@/lib/case-service";
+import { db } from "@/server/db";
+import { caseAccess, isDenied } from "@/server/core/access";
+import { IMAGE_MIME, readUpload, type SniffedKind } from "@/server/core/upload";
+import { last4Of, redactIdentifiers } from "@/server/core/masking";
+import { completeJson } from "@/server/ai";
+import { aiRateLimit } from "@/server/core/rate-limit";
+import { logEvent } from "@/server/domain/case-service";
 import type { ExtractedDocumentData } from "@/lib/types";
 import { ASSET_CATEGORIES, type AssetCategory } from "@/lib/types";
 
@@ -80,33 +83,22 @@ function validateExtraction(raw: unknown): ExtractedDocumentData | null {
   };
 }
 
-async function extractTextFromFile(file: File): Promise<{
-  text: string;
-  note: string | null;
-}> {
-  const name = file.name.toLowerCase();
-  const type = file.type || "";
-  if (type.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".csv") || name.endsWith(".md")) {
-    return { text: await file.text(), note: null };
-  }
-  if (name.endsWith(".pdf") || type === "application/pdf") {
-    const buf = new Uint8Array(await file.arrayBuffer());
-    const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(buf);
-    const { text } = await extractText(pdf, { mergePages: true });
+async function extractText(bytes: Uint8Array, kind: SniffedKind): Promise<{ text: string; note: string | null }> {
+  if (kind === "text") return { text: new TextDecoder().decode(bytes), note: null };
+  if (kind === "pdf") {
+    const { extractText: pdfText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(bytes);
+    const { text } = await pdfText(pdf, { mergePages: true });
     const merged = Array.isArray(text) ? text.join("\n") : text;
     if (!merged || merged.replace(/\s/g, "").length < 30) {
       return {
         text: "",
-        note: "This PDF appears to be a scanned image without an embedded text layer, so no text could be extracted. Try a text-based PDF or paste key details manually.",
+        note: "This PDF appears to be a scanned image without an embedded text layer, so no text could be extracted. Photograph the page and upload it as an image instead.",
       };
     }
     return { text: merged, note: null };
   }
-  return {
-    text: "",
-    note: `Unsupported file type for real text extraction (${file.type || name}). Supported: text files and text-based PDFs. For images, paste the key details as text.`,
-  };
+  return { text: "", note: "Unsupported file type." };
 }
 
 function parseFieldsSafe(s: string | null | undefined) {
@@ -120,35 +112,36 @@ function parseFieldsSafe(s: string | null | undefined) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await requireSession(req);
-  if (!session) return unauthorized();
-
   const form = await req.formData().catch(() => null);
   if (!form) return Response.json({ error: "Expected multipart form" }, { status: 400 });
-  const caseId = String(form.get("caseId") ?? "");
-  const file = form.get("file");
+  const access = await caseAccess(req, String(form.get("caseId") ?? ""), "discovery");
+  if (isDenied(access)) return access;
+  const { session, legacyCase } = access;
+  const limited = aiRateLimit(session.id);
+  if (limited) return limited;
 
-  const legacyCase = await db.legacyCase.findFirst({ where: { id: caseId, sessionId: session.id } });
-  if (!legacyCase) return Response.json({ error: "Case not found" }, { status: 404 });
+  const file = form.get("file");
   if (!(file instanceof File)) return Response.json({ error: "File required" }, { status: 400 });
-  if (file.size > 8 * 1024 * 1024)
-    return Response.json({ error: "File too large (max 8MB)" }, { status: 413 });
+  const up = await readUpload(file, ["text", "pdf", "png", "jpeg", "webp"]);
+  if (!up.ok) return Response.json({ error: up.error }, { status: up.status });
+  const imageMime = IMAGE_MIME[up.kind];
 
   const doc = await db.documentRecord.create({
     data: {
       caseId: legacyCase.id,
       category: "other",
       fileName: file.name,
-      fileType: file.type || "application/octet-stream",
+      fileType: imageMime ?? (up.kind === "pdf" ? "application/pdf" : "text/plain"),
       sizeLabel: `${Math.max(1, Math.round(file.size / 1024))} KB`,
       extractionStatus: "processing",
     },
   });
   await logEvent(legacyCase.id, "document", `Uploaded "${file.name}" — AI extraction started`, "user", doc.id);
 
-  const { text, note } = await extractTextFromFile(file);
+  // Images (camera-scan fallback) go straight to Gemini vision; text and PDFs are read locally first.
+  const { text, note } = imageMime ? { text: "", note: null } : await extractText(up.bytes, up.kind);
 
-  if (!text) {
+  if (!imageMime && !text) {
     await db.documentRecord.update({
       where: { id: doc.id },
       data: {
@@ -166,8 +159,11 @@ export async function POST(req: NextRequest) {
 
   const res = await completeJson<ExtractedDocumentData>(
     EXTRACT_SYSTEM,
-    `Document file name: ${file.name}\n\nDocument text:\n"""\n${text.slice(0, 12000)}\n"""`,
-    validateExtraction
+    imageMime
+      ? `Document file name: ${file.name}\n\nThe document is the attached image (photo or scan). Read only what is visible.`
+      : `Document file name: ${file.name}\n\nDocument text:\n"""\n${text.slice(0, 12000)}\n"""`,
+    validateExtraction,
+    imageMime ? { images: [{ mimeType: imageMime, data: Buffer.from(up.bytes).toString("base64") }] } : undefined
   );
 
   if (!res.ok) {
@@ -175,8 +171,8 @@ export async function POST(req: NextRequest) {
       where: { id: doc.id },
       data: {
         extractionStatus: "failed",
-        extractionNote: `AI extraction could not complete: ${res.error}. The document text was preserved — you can retry or enter details manually.`,
-        rawText: text.slice(0, 20000),
+        extractionNote: `AI extraction could not complete: ${res.error}. ${imageMime ? "Try again shortly" : "The document text was preserved — you can retry"} or enter details manually.`,
+        rawText: text ? redactIdentifiers(text.slice(0, 20000)) : null,
       },
     });
     await logEvent(legacyCase.id, "document", `AI extraction failed for "${file.name}"`, "ai", doc.id);
@@ -193,8 +189,11 @@ export async function POST(req: NextRequest) {
     data: {
       category: ex.documentCategory,
       extractionStatus: "extracted",
-      rawText: text.slice(0, 20000),
-      extractedFields: JSON.stringify(ex.fields),
+      // Read, extract, forget: identifiers are redacted before anything is stored.
+      rawText: text ? redactIdentifiers(text.slice(0, 20000)) : null,
+      extractedFields: JSON.stringify(
+        ex.fields.map((f) => ({ ...f, value: redactIdentifiers(f.value), sourceExcerpt: redactIdentifiers(f.sourceExcerpt) }))
+      ),
       extractionNote: ex.summary,
     },
   });
@@ -224,7 +223,8 @@ export async function POST(req: NextRequest) {
         caseId: legacyCase.id,
         category: clue.category,
         institution: clue.institution,
-        maskedRef: clue.reference,
+        maskedRef: clue.reference ? redactIdentifiers(clue.reference) : null,
+        last4: last4Of(clue.reference),
         holderName: clue.holderName,
         evidence: clue.evidence,
         sourceDocumentId: doc.id,

@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { completeJson } from "@/lib/ai";
-import { logEvent } from "@/lib/case-service";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { completeJson } from "@/server/ai";
+import { canDiscover } from "@/server/core/gate-engine";
+import { maskAsset } from "@/server/core/masking";
+import { aiRateLimit } from "@/server/core/rate-limit";
+import { logEvent } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,8 @@ interface Checklist {
 export async function POST(req: NextRequest) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
+  const limited = aiRateLimit(session.id);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const caseId = String(body?.caseId ?? "");
   const institution: string = String(body?.institution ?? "");
@@ -32,7 +37,12 @@ export async function POST(req: NextRequest) {
   });
   if (!legacyCase) return Response.json({ error: "Case not found" }, { status: 404 });
 
-  const context = legacyCase.assets
+  // Prompts only ever see what the user may see: nothing below the discovery
+  // gate, and masked assets below G4.
+  const unlocked = canDiscover(legacyCase);
+  const visibleAssets = unlocked ? legacyCase.assets.map((a) => maskAsset(legacyCase, a)) : [];
+
+  const context = visibleAssets
     .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""}, verification: ${a.verificationStatus}`)
     .join("\n");
 

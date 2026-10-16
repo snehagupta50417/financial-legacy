@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
       nextBestAction: true,
       isDemo: true,
       demoKey: true,
+      gateReached: true,
+      frozenReason: true,
       updatedAt: true,
     },
   });
