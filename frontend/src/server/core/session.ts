@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/server/db";
 
 /**
  * Demo-grade identity: the client generates a stable random session key

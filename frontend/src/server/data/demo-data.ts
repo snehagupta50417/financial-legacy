@@ -1,4 +1,4 @@
-import type { ExtractedDocumentData } from "./types";
+import type { ExtractedDocumentData } from "@/lib/types";
 
 /**
  * Synthetic demo data — clearly labelled everywhere in the UI as DEMO.

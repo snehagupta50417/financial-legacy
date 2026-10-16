@@ -1,5 +1,5 @@
-import { db } from "@/lib/db";
-import type { CaseWorkspace } from "./types";
+import { db } from "@/server/db";
+import type { CaseWorkspace } from "@/lib/types";
 
 export function parseJsonArray(s: string | null | undefined): string[] {
   if (!s) return [];

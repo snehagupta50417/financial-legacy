@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
 
 export const dynamic = "force-dynamic";
 

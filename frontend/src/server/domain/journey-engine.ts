@@ -1,6 +1,6 @@
-import type { AssetCategory, CaseType, ClassifiedSituation } from "./types";
-import { SCENARIO_LABELS } from "./types";
-import { resourceForTask } from "./resources";
+import type { AssetCategory, CaseType, ClassifiedSituation } from "@/lib/types";
+import { SCENARIO_LABELS } from "@/lib/types";
+import { resourceForTask } from "@/server/data/resources";
 
 /**
  * Journey engine — ONE configurable engine powering all seven personas.

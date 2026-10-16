@@ -1,4 +1,4 @@
-import { OFFICIAL_RESOURCES } from "@/lib/resources";
+import { OFFICIAL_RESOURCES } from "@/server/data/resources";
 
 export const dynamic = "force-static";
 
