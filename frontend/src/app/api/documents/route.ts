@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession, unauthorized } from "@/lib/session";
-import { completeJson } from "@/lib/ai";
+import { completeJson } from "@/server/ai";
+import { aiRateLimit } from "@/server/core/rate-limit";
 import { logEvent } from "@/lib/case-service";
 import type { ExtractedDocumentData } from "@/lib/types";
 import { ASSET_CATEGORIES, type AssetCategory } from "@/lib/types";
@@ -122,6 +123,8 @@ function parseFieldsSafe(s: string | null | undefined) {
 export async function POST(req: NextRequest) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
+  const limited = aiRateLimit(session.id);
+  if (limited) return limited;
 
   const form = await req.formData().catch(() => null);
   if (!form) return Response.json({ error: "Expected multipart form" }, { status: 400 });

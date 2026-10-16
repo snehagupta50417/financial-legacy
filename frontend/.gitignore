@@ -56,3 +56,4 @@ server.log
 *.db
 *.db-journal
 !.env.example
+test/.tmp
