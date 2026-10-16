@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
 import { completeJson, completeWithHistory } from "@/server/ai";
 import { aiRateLimit } from "@/server/core/rate-limit";
-import { buildJourney, recalcProgress } from "@/lib/journey-engine";
-import { logEvent, officialLinkFor } from "@/lib/case-service";
+import { buildJourney, recalcProgress } from "@/server/domain/journey-engine";
+import { logEvent, officialLinkFor } from "@/server/domain/case-service";
 import {
   ASSET_CATEGORIES,
   CASE_TYPES,

@@ -1,4 +1,4 @@
-import type { OfficialResource } from "./types";
+import type { OfficialResource } from "@/lib/types";
 
 /**
  * Official Resources registry — REAL, verified public destinations only.

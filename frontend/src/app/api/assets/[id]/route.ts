@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { logEvent } from "@/lib/case-service";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { logEvent } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
 

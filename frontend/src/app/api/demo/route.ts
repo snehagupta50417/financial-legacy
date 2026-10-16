@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { DEMO_CASES, type DemoCaseSeed } from "@/lib/demo-data";
-import { buildJourney } from "@/lib/journey-engine";
-import { logEvent, officialLinkFor } from "@/lib/case-service";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { DEMO_CASES, type DemoCaseSeed } from "@/server/data/demo-data";
+import { buildJourney } from "@/server/domain/journey-engine";
+import { logEvent, officialLinkFor } from "@/server/domain/case-service";
 import type { ClassifiedSituation, CaseType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";

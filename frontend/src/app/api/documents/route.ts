@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
 import { completeJson } from "@/server/ai";
 import { aiRateLimit } from "@/server/core/rate-limit";
-import { logEvent } from "@/lib/case-service";
+import { logEvent } from "@/server/domain/case-service";
 import type { ExtractedDocumentData } from "@/lib/types";
 import { ASSET_CATEGORIES, type AssetCategory } from "@/lib/types";
 

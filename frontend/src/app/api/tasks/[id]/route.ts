@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { requireSession, unauthorized } from "@/lib/session";
-import { logEvent, getWorkspacePayload } from "@/lib/case-service";
-import { recalcProgress } from "@/lib/journey-engine";
+import { db } from "@/server/db";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { logEvent, getWorkspacePayload } from "@/server/domain/case-service";
+import { recalcProgress } from "@/server/domain/journey-engine";
 
 export const dynamic = "force-dynamic";
 

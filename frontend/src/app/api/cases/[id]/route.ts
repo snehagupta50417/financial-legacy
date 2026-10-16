@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { requireSession, unauthorized } from "@/lib/session";
-import { getWorkspacePayload } from "@/lib/case-service";
+import { requireSession, unauthorized } from "@/server/core/session";
+import { getWorkspacePayload } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
 
