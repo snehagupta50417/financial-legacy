@@ -183,7 +183,7 @@ export interface RetrieveResult {
 export async function retrieve(
   question: string,
   legacyCase: GateCase & { id: string },
-  opts: { limit?: number } = {}
+  opts: { limit?: number; allowSemantic?: boolean } = {}
 ): Promise<RetrieveResult> {
   await syncLibrary();
   const withDocs = canDiscover(legacyCase);
@@ -193,7 +193,7 @@ export async function retrieve(
     where: withDocs ? { OR: [{ scope: "library" }, { scope: "case", caseId: legacyCase.id }] } : { scope: "library" },
   });
 
-  const model = embeddingModel();
+  const model = opts.allowSemantic === false ? null : embeddingModel();
   let queryVector: number[] | null = null;
   if (model) {
     const [q] = await Promise.all([embedTexts([question], "query"), fillEmbeddings(rows, model)]);

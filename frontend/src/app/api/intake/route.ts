@@ -1,3 +1,4 @@
+import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { requireSession, unauthorized } from "@/server/core/session";
@@ -30,7 +31,7 @@ Rules:
 - "rejected_claim": a claim was rejected or institution is not responding.
 - "caregiver": user is helping an elderly relative organise finances.
 - "nri_cross_border": family lives abroad or assets span multiple countries.
-Distinguish CONFIRMED facts (stated) from ASSUMPTIONS (inferred). Ask at most 2 focused follow-up questions ONLY when essential facts are missing (e.g., is the holder alive? which documents exist?). Never invent institutions, account numbers, balances or eligibility.
+Distinguish CONFIRMED facts (stated) from ASSUMPTIONS (inferred). Ask one focused follow-up question ONLY when essential facts are missing (e.g., is the holder alive? which documents exist?). Never invent institutions, account numbers, balances or eligibility.
 assetCategories must be from: ${ASSET_CATEGORIES.join(", ")}.
 If the user asks a follow-up question instead of giving facts, keep caseType stable when a previous classification exists (it will be provided) and set followUpQuestions to [].
 
@@ -48,7 +49,7 @@ Respond with JSON:
   "urgency": "low"|"medium"|"high",
   "confirmedFacts": string[],
   "assumptions": string[],
-  "followUpQuestions": string[] (max 2),
+  "followUpQuestions": string[] (max 1),
   "summary": one-sentence case summary
 }`;
 
@@ -99,7 +100,8 @@ export async function POST(req: NextRequest) {
 
   let cls: ClassifiedSituation | null = null;
   let aiDegraded = false;
-  const res = await completeJson<ClassifiedSituation>(
+  const allowed = await hasAiConsent(session.id);
+  const res = allowed ? await completeJson<ClassifiedSituation>(
     SYSTEM,
     `User message: ${message}${priorContext}`,
     (raw) => {
@@ -124,12 +126,12 @@ export async function POST(req: NextRequest) {
         confirmedFacts: Array.isArray(r.confirmedFacts) ? r.confirmedFacts.map(String).slice(0, 10) : [],
         assumptions: Array.isArray(r.assumptions) ? r.assumptions.map(String).slice(0, 6) : [],
         followUpQuestions: Array.isArray(r.followUpQuestions)
-          ? r.followUpQuestions.map(String).slice(0, 2)
+          ? r.followUpQuestions.map(String).slice(0, 1)
           : [],
         summary: typeof r.summary === "string" ? r.summary : "",
       };
     }
-  );
+  ) : { ok: false as const, error: "Permission not granted" };
 
   if (res.ok) {
     cls = res.data;
@@ -283,12 +285,12 @@ export async function POST(req: NextRequest) {
     ? `\nWorking assumptions (please correct me if wrong): ${cls.assumptions.slice(0, 3).join("; ")}.`
     : "";
 
-  const replyRes = await completeWithHistory(
+  const replyRes = allowed ? await completeWithHistory(
     `You are Financial Legacy's intake companion. Tone: calm, empathetic, precise, never salesy. Acknowledge the user's situation in 2-4 sentences, state the journey type you opened, and surface the most important next step. Never invent facts, balances, or eligibility. Never promise outcomes. If the situation involves a death, express brief, sincere condolence first.`,
     // history is newest-first: take the 6 most recent turns, oldest first
     history.slice(0, 6).reverse().map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
     `User said: "${message}"\nClassification: ${cls.scenarioLabel}.\nWrite the acknowledgement.`
-  );
+  ) : { ok: false as const, error: "Permission not granted" };
 
   const reply =
     replyRes.ok

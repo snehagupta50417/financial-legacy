@@ -329,3 +329,13 @@ References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://ww
 - **0.3.1:** status row added; G3 accepts any evidenced claimant role; "known assets" skips discovery, never the gates; screen flows added for Journeys A and B.
 
 - **Theme decided:** the app's current navy/teal theme is the standard; three contrast fixes are listed in §3.1.
+
+
+### Keeper backend wiring — 18 Oct 2026
+
+The original Keeper landing, sign-in composition, desktop sidebar, mobile navigation, chat bubbles, starter cards, paperclip, voice dialog and detail panels are preserved. Normal Continue uses server data through an adapter rather than a new workspace layout. Busy/errors use a small status banner; verification is inside existing detail cards. Synthetic file upload is added to the existing paperclip and Documents card. The offline sample remains available. Family contact scopes are previews, not live sharing.
+
+
+### In-place refinement — 18 Oct 2026
+
+Keep the existing composition and visual identity. Quieter copy, fewer repeated badges, a single primary task action, collapsed supporting sources and secondary replies. The original paperclip, microphone, composer, dialogs, drawers and navigation remain. Small provenance, claim-stage, comparison and contact-access visuals use existing tokens and icons. No estimated progress or decorative charts. Voice retains explicit start/stop and transcript review; normal account flows never load fictional holdings. Example scope appears in the existing case selector.

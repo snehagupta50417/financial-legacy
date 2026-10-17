@@ -32,7 +32,7 @@ export function maskRef(input: string | null | undefined): string | null {
 export const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export function formatDay(isoDate: string | null | undefined): string {
-  if (!isoDate) return "—";
+  if (!isoDate) return "Not recorded";
   const d = new Date(isoDate);
   return Number.isNaN(d.getTime()) ? isoDate : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }

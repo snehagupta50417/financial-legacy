@@ -149,3 +149,8 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Listening indicator, shown only while recognition is active. */
+@keyframes keeper-wave { from { transform: scaleY(.55); } to { transform: scaleY(1); } }
+.keeper-wave i { animation: keeper-wave .7s ease-in-out infinite alternate; transform-origin: center; }
+@media (prefers-reduced-motion: reduce) { .keeper-wave i { animation: none !important; transform: none; } }

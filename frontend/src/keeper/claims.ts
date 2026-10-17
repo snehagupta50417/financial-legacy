@@ -36,7 +36,7 @@ export function claimSituation(a: Asset, cl: Claim): Situation {
 const GENERIC_ITEMS: PackItem[] = [
   { id: "death-certificate", label: "Death certificate", required: true },
   { id: "claimant-id", label: "Your officially valid ID document", required: true },
-  { id: "holding-details", label: "Account, policy or folio details", required: true, note: "Not checked against an official procedure — ask the institution what it needs." },
+  { id: "holding-details", label: "Account, policy or folio details", required: true, note: "Not checked against an official procedure. ask the institution what it needs." },
 ];
 
 export interface ClaimPlan {
@@ -49,6 +49,16 @@ export interface ClaimPlan {
 
 export function claimPlan(a: Asset, cl: Claim, today = iso().slice(0, 10)): ClaimPlan {
   const holding = { category: SERVER_CATEGORY[a.category], institution: a.institution };
+  if (cl.backend) {
+    const view = cl.backend;
+    const procedure = procedureFor(holding.category, holding.institution);
+    if (view.decision.kind === "path" && procedure) {
+      const path = view.decision.path as keyof typeof procedure.paths;
+      return { decision: { kind: "path", path, procedure, reasons: view.decision.reasons }, items: view.pack?.items || procedure.paths[path]?.items || [], procedure, path, label: view.decision.label };
+    }
+    if (view.decision.kind === "ask" && procedure) return { decision: { kind: "ask", question: view.decision.question as "nominee" | "jointHolder" | "amount" | "relationship", procedure, reasons: view.decision.reasons }, items: [], procedure, path: null, label: null };
+    return { decision: { kind: "review", reason: view.decision.kind === "review" ? view.decision.reason : "No checked procedure is available.", procedure }, items: [], procedure, path: null, label: null };
+  }
   const decision = choosePath(holding, claimSituation(a, cl), today);
   const procedure = procedureFor(holding.category, holding.institution);
   if (decision.kind === "path") {
@@ -108,7 +118,7 @@ export function startClaim(c: Case, assetId: string): Claim | null {
   return cl;
 }
 
-/** Any change to a prepared package cancels an earlier approval — it must be reviewed again. */
+/** Any change to a prepared package cancels an earlier approval. it must be reviewed again. */
 function invalidate(c: Case, cl: Claim, why: string) {
   if (cl.approval && (cl.approval.state === "approved" || cl.approval.state === "requested")) {
     cl.approval.state = "invalidated";
@@ -142,7 +152,7 @@ export function requestApproval(c: Case, cl: Claim): string | null {
     id: uid(),
     hash: claimHash(a, cl, plan),
     recipient: a.institution,
-    channel: "You submit it yourself (simulated in this prototype — nothing is sent)",
+    channel: "You submit it yourself",
     includes: plan.items.filter((i) => cl.have[i.id]).map((i) => i.label),
     declarations: declarationsFor(a.institution, plan.path).map((d) => d.text),
     state: "requested",
@@ -172,11 +182,10 @@ export function submit(c: Case, cl: Claim, method: string): string | null {
   }
   cl.approval.state = "used";
   const at = iso();
-  const days = claimPlan(a, cl).procedure?.timeline.days ?? 15;
-  cl.submitted = { at, ref: `SIM-${uid().slice(0, 6).toUpperCase()}`, method };
-  cl.nextFollowUp = new Date(Date.parse(at) + days * 86_400_000).toISOString();
-  cl.lastConfirmed = at;
-  logActivity(c, "sent", `Simulated submission to ${a.institution} (${method}). Nothing was actually sent — a real claim is submitted by you.`);
+  cl.submitted = { at, ref: "Not submitted", method };
+  cl.nextFollowUp = null;
+  cl.lastConfirmed = null;
+  logActivity(c, "sent", `Submission step previewed for ${a.institution}. Nothing was sent.`);
   return null;
 }
 
@@ -199,6 +208,7 @@ export function recordOutcome(c: Case, cl: Claim, kind: Outcome, note: string) {
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
   settled: "Settled",
+  partially_settled: "Partially settled",
   transferred: "Transferred",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
@@ -220,13 +230,15 @@ export const CLAIM_STEPS: { id: ClaimStep; label: string }[] = [
 /** Where a claim is now, derived from its facts so it can't drift. */
 export function claimStep(c: Case, cl: Claim): ClaimStep {
   const a = c.assets.find((x) => x.id === cl.assetId);
+  if (cl.backend && !cl.backend.entitled) return "authority";
   if (cl.outcome) return "outcome";
-  if (cl.acknowledged || cl.submitted) return "followup";
+  if (cl.acknowledged || (cl.backend && cl.submitted)) return "followup";
+  if (cl.submitted) return "submission";
   if (cl.approval?.state === "approved") return "submission";
   if (!a) return "intake";
   const plan = claimPlan(a, cl);
   if (plan.decision.kind === "ask") return "intake";
-  if (cl.claimant.verification === "awaiting_review" && !cl.have["death-certificate"]) return "authority";
+  if (cl.claimant.verification === "awaiting_review") return "authority";
   if (!plan.items.filter((i) => i.required).every((i) => cl.have[i.id])) return "documents";
   if (!cl.prepared) return "requirements";
   return "review";

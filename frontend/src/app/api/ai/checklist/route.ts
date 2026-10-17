@@ -1,3 +1,4 @@
+import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { requireSession, unauthorized } from "@/server/core/session";
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest) {
   const context = visibleAssets
     .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""}, verification: ${a.evidenceStatus.replace(/_/g, " ")}`)
     .join("\n");
+
+  if (!await hasAiConsent(session.id)) return Response.json({ error: "AI processing needs your permission in Settings." }, { status: 503 });
 
   const res = await completeJson<Checklist>(
     `You are the Checklist Agent of Financial Legacy for Indian BFSI processes. Generate a precise, practical document checklist for a specific institution interaction. Rules: only include documents genuinely standard for this process in India; explain where each is obtained; never invent portal URLs or fees; mark truly mandatory items critical=true. Respond with JSON: {"institution": string, "purpose": string, "items": [{"document": string, "why": string, "whereToGet": string, "critical": boolean}], "tips": string[]}`,

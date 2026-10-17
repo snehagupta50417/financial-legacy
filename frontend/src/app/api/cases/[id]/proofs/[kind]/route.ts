@@ -1,3 +1,4 @@
+import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { caseAccess, isDenied } from "@/server/core/access";
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   } else if (kind === "death") {
     const isMultipart = (req.headers.get("content-type") ?? "").includes("multipart/form-data");
     if (isMultipart) {
+      if (!await hasAiConsent(session.id)) return errorResponse(403, "AI processing needs your permission in Settings.");
       // Scan path: certificate photo read by Gemini vision.
       const limited = aiRateLimit(session.id);
       if (limited) return limited;

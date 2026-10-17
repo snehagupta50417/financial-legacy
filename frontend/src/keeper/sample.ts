@@ -1,3 +1,4 @@
+import { nextWork } from "./presentation";
 import { addAsset, docReady, emptyCase, makeDoc, refreshAsset, SAMPLE_HOOK, newThread } from "./engine";
 import { startClaim } from "./claims";
 import type { AppState, Case, Message } from "./types";
@@ -43,21 +44,22 @@ function mine(name: string): Case {
   c.family.reviewedAt = "2026-04-02T10:00:00.000Z";
   addTask(c, "Check nominees on each account and policy", "review", "Nomination decides who the institution deals with first.");
   addTask(c, "Choose what Anita can see", "prepare", "Nothing is shared until you choose, and you can preview her exact view.");
-  addTask(c, "Review this record again", "follow", "You asked for a reminder every 6 months.");
-  logActivity(c, "confirmed", "Sample record created for the demo.");
+  addTask(c, "Review this record again", "follow", "Review preference: every 6 months. Notifications are not connected.");
+  logActivity(c, "confirmed", "Family record opened.");
   const th = c.threads[0];
   th.title = "Preparing my family record";
   th.journey = "prepare";
   th.messages.length = 0; // building the sample read a document; start the thread clean
   c.focus = null;
-  th.messages.push(keeperMsg(`Welcome back. You're preparing your family record: 3 assets noted, 1 statement fully reviewed, and one trusted contact chosen (nothing is shared yet). The next useful step is checking the nominee on your SBI Mutual Fund folio.`, {
-    choices: [{ id: "m:resume", label: "Continue where we left off" }, { id: "m:something", label: "Something else" }],
+  th.messages.push(keeperMsg(nextWork(c)?.text || "Your family record is ready for review.", {
+    card: nextWork(c)?.card,
+    choices: [{ id: "m:resume", label: "Continue" }, { id: "m:something", label: "Something else" }],
   }));
   return c;
 }
 
 function estate(): Case {
-  const c = emptyCase("estate-sample", "Estate of Ramesh Iyer (sample)", "estate", "Ramesh Iyer (sample)");
+  const c = emptyCase("estate-sample", "Estate of Ramesh Iyer", "estate", "Ramesh Iyer (sample)");
   const f = (k: string, v: string) => setFact(c, k, v, "confirmed", "Sample record");
   f("goal", "Find or claim assets after a death");
   f("relation", "Child");
@@ -81,13 +83,14 @@ function estate(): Case {
   addTask(c, "Gather the documents for the Punjab National Bank claim", "claims", "Each claim has its own checklist.");
   addTask(c, "Confirm whether the Nippon India folio belongs to the estate", "review", "It's a potential match, not confirmed.");
   addTask(c, "Choose which claim to start next", "claims", "Each institution has its own requirements.");
-  logActivity(c, "confirmed", "Sample estate record created for the demo.");
+  logActivity(c, "confirmed", "Estate record opened.");
   c.focus = null;
   const th = c.threads[0];
   th.title = "Claims for Ramesh Iyer";
   th.journey = "claim";
   th.messages.length = 0;
-  th.messages.push(keeperMsg(`Welcome back. This is the sample record for Ramesh Iyer’s estate. The Punjab National Bank claim is started and still needs documents, one statement is reviewed, and a Nippon India folio is a possible match we haven't confirmed. Nothing has been sent to any institution.`, {
+  th.messages.push(keeperMsg(nextWork(c)?.text || "Your estate record is ready for review.", {
+    card: nextWork(c)?.card,
     choices: [{ id: "m:resume", label: "Continue where we left off" }, { id: "m:something", label: "Something else" }],
   }));
   return c;

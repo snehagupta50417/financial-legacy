@@ -1,3 +1,4 @@
+import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { requireSession, unauthorized } from "@/server/core/session";
@@ -83,6 +84,8 @@ User's question/context: ${extraContext || "(none)"}`;
   } else {
     return Response.json({ error: "Unknown draft kind" }, { status: 400 });
   }
+
+  if (!await hasAiConsent(session.id)) return Response.json({ error: "AI processing needs your permission in Settings." }, { status: 503 });
 
   const res = await complete(system, user);
   if (!res.ok) {

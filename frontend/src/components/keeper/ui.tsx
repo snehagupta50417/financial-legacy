@@ -8,7 +8,7 @@ import type { Evidence, FactState } from "@/keeper/types";
 /** Typographic wordmark: lowercase serif with an apricot "keeping" curve under it. */
 export function Wordmark({ className, href = "/" }: { className?: string; href?: string }) {
   return (
-    <Link href={href} className={cn("group inline-flex flex-col leading-none", className)} aria-label="keeper — home">
+    <Link href={href} className={cn("group inline-flex flex-col leading-none", className)} aria-label="Keeper home">
       <span className="display text-[1.7rem] font-semibold tracking-tight text-ink">keeper</span>
       <svg viewBox="0 0 64 8" className="-mt-0.5 h-2 w-14 text-apricot" aria-hidden>
         <path d="M2 2 C 18 8, 46 8, 62 2" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
@@ -90,7 +90,7 @@ export function FamilyScene({ variant = "table", className }: { variant?: "table
         { x: 306, h: 100, c: "#7b8f7c", s: skin[2], hair: "#2a2a26" },
         { x: 372, h: 66, c: "#c8553d", s: skin[3], hair: "#2a2a26" },
       ].map((p, i) => (
-        <g key={i} className={i === 1 ? "drift" : undefined}>
+        <g key={i}>
           <rect x={p.x - 30} y={246 - p.h * 0.55} width="60" height={p.h * 0.7} rx="26" fill={p.c} />
           <circle cx={p.x} cy={228 - p.h * 0.62} r="19" fill={p.s} />
           <path d={`M${p.x - 19} ${224 - p.h * 0.62}a19 19 0 0138 0z`} fill={p.hair} />
@@ -98,4 +98,9 @@ export function FamilyScene({ variant = "table", className }: { variant?: "table
       ))}
     </svg>
   );
+}
+
+/** Shared by the product conversation and its landing-page preview. */
+export function ChatBubble({ user, children, className }: { user?: boolean; children: React.ReactNode; className?: string }) {
+  return <div className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 leading-relaxed", user ? "ml-auto max-w-[85%] rounded-br-md bg-ink text-ivory" : "mr-auto max-w-[92%] rounded-bl-md bg-paper", className)}>{children}</div>;
 }

@@ -1,3 +1,4 @@
+import { nextWork, refineTurns } from "./presentation";
 import { INSTITUTIONS, JOURNEY_LABEL, WELCOME_NEW } from "./catalog";
 import * as K from "./claims";
 import type {
@@ -41,6 +42,7 @@ export function welcome(c: Case, th: Thread) {
 export function freshState(name: string, mode: Session["mode"]): AppState {
   const self = emptyCase("self", "My financial record", "self", name || "You");
   welcome(self, self.threads[0]);
+  if (mode === "signin") self.threads[0].messages[0].choices = START_CHOICES;
   return { v: 1, session: { mode, name: name || "You" }, activeCase: "self", order: ["self"], cases: { self }, voiceDisclosed: false, speakReplies: false };
 }
 
@@ -112,6 +114,12 @@ function absorb(c: Case, text: string): { added: Asset[]; someUnknown: boolean }
       c.name = `Estate of ${r.label}`;
     }
   }
+  const location = /\b(?:papers|statements|documents|policies|passbooks)\b.{0,20}\b(?:kept|stored|are|is)\s+(?:in|at|with)\s+([^.!?]{2,120})/i.exec(text);
+  if (location) setFact(c, "docs_where", location[1].trim(), "confirmed");
+  const named = /\b(?:name is|name was|named|called)\s+([\p{Lu}][\p{L}'-]+(?:\s+[\p{Lu}][\p{L}'-]+){0,3})/u.exec(text);
+  if (named && c.kind === "estate") { setFact(c, "name", named[1], "confirmed"); c.subject = named[1]; c.name = "Estate of " + named[1]; }
+  if (/\b(?:all (?:my )?(?:accounts|policies).{0,20}(?:have|named|recorded) nominees|nominees.{0,20}(?:all|every) (?:account|policy))/i.test(text)) setFact(c, "nomination", "Recorded for all", "confirmed");
+  if (/\b(?:have|got).{0,15}death certificate/i.test(text)) setFact(c, "authority", /\b(?:my|claimant|own) (?:id|identity)/i.test(text) ? "both" : "death", "confirmed", "You said", "Availability only. Authority is checked separately.");
   return { added, someUnknown };
 }
 
@@ -136,9 +144,9 @@ const SLOTS: Record<string, Slot> = {
   known: {
     key: "known",
     when: (c) => !(c.kind === "estate" && c.facts.known_assets?.value === "none"),
-    ask: (c) => c.kind === "self" ? "Which banks, fund houses or insurers do you remember using? Rough names are fine — you can add more any time." : `Which banks, fund houses or insurers do you know ${poss(c).replace(/’s$/, "")} used? Rough names are fine.`,
-    why: "Named institutions let Keeper prepare the right searches and requirements. Keeper only uses names — never passwords, PINs or OTPs.",
-    parse: (t) => (t.trim().length > 2 ? { value: t.trim().slice(0, 200), state: "needs_confirmation", note: "No institution name was recognised — please confirm the exact name." } : null),
+    ask: (c) => c.kind === "self" ? "Which banks, fund houses or insurers do you remember?" : `Which banks, fund houses or insurers do you know ${poss(c).replace(/’s$/, "")} used? Rough names are fine.`,
+    why: "Named institutions let Keeper prepare the right searches and requirements. Keeper only uses names. never passwords, PINs or OTPs.",
+    parse: (t) => (t.trim().length > 2 ? { value: t.trim().slice(0, 200), state: "needs_confirmation", note: "No institution name was recognised. please confirm the exact name." } : null),
     after: (c, _th, p) => { if (p.state === "needs_confirmation") addTask(c, "Confirm the institution names you mentioned", "gather", "Keeper didn't recognise a name in what you said."); },
   },
   clues: {
@@ -150,10 +158,10 @@ const SLOTS: Record<string, Slot> = {
   },
   docs: {
     key: "docs",
-    ask: (c) => `Do you have any statements, policy papers or passbooks for ${c.kind === "self" ? "your accounts" : poss(c) + " accounts"} that you can add?`,
+    ask: (c) => `Do you have statements, policies or passbooks for ${c.kind === "self" ? "your accounts" : poss(c) + " accounts"} that you can add?`,
     why: "A document is the strongest evidence. Keeper reads it, shows you what it found next to the original, and you correct anything wrong.",
     choices: () => [
-      { id: "s:docs:now", label: "Add a sample document now" },
+      { id: "s:docs:now", label: "Add a document" },
       { id: "s:docs:later", label: "I have some at home" },
       { id: "s:docs:none", label: "Not right now" },
     ],
@@ -161,19 +169,19 @@ const SLOTS: Record<string, Slot> = {
     after: (c, th, p) => {
       if (p.value === "None right now") addTask(c, "Look for old statements, passbooks or policy papers", "gather", "Documents make findings stronger.");
       if (p.value === "Some documents, to add later") addTask(c, "Add the documents you have at home", "gather", "Upload one at a time; Keeper reads each and you check it.");
-      if (p.value === "Adding a document now") say(th, "Use the paperclip beside the message box to add a sample document. Real files aren't accepted in this prototype.");
+      if (p.value === "Adding a document now") say(th, "Use the paperclip to add a document.");
     },
   },
   consent: {
     key: "consent",
     ask: () => "Guided searches use the details you've shared. May Keeper prepare them for you to run yourself? Nothing is sent anywhere.",
-    why: "Each official portal asks for personal details. Keeper only prepares what to enter and where — you run the search on the official site.",
+    why: "Each official portal asks for personal details. Keeper only prepares what to enter and where. you run the search on the official site.",
     choices: () => [{ id: "s:consent:yes", label: "Yes, prepare them" }, { id: "s:consent:no", label: "Not yet" }],
     parse: (t, _c, ch) => pick(ch, { yes: "Allowed", no: "Not yet" }) ?? (/\b(yes|ok|okay|sure|go ahead)\b/i.test(t) ? { value: "Allowed" } : /\b(no|not)\b/i.test(t) ? { value: "Not yet" } : null),
   },
   docs_where: {
     key: "docs_where",
-    ask: () => "Where are your important papers kept — policies, passbooks, property papers, your will if you have one?",
+    ask: () => "Where are your important papers kept. policies, passbooks, property papers, your will if you have one?",
     why: "Your family can only use documents they can find. This tells them where to look.",
     choices: () => [{ id: "s:docs_where:home", label: "At home" }, { id: "s:docs_where:family", label: "With a family member" }, { id: "s:docs_where:locker", label: "In a bank locker" }],
     parse: (t, _c, ch) => pick(ch, { home: "At home", family: "With a family member", locker: "In a bank locker" }) ?? free(t),
@@ -192,7 +200,7 @@ const SLOTS: Record<string, Slot> = {
   contact: {
     key: "contact",
     ask: () => "Is there someone who should know where to begin? Give a name and relationship, like “Anita, daughter”.",
-    why: "A trusted contact is told where your record is. It does not make them an owner or heir — inheritance is decided by law and your will.",
+    why: "A trusted contact is told where your record is. It does not make them an owner or heir. inheritance is decided by law and your will.",
     parse: (t) => {
       const [name, rel] = t.split(/[,–—(]|\s-\s/).map((s) => s.replace(/[)]/g, "").trim());
       return name && name.length < 60 ? { value: rel ? `${name}, ${rel}` : name } : null;
@@ -207,22 +215,22 @@ const SLOTS: Record<string, Slot> = {
   },
   instructions: {
     key: "instructions",
-    ask: () => "Any practical instructions your family should have — for example “the FD papers are in the blue folder”?",
+    ask: () => "Any practical instructions your family should have. for example “the FD papers are in the blue folder”?",
     why: "Small practical details save families days of searching.",
     parse: (t) => free(t),
     after: (c, _th, p) => { if (p.value) c.family.instructions = [c.family.instructions, p.value].filter(Boolean).join("\n"); },
   },
   review: {
     key: "review",
-    ask: () => "How often should Keeper remind you to review this record?",
-    why: "Records go stale — accounts close and nominees change. A regular review keeps it useful.",
-    choices: () => [{ id: "s:review:6m", label: "Every 6 months" }, { id: "s:review:1y", label: "Every year" }, { id: "s:review:none", label: "No reminders" }],
+    ask: () => "How often would you like to review this record?",
+    why: "A review preference helps keep the record current. Notifications are not connected.",
+    choices: () => [{ id: "s:review:6m", label: "Every 6 months" }, { id: "s:review:1y", label: "Every year" }, { id: "s:review:none", label: "No schedule" }],
     parse: (t, _c, ch) => pick(ch, { "6m": "Every 6 months", "1y": "Every year", none: "No reminders" }) ?? (/6|six/i.test(t) ? { value: "Every 6 months" } : /year|annual/i.test(t) ? { value: "Every year" } : null),
     after: (c, _th, p) => { c.family.cadence = p.value; },
   },
   relation: {
     key: "relation",
-    ask: () => "How were you related to them? This is intake only — institutions decide who has authority.",
+    ask: () => "How were you related to them? This is intake only. institutions decide who has authority.",
     why: "Different relationships follow different steps. Keeper records this to prepare the right checklist; it isn't proof of authority.",
     choices: () => [{ id: "s:relation:spouse", label: "Spouse" }, { id: "s:relation:child", label: "Child" }, { id: "s:relation:parent", label: "Parent" }, { id: "s:relation:sibling", label: "Sibling" }, { id: "s:relation:other", label: "Executor or other" }],
     parse: (t, _c, ch) => pick(ch, { spouse: "Spouse", child: "Child", parent: "Parent", sibling: "Sibling", other: "Executor or other" }) ?? (/spouse|husband|wife/i.test(t) ? { value: "Spouse" } : /son|daughter|child/i.test(t) ? { value: "Child" } : /mother|father|parent/i.test(t) ? { value: "Parent" } : /brother|sister|sibling/i.test(t) ? { value: "Sibling" } : /executor|other/i.test(t) ? { value: "Executor or other" } : null),
@@ -245,14 +253,14 @@ const SLOTS: Record<string, Slot> = {
     key: "known_assets",
     ask: () => "Do you already know about any of their assets?",
     why: "If you already know about an asset, Keeper starts its claim right away. If not, it helps you look.",
-    choices: () => [{ id: "s:known_assets:yes", label: "Yes — help me with claims" }, { id: "s:known_assets:some", label: "Some — help me find the rest" }, { id: "s:known_assets:none", label: "No — I need help starting" }],
+    choices: () => [{ id: "s:known_assets:yes", label: "Yes. help me with claims" }, { id: "s:known_assets:some", label: "Some. help me find the rest" }, { id: "s:known_assets:none", label: "No. I need help starting" }],
     parse: (t, _c, ch) => pick(ch, { yes: "yes", some: "some", none: "none" }) ?? (/\bsome\b/i.test(t) ? { value: "some" } : /\b(yes|know)\b/i.test(t) ? { value: "yes" } : /\b(no|none|nothing)\b/i.test(t) ? { value: "none" } : null),
   },
   fork: {
     key: "fork",
     when: (c) => c.assets.length > 0 && c.facts.known_assets?.value === "some",
     ask: () => "We can work through both. Do you want to begin with the claim for what you know, or look for the rest?",
-    why: "They run independently — you can do one now and the other later without repeating anything.",
+    why: "They run independently. you can do one now and the other later without repeating anything.",
     choices: (c) => {
       const a = c.assets.find((x) => x.confirmed) ?? c.assets[0];
       const word = a.category === "bank" ? "bank" : a.category === "mutual_fund" ? "fund" : a.category === "insurance" ? "insurance" : "asset";
@@ -318,27 +326,27 @@ function summary(c: Case): string {
   const told = Object.values(c.facts).filter((f) => f.value && (f.state === "confirmed" || f.state === "document_supported")).length;
   const open = Object.values(c.facts).filter((f) => f.state === "unknown" || f.state === "needs_confirmation" || f.state === "not_provided").length;
   const names = c.assets.map((a) => a.institution);
-  return `So far: ${told} ${told === 1 ? "detail" : "details"} you've confirmed${names.length ? `, and ${names.length} ${names.length === 1 ? "asset" : "assets"} noted (${names.slice(0, 3).join(", ")}${names.length > 3 ? "…" : ""})` : ""}. ${open ? `${open} ${open === 1 ? "thing is" : "things are"} still open — I've turned them into tasks rather than blocking you.` : "Nothing is blocking you right now."}`;
+  return `So far: ${told} ${told === 1 ? "detail" : "details"} you've confirmed${names.length ? `, and ${names.length} ${names.length === 1 ? "asset" : "assets"} noted (${names.slice(0, 3).join(", ")}${names.length > 3 ? "…" : ""})` : ""}. ${open ? `${open} ${open === 1 ? "thing is" : "things are"} still open. I've turned them into tasks rather than blocking you.` : "Nothing is blocking you right now."}`;
 }
 
 // ─── the discovery plan (honest about what each source is) ───────────────────────────────────
 
 export function buildPlan(c: Case): PlanSource[] {
   const consent = c.facts.consent?.value === "Allowed";
-  const hasNames = c.assets.length > 0;
+  const hasNames = c.assets.length > 0 || !!c.facts.known?.value;
   const guided = (id: string, label: string, note: string, url: string): PlanSource => {
     const prev = c.plan.find((p) => p.id === id);
     return { id, label, type: "guided", state: prev?.state === "completed" || prev?.state === "in_progress" ? prev.state : consent ? "ready" : "awaiting_consent", note, url, result: prev?.result };
   };
   const readyDocs = c.docs.filter((d) => d.state === "ready").length;
   return [
-    { id: "uploaded", label: "Records you upload", type: "uploaded", state: readyDocs ? "completed" : "needs_info", note: readyDocs ? `${readyDocs} uploaded ${readyDocs === 1 ? "document" : "documents"} analysed — this covers only what those documents mention.` : "Add a statement or policy and Keeper will read it." },
-    { id: "connected", label: "Connected sources", type: "connected", state: "unavailable", note: "No live connections exist in this prototype. Keeper will never present a guided search as one." },
-    guided("udgam", "RBI UDGAM — unclaimed bank deposits", "A guided search on the official site: you enter the details, Keeper tells you what to use.", "https://udgam.rbi.org.in/unclaimed-deposits/#/login"),
-    guided("mitra", "SEBI MITRA — inactive mutual fund folios", "A guided search through MFCentral. Results show the fund name only.", "https://www.sebi.gov.in/"),
-    guided("bima", "IRDAI Bima Bharosa — unclaimed insurance", "A guided search of insurers' unclaimed-amount pages.", "https://bimabharosa.irdai.gov.in/"),
+    { id: "uploaded", label: "Records you upload", type: "uploaded", state: readyDocs ? "completed" : "needs_info", note: readyDocs ? `${readyDocs} uploaded ${readyDocs === 1 ? "document" : "documents"} analysed. this covers only what those documents mention.` : "Add a statement or policy and Keeper will read it." },
+    { id: "connected", label: "Institution connections", type: "connected", state: "unavailable", note: "This source is not connected." },
+    guided("udgam", "RBI UDGAM. unclaimed bank deposits", "A guided search on the official site: you enter the details, Keeper tells you what to use.", "https://udgam.rbi.org.in/unclaimed-deposits/#/login"),
+    guided("mitra", "SEBI MITRA. inactive mutual fund folios", "A guided search through MFCentral. Results show the fund name only.", "https://www.sebi.gov.in/"),
+    guided("bima", "IRDAI Bima Bharosa. unclaimed insurance", "A guided search of insurers' unclaimed-amount pages.", "https://bimabharosa.irdai.gov.in/"),
     { id: "manual", label: "Ask an institution directly", type: "manual", state: hasNames ? "ready" : "needs_info", note: hasNames ? "Write to or visit the institutions you named and ask what they hold." : "Needs at least one institution name." },
-    { id: "iepf", label: "IEPF — unclaimed shares and dividends", type: "guided", state: "planned", note: "Planned. Not available in this prototype." },
+    { id: "iepf", label: "IEPF. unclaimed shares and dividends", type: "guided", state: "planned", note: "This source is not connected." },
   ];
 }
 
@@ -351,25 +359,24 @@ function finish(c: Case, th: Thread) {
     c.plan = buildPlan(c);
     addTask(c, "Run the guided searches Keeper prepared", "follow", "A no-match result only covers that portal and the details you gave.");
     c.focus = { type: "plan" };
-    say(th, `${summary(c)}\n\nI've built a discovery plan. It separates what Keeper analysed from your uploads from searches you run yourself on official sites. A search that finds nothing only tells us about that site and those details.`, {
+    say(th, `${summary(c)}\n\nYour discovery plan is ready. Review the sources before searching.`, {
       card: { type: "plan" },
-      choices: [{ id: "a:sampleDoc:statement", label: "Add a sample statement" }, { id: "j:prepare", label: "Prepare my family record" }, { id: "m:know", label: "Show what Keeper knows" }],
+      choices: [{ id: "m:something", label: "Something else" }],
     });
   } else if (j === "prepare") {
-    c.family.reviewedAt = iso();
-    addTask(c, "Review this record again", "follow", c.family.cadence && c.family.cadence !== "No reminders" ? `You asked to be reminded: ${c.family.cadence.toLowerCase()}.` : "Records go stale.");
+    addTask(c, "Review this record again", "follow", c.family.cadence && c.family.cadence !== "No reminders" ? `Review preference: ${c.family.cadence.toLowerCase()}. Notifications are not connected.` : "Records go stale.");
     c.focus = { type: "family" };
-    say(th, `${summary(c)}\n\nYour family record is ready to review. It helps your family understand your assets, find documents and see where to begin. It does not replace a will or establish who inherits.`, {
+    say(th, `${summary(c)}\n\nYour family record is ready for review.`, {
       card: { type: "family" },
-      choices: [{ id: "a:previewContact", label: "Preview a trusted contact's view" }, { id: "a:sampleDoc:policy", label: "Add a sample policy" }, { id: "j:discover", label: "Look for forgotten assets" }],
+      choices: [{ id: "m:something", label: "Something else" }],
     });
   } else if (j === "claim") {
     addTask(c, "Choose which claim to start first", "claims", "Each institution has its own requirements.");
     const starters = c.assets.filter((a) => a.confirmed).slice(0, 3).map((a) => ({ id: `a:startClaim:${a.id}`, label: `Start claim: ${a.institution}` }));
     c.focus = { type: "know" };
-    say(th, `${summary(c)}\n\nEach institution gets its own claim. Requirements come from official sources where we have them and are marked clearly where we don't.`, {
+    say(th, `${summary(c)}\n\nEach institution gets its own claim. Start with a known holding.`, {
       card: { type: "know" },
-      choices: [...starters, { id: "a:sampleDoc:statement", label: "Add a sample statement" }, { id: "j:discover", label: "Look for other assets" }],
+      choices: [...starters, { id: "a:sampleDoc:statement", label: "Add document" }, { id: "j:discover", label: "Look for other assets" }],
     });
   }
 }
@@ -394,9 +401,9 @@ function begin(c: Case, th: Thread, journey: Journey) {
   th.title = JOURNEY_LABEL[journey];
   setFact(c, "goal", JOURNEY_LABEL[journey], "confirmed");
   if (journey === "prepare") {
-    say(th, "Preparing your financial affairs for the end of life. This record helps your family understand your assets, locate documents, and identify practical next steps. It does not replace a will or establish inheritance rights.");
+    say(th, "This record helps your family find what they need. It does not replace a will.");
   } else if (journey === "claim") {
-    say(th, "I'll help you organise this and prepare claims, one institution at a time. Keeper coordinates information — it doesn't decide who is legally entitled to what.");
+    say(th, "We can work on known assets first. Each institution checks the authority to claim.");
   }
 }
 
@@ -413,7 +420,8 @@ function ensureCaseFor(s: AppState, journey: Journey): Case {
     return e;
   }
   if (journey === "prepare" && cur.kind === "estate") {
-    const self = s.cases[s.order.find((i) => s.cases[i].kind === "self")!];
+    let self = s.cases[s.order.find((i) => s.cases[i].kind === "self")!];
+    if (!self) { self = emptyCase(uid(), "My financial record", "self", s.session?.name || "You"); s.cases[self.id] = self; s.order.push(self.id); }
     s.activeCase = self.id;
     return self;
   }
@@ -445,7 +453,7 @@ function startJourney(s: AppState, journey: Journey, label: string, userText?: s
 function noteAdded(th: Thread, added: Asset[]) {
   if (!added.length) return;
   const names = added.map((a) => a.institution).join(", ");
-  say(th, `Noted: ${names}. I'll treat ${added.length === 1 ? "it" : "them"} as self-declared until a document supports ${added.length === 1 ? "it" : "them"}.`);
+  say(th, `You mentioned ${names}.`);
 }
 
 export function converse(s: AppState, input: { text?: string; choice?: string; label?: string; voice?: boolean }) {
@@ -467,7 +475,7 @@ export function converse(s: AppState, input: { text?: string; choice?: string; l
     if (!th.journey) return say(th, "What would you like help with?", { choices: START_CHOICES });
     return askNext(c, th);
   }
-  if (choice === "m:know") { userSays(); c.focus = { type: "know" }; return say(th, "Here's what Keeper knows so far. Anything marked unknown or needs confirmation is something to correct or add.", { card: { type: "know" } }); }
+  if (choice === "m:know") { userSays(); c.focus = { type: "know" }; return say(th, "Review the saved details.", { card: { type: "know" } }); }
   if (choice?.startsWith("a:")) return action(s, c, th, choice, input.label ?? "");
 
   // No journey yet: read the situation from what they said.
@@ -477,7 +485,7 @@ export function converse(s: AppState, input: { text?: string; choice?: string; l
     userSays();
     const r = absorb(c, text);
     noteAdded(th, r.added);
-    return say(th, "Thanks — I want to point you the right way. Which of these is closest to your situation?", { choices: START_CHOICES });
+    return say(th, "What would you like help with?", { choices: START_CHOICES });
   }
 
   userSays();
@@ -487,18 +495,18 @@ export function converse(s: AppState, input: { text?: string; choice?: string; l
   if (pending && (choice === "m:why" || (!choice && isWhy(text)))) return say(th, `${pending.why}\n\n${pending.ask(c)}`, { choices: pending.choices?.(c), pending: pending.key });
   if (pending && (choice === "m:unknown" || (!choice && isUnknown(text)))) {
     setFact(c, pending.key, null, "unknown", "You said", "You weren't sure.");
-    addTask(c, `Find out: ${pending.key.replace(/_/g, " ")}`, "gather", "You said you weren't sure — this is a follow-up, not a blocker.");
-    return askNext(c, th, ["That's fine — I've saved it as something to find out later, and we can keep going."]);
+    addTask(c, `Find out: ${pending.key.replace(/_/g, " ")}`, "gather", "You said you weren't sure. this is a follow-up, not a blocker.");
+    return askNext(c, th, ["Saved for later."]);
   }
   if (pending && (choice === "m:skip" || (!choice && isSkip(text)))) {
     setFact(c, pending.key, null, "not_provided", "You said", "Skipped for now.");
-    return askNext(c, th, ["Skipped. I'll remind you about it later."]);
+    return askNext(c, th, ["Skipped for now."]);
   }
 
   // Changing direction mid-conversation: ask rather than silently switching.
   const other = !choice ? detect(text) : null;
   if (other && other !== th.journey && (other === "claim" || /\b(also|actually|instead)\b/i.test(text))) {
-    return say(th, `That sounds like “${JOURNEY_LABEL[other]}”. Switch to that? Nothing you've told me will be lost.`, { choices: [{ id: `j:${other}`, label: `Yes — ${JOURNEY_LABEL[other].toLowerCase()}` }, { id: "m:resume", label: "No, keep going here" }] });
+    return say(th, `That sounds like “${JOURNEY_LABEL[other]}”. Switch to that? Nothing you've told me will be lost.`, { choices: [{ id: `j:${other}`, label: `Yes. ${JOURNEY_LABEL[other].toLowerCase()}` }, { id: "m:resume", label: "No, keep going here" }] });
   }
 
   const absorbed = absorb(c, text);
@@ -507,7 +515,7 @@ export function converse(s: AppState, input: { text?: string; choice?: string; l
   if (pending && !isAnswered(c, pending.key)) {
     const val = choice?.startsWith("s:") ? choice.split(":")[2] : undefined;
     const p = pending.parse(text, c, val);
-    if (!p) return say(th, `I want to be sure I've got this right. ${pending.ask(c)}`, { choices: pending.choices?.(c), pending: pending.key });
+    if (!p) return say(th, `${pending.ask(c)}`, { choices: pending.choices?.(c), pending: pending.key });
     setFact(c, pending.key, p.value, p.state ?? "confirmed", "You said", p.note);
     pending.after?.(c, th, p);
   }
@@ -524,7 +532,7 @@ function action(s: AppState, c: Case, th: Thread, choice: string, label: string)
     c.focus = { type: "claim", id: cl.id };
     const a = c.assets.find((x) => x.id === arg)!;
     addTask(c, `Gather the documents for the ${a.institution} claim`, "claims", "Each claim has its own checklist.");
-    say(th, `I've started the ${a.institution} claim. It opens beside this conversation with its checklist, where each requirement comes from, and what's still missing. Nothing is sent anywhere until you approve it.`, { card: { type: "claim", id: cl.id } });
+    say(th, `I’ve opened the ${a.institution} claim. Review the requirements before preparing the package.`, { card: { type: "claim", id: cl.id } });
     return askNext(c, th);
   }
   if (kind === "investigate") {
@@ -540,21 +548,21 @@ function action(s: AppState, c: Case, th: Thread, choice: string, label: string)
     setFact(c, "fork", null, "unknown", "You said");
     delete c.facts.fork;
     const a = c.assets.find((x) => x.confirmed) ?? c.assets[0];
-    return say(th, `If you already know about an asset, starting its claim moves things forward fastest — claims take weeks, so beginning early helps. Searching for the rest can run alongside. A good order: start the ${a.institution} claim, then look for other assets.`, { choices: [{ id: `a:startClaim:${a.id}`, label: `Start the ${a.institution} claim` }, { id: "a:investigate", label: "Look for investments first" }] });
+    return say(th, `If you already know about an asset, starting its claim moves things forward fastest. claims take weeks, so beginning early helps. Searching for the rest can run alongside. A good order: start the ${a.institution} claim, then look for other assets.`, { choices: [{ id: `a:startClaim:${a.id}`, label: `Start the ${a.institution} claim` }, { id: "a:investigate", label: "Look for investments first" }] });
   }
   if (kind === "sampleDoc") {
     const d = makeDoc(c, arg as DocVariant, undefined);
     c.docs.push(d);
-    return say(th, `I'm reading a synthetic sample ${d.kind.toLowerCase()} (${d.name}). Sample documents only — real files aren't accepted in this prototype.`, { card: { type: "doc", id: d.id } });
+    return say(th, `I’ve opened the ${d.kind.toLowerCase()} (${d.name}). Review the extracted details against the source.`, { card: { type: "doc", id: d.id } });
   }
   if (kind === "previewContact") {
     c.focus = { type: "family" };
-    return say(th, c.contacts.length ? "Choose what each contact can see in the panel — it shows their exact view. Nothing is shared in this prototype." : "Add a trusted contact first, then you can preview exactly what they would see.", { card: { type: "family" } });
+    return say(th, c.contacts.length ? "Preview the intended access. Nothing is shared yet." : "Add a trusted contact first, then you can preview exactly what they would see.", { card: { type: "family" } });
   }
   if (kind === "linkStatement") {
     const d = makeDoc(c, "statement", arg);
     c.docs.push(d);
-    return say(th, `I'm reading a synthetic sample statement for that asset. Open it to compare each detail with the original.`, { card: { type: "doc", id: d.id } });
+    return say(th, `I'm reading a statement for that asset. Open it to compare each detail with the original.`, { card: { type: "doc", id: d.id } });
   }
   askNext(c, th);
 }
@@ -580,20 +588,20 @@ export function makeDoc(c: Case, variant: DocVariant, assetId?: string): Doc {
   const cat = variant === "policy" ? "insurance" : variant === "folio" ? "mutual_fund" : (a?.category ?? "bank");
   const inst = a?.institution ?? (cat === "insurance" ? "LIC of India" : cat === "mutual_fund" ? "HDFC Mutual Fund" : "HDFC Bank");
   if (cat === "insurance") {
-    return { ...base, name: "policy-schedule-SAMPLE.pdf", kind: "Insurance policy", text: `${inst.toUpperCase()}\nPolicy schedule — SAMPLE DOCUMENT\nPolicy holder: ${holderName}\nPolicy no: ••••${last4}\nSum assured: ₹5,00,000\nNominee: Not registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, `${inst.toUpperCase()}`), F("Policy holder", holderName, `Policy holder: ${holderName}`), F("Policy reference", `••••${last4}`, `Policy no: ••••${last4}`), F("Sum assured", "₹5,00,000", "Sum assured: ₹5,00,000"), F("Nominee", "Not registered", "Nominee: Not registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
+    return { ...base, name: "policy-schedule-SAMPLE.pdf", kind: "Insurance policy", text: `${inst.toUpperCase()}\nPolicy schedule. SAMPLE DOCUMENT\nPolicy holder: ${holderName}\nPolicy no: ••••${last4}\nSum assured: ₹5,00,000\nNominee: Not registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, `${inst.toUpperCase()}`), F("Policy holder", holderName, `Policy holder: ${holderName}`), F("Policy reference", `••••${last4}`, `Policy no: ••••${last4}`), F("Sum assured", "₹5,00,000", "Sum assured: ₹5,00,000"), F("Nominee", "Not registered", "Nominee: Not registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
   }
   if (cat === "mutual_fund") {
-    return { ...base, name: "cas-statement-SAMPLE.pdf", kind: "Mutual fund statement", text: `${inst.toUpperCase()}\nAccount statement — SAMPLE DOCUMENT\nInvestor: ${holderName}\nFolio: ••••${last4}\nValue: ₹1,86,420\nNominee: Not registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, inst.toUpperCase()), F("Investor", holderName, `Investor: ${holderName}`), F("Folio reference", `••••${last4}`, `Folio: ••••${last4}`), F("Value", "₹1,86,420", "Value: ₹1,86,420"), F("Nominee", "Not registered", "Nominee: Not registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
+    return { ...base, name: "cas-statement-SAMPLE.pdf", kind: "Mutual fund statement", text: `${inst.toUpperCase()}\nAccount statement. SAMPLE DOCUMENT\nInvestor: ${holderName}\nFolio: ••••${last4}\nValue: ₹1,86,420\nNominee: Not registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, inst.toUpperCase()), F("Investor", holderName, `Investor: ${holderName}`), F("Folio reference", `••••${last4}`, `Folio: ••••${last4}`), F("Value", "₹1,86,420", "Value: ₹1,86,420"), F("Nominee", "Not registered", "Nominee: Not registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
   }
-  return { ...base, name: "savings-statement-SAMPLE.pdf", kind: "Bank statement", text: `${inst.toUpperCase()}\nSavings account statement — SAMPLE DOCUMENT\nAccount holder: ${holderName}\nAccount no: ••••${last4}\nClosing balance: ₹58,240\nNominee: Registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, inst.toUpperCase()), F("Account holder", holderName, `Account holder: ${holderName}`), F("Account reference", `••••${last4}`, `Account no: ••••${last4}`), F("Closing balance", "₹58,240", "Closing balance: ₹58,240"), F("Nominee", "Registered", "Nominee: Registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
+  return { ...base, name: "savings-statement-SAMPLE.pdf", kind: "Bank statement", text: `${inst.toUpperCase()}\nSavings account statement. SAMPLE DOCUMENT\nAccount holder: ${holderName}\nAccount no: ••••${last4}\nClosing balance: ₹58,240\nNominee: Registered\nStatement date: 31 Mar 2024`, fields: [F("Institution", inst, inst.toUpperCase()), F("Account holder", holderName, `Account holder: ${holderName}`), F("Account reference", `••••${last4}`, `Account no: ••••${last4}`), F("Closing balance", "₹58,240", "Closing balance: ₹58,240"), F("Nominee", "Registered", "Nominee: Registered"), F("Statement date", "31 Mar 2024", "Statement date: 31 Mar 2024")] };
 }
 
 const CAT_OF = (kind: string): Category => (/insurance/i.test(kind) ? "insurance" : /mutual/i.test(kind) ? "mutual_fund" : "bank");
 
 export function docReady(c: Case, d: Doc) {
   const th = activeThread(c);
-  if (d.kind === "Scan") { d.state = "unreadable"; addTask(c, "Upload a clearer copy of the blurred scan", "gather", "Keeper couldn't read it — text was too blurred.", "Unreadable file"); logActivity(c, "prepared", `Keeper couldn't read ${d.name}. It stays attached for you to replace.`); return noteIn(th, "I couldn't read that scan — it's too blurred. Try a clearer photo, or upload the PDF. I've added a task."); }
-  if (d.kind === "Password-protected PDF") { d.state = "password"; logActivity(c, "prepared", `${d.name} is password-protected.`); return noteIn(th, "That PDF is password-protected. Keeper never asks for passwords — remove the protection in your PDF viewer, then upload the unlocked copy."); }
+  if (d.kind === "Scan") { d.state = "unreadable"; addTask(c, "Upload a clearer copy of the blurred scan", "gather", "Keeper couldn't read it. text was too blurred.", "Unreadable file"); logActivity(c, "prepared", `Keeper couldn't read ${d.name}. It stays attached for you to replace.`); return noteIn(th, "I couldn't read that scan. it's too blurred. Try a clearer photo, or upload the PDF. I've added a task."); }
+  if (d.kind === "Password-protected PDF") { d.state = "password"; logActivity(c, "prepared", `${d.name} is password-protected.`); return noteIn(th, "That PDF is password-protected. Keeper never asks for passwords. remove the protection in your PDF viewer, then upload the unlocked copy."); }
   if (d.kind === "Duplicate") { d.state = "duplicate"; logActivity(c, "prepared", `${d.name} looks like a copy of a document already added.`); return noteIn(th, "That looks like a copy of a document you already added, so I haven't added a second set of details."); }
   d.state = "ready";
   const inst = d.fields.find((f) => f.label === "Institution")?.value ?? "";
@@ -613,7 +621,7 @@ export function docReady(c: Case, d: Doc) {
   addTask(c, `Confirm with ${a.institution} that the account is still active`, "review", "A document shows what existed on its date. Only the institution can confirm today's status.");
   logActivity(c, "prepared", `Keeper read the sample document ${d.name} and found ${d.fields.length} details to check.`);
   c.focus = { type: "doc", id: d.id };
-  noteIn(th, `I've read ${d.name}. ${d.fields.length} details need your check — open it to compare each one with the original. ${a.evidence === "potential_match" ? `${a.institution} is a potential match until you confirm it.` : ""}`, { card: { type: "doc", id: d.id } });
+  noteIn(th, `I've read ${d.name}. ${d.fields.length} details need your check. open it to compare each one with the original. ${a.evidence === "potential_match" ? `${a.institution} is a potential match until you confirm it.` : ""}`, { card: { type: "doc", id: d.id } });
 }
 
 function noteIn(th: Thread, text: string, extra: Partial<Message> = {}) { th.messages.push(msg("note", text, extra)); }
@@ -624,14 +632,14 @@ export function refreshAsset(c: Case, a: Asset) {
   const docs = a.docIds.map((id) => c.docs.find((d) => d.id === id)).filter((d): d is Doc => !!d && d.state === "ready");
   const reviewed = docs.filter((d) => d.fields.length > 0 && d.fields.every((f) => f.reviewed));
   a.evidence = !a.confirmed ? "potential_match" : reviewed.length ? "document_backed" : "self_declared";
-  if (reviewed.length) a.next = `Ask ${a.institution} to confirm it's still active — a document only shows the past`;
+  if (reviewed.length) a.next = `Ask ${a.institution} to confirm it's still active. a document only shows the past`;
   for (const d of reviewed) {
     const num = (label: RegExp) => { const f = d.fields.find((x) => label.test(x.label)); const n = f ? Number(f.value.replace(/[^\d]/g, "")) : NaN; return Number.isFinite(n) && f ? { n, f } : null; };
     const asOf = d.fields.find((f) => /statement date/i.test(f.label))?.value ?? "date unknown";
     const bal = num(/closing balance/i), sum = num(/sum assured/i), val = num(/^value$/i);
     if (bal) a.amount = { value: bal.n, type: "Closing balance (historical)", asOf };
     else if (val) a.amount = { value: val.n, type: "Value on statement date", asOf };
-    else if (sum) a.amount = { value: sum.n, type: "Sum assured (what a policy pays — not a current value)", asOf };
+    else if (sum) a.amount = { value: sum.n, type: "Sum assured (what a policy pays. not a current value)", asOf };
     const nom = d.fields.find((f) => /nominee/i.test(f.label));
     if (nom) a.nomination = /not registered|none/i.test(nom.value) ? "none" : "recorded";
   }
@@ -656,6 +664,7 @@ export type Action =
   | { t: "asset.confirm"; id: string }
   | { t: "asset.remove"; id: string }
   | { t: "asset.dup"; id: string; merge: boolean }
+  | { t: "doc.upload"; file: File; threadId?: string }
   | { t: "doc.sample"; variant: DocVariant }
   | { t: "doc.ready"; id: string }
   | { t: "doc.field"; docId: string; fieldId: string; value?: string; reviewed?: boolean }
@@ -669,13 +678,17 @@ export type Action =
   | { t: "claim.request"; id: string }
   | { t: "claim.approve"; id: string }
   | { t: "claim.cancel"; id: string }
-  | { t: "claim.submit"; id: string; method: string }
+  | { t: "claim.submit"; id: string; method: string; date?: string; receiptRef?: string }
   | { t: "claim.ack"; id: string; note: string }
-  | { t: "claim.outcome"; id: string; kind: Parameters<typeof K.recordOutcome>[2]; note: string };
+  | { t: "claim.outcome"; id: string; kind: Parameters<typeof K.recordOutcome>[2]; note: string; amount?: string; date?: string; documentId?: string };
 
 export const SAMPLE_HOOK: { load: ((name: string) => AppState) | null } = { load: null };
 
 export function reduce(prev: AppState, a: Action): AppState {
+  return refineTurns(reduceState(prev, a), prev);
+}
+
+function reduceState(prev: AppState, a: Action): AppState {
   if (a.t === "load") return a.state;
   if (a.t === "signIn") return freshState(a.name, a.mode);
   if (a.t === "signOut") return prev;
@@ -686,7 +699,7 @@ export function reduce(prev: AppState, a: Action): AppState {
   switch (a.t) {
     case "reset": return s.session?.mode === "sample" && SAMPLE_HOOK.load ? SAMPLE_HOOK.load(s.session.name) : freshState(s.session?.name ?? "", s.session?.mode ?? "signin");
     case "switchCase": if (s.cases[a.id]) s.activeCase = a.id; break;
-    case "newThread": { const t = newThread(); const hasFacts = Object.keys(c.facts).length > 0; c.threads.unshift(t); c.activeThread = t.id; t.messages.push(msg("keeper", hasFacts ? `Back to ${c.name.toLowerCase()}. I remember what you've told me, so I won't ask again. What would you like to work on?` : WELCOME_NEW, { choices: START_CHOICES })); break; }
+    case "newThread": { const t = newThread(); const work = nextWork(c); c.threads.unshift(t); c.activeThread = t.id; t.messages.push(msg("keeper", work?.text || WELCOME_NEW, { ...(work ? { card: work.card } : {}), choices: work ? [{ id: "m:resume", label: "Continue" }, { id: "m:something", label: "Something else" }] : START_CHOICES })); break; }
     case "switchThread": if (c.threads.some((t) => t.id === a.id)) c.activeThread = a.id; break;
     case "send": converse(s, { text: a.text, voice: a.voice }); break;
     case "choose":
@@ -707,7 +720,7 @@ export function reduce(prev: AppState, a: Action): AppState {
     case "asset.add": {
       const asset = addAsset(c, { institution: a.institution.trim() || "Unnamed institution", category: a.category, ref: maskRef(a.ref) });
       logActivity(c, "confirmed", `You added ${asset.institution}.`);
-      th?.messages.push(msg("note", `You added ${asset.institution}. Would you like to link a statement or include it in your family record?`, { choices: [{ id: `a:linkStatement:${asset.id}`, label: "Add a sample statement" }, { id: "m:something", label: "Not now" }] }));
+      c.context.push(`added ${asset.institution}`);
       break;
     }
     case "asset.edit": {
@@ -755,7 +768,7 @@ export function reduce(prev: AppState, a: Action): AppState {
       if (a.cadence !== undefined) c.family.cadence = a.cadence;
       if (a.reviewed) { c.family.reviewedAt = iso(); logActivity(c, "confirmed", "You marked the family record as reviewed."); }
       break;
-    case "plan.record": { const p = c.plan.find((q) => q.id === a.id); if (p) { p.state = "completed"; p.result = a.result; logActivity(c, "confirmed", `You recorded a search result for ${p.label}: ${a.result}`); } break; }
+    case "plan.record": { const p = c.plan.find((q) => q.id === a.id); if (p) { p.state = /couldn.t|could not|needed details/i.test(a.result) ? "needs_info" : "completed"; p.result = a.result; logActivity(c, "confirmed", `You recorded a search result for ${p.label}: ${a.result}`); } break; }
     case "claim.start": { const cl = K.startClaim(c, a.assetId); if (cl) c.focus = { type: "claim", id: cl.id }; break; }
     default: return claimAction(s, c, a);
   }
