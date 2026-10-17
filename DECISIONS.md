@@ -183,3 +183,10 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **My cases** shows subject, goal, state and next step per case; no balances or document previews.
 - Removed: `overview-tab.tsx`, `estate-tab.tsx`, the cases dialog.
 - **Known limitation, not frontend:** without a model key the intake falls back to rules that classify "make sure my family can find everything" as recover-forgotten-assets.
+
+## Intake fallback follows the three journeys — 17 Oct 2026 (issue #39)
+
+- Without a model key the intake classifies by rules (`src/server/domain/intake-fallback.ts`, moved out of the route so it can be tested). The rules now cover the one-pager's three journeys: a death in the family → `family_death` (holder deceased); "what I have" in the first person → `living_individual` with the user as the living holder; "my family can find everything when I'm gone" → `estate_planning` (holder living). This replaces the known limitation noted under the frontend revamp.
+- The person's own future death ("when I'm gone", "after my death") is planning, not a death in the family. "Will" counts only as a document ("my will", "write a will"), never the verb; a reported death now outranks will words. "Executor" moved from the will rule to the nominee rule.
+- The holder is assumed to be the user only when no relative or "belonging to" is mentioned; otherwise it stays unknown and the reply still asks whether the holder is living. Follow-up questions match the journey (no death-certificate question for planning).
+- The starter prompts live in `src/lib/starters.ts`, used by the landing page, the intake starters and the FL-01 test, so the test runs the exact words people send.

@@ -6,6 +6,7 @@ import { aiRateLimit } from "@/server/core/rate-limit";
 import { buildJourney, recalcProgress } from "@/server/domain/journey-engine";
 import { logEvent, officialLinkFor, parseJsonArray } from "@/server/domain/case-service";
 import { gateSummary } from "@/server/domain/gates";
+import { fallbackClassification } from "@/server/domain/intake-fallback";
 import { canDiscover, nextGate } from "@/server/core/gate-engine";
 import {
   ASSET_CATEGORIES,
@@ -59,47 +60,6 @@ function inferInstitutionCategory(name: string, fallback: string): string {
   if (/(mutual fund|amc|hdfc mf|sbi mf|icici pru|axis mf|kotak mf|nipp|mirae|quant|uti)/.test(n)) return "mutual_fund";
   if (/(demat|shares|nsdl|cdsl|depository)/.test(n)) return "shares";
   return fallback;
-}
-
-function fallbackClassification(message: string): ClassifiedSituation {
-  const m = message.toLowerCase();
-  const deceased = /\b(died|passed away|death|deceased|no more|demise|funeral)\b/.test(m);
-  const rejected = /\b(reject\w*|denied|not responded|no response|stall\w*|delay\w*)\b/.test(m);
-  const will = /\b(will|estate plan\w*|beneficiar\w*|executor|inherit plan)\b/.test(m);
-  const nominee = /\b(nominee|legal heir|succession)\b/.test(m);
-  const nri = /\b(nri|abroad|foreign|usa|uk|dubai|singapore|cross.border)\b/.test(m);
-  const caregiver = /\b(elderly|caregiver|helping my (mother|father|parent)|senior)\b/.test(m);
-  const cats: AssetCategory[] = [];
-  if (/\b(bank|fd|deposit|account)\b/.test(m)) cats.push("bank_deposit");
-  if (/\b(lic|insurance|policy|premium)\b/.test(m)) cats.push("insurance");
-  if (/\b(mutual fund|folio|sip|investment)\b/.test(m)) cats.push("mutual_fund");
-  if (/\b(share|stock|dividend|demat)\b/.test(m)) cats.push("shares");
-  let caseType: CaseType = "general";
-  if (rejected) caseType = "rejected_claim";
-  else if (will) caseType = "estate_planning";
-  else if (deceased) caseType = nominee ? "nominee_heir" : "family_death";
-  else if (nri) caseType = "nri_cross_border";
-  else if (caregiver) caseType = "caregiver";
-  else if (cats.length || m.length > 25) caseType = "living_individual";
-  return {
-    caseType,
-    scenarioLabel: SCENARIO_LABELS[caseType],
-    confidence: 0.55,
-    holderLiving: deceased ? false : caseType === "estate_planning" || caseType === "caregiver" ? true : null,
-    relationship: null,
-    assetHolderName: null,
-    assetCategories: cats.length ? cats : ["unknown"],
-    institutions: [],
-    jurisdiction: "India",
-    urgency: deceased || rejected ? "high" : "medium",
-    confirmedFacts: [message.slice(0, 200)],
-    assumptions: [],
-    followUpQuestions: [
-      "Is the asset holder living or deceased?",
-      "Which documents do you already have (statements, policy papers, death certificate)?",
-    ],
-    summary: message.slice(0, 240),
-  };
 }
 
 export async function POST(req: NextRequest) {
