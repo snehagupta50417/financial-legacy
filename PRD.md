@@ -561,7 +561,16 @@ Privacy rules that apply everywhere:
 - **Breach response:** a written plan for detecting, containing and notifying data breaches before the Pilot.
 - **No data selling, no advertising use** of financial information.
 
-The full assessment — data inventory, legal basis, processors, retention, rights and questions for counsel — is in [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
+**Cautious legal positions** (the law is unclear on these; we take the strictest reading — [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §9):
+
+- A deceased person's data is treated as fully protected; it is processed only for a claimant who has consented **and** shown documented authority; disputed assets are put on hold.
+- Fraud and duplicate-claim checks are always disclosed and covered by the claimant's consent.
+- The product **never contacts co-heirs or nominees**; it stores only what the claim needs about them and deletes it at closure.
+- Full compliance with the DPDP Rules by **January 2027**; today's SPDI rules and the CERT-In 6-hour incident rule apply now.
+- Only institution-published forms and standard formats; no advice on who inherits, will validity or disputes — those get a referral (a lawyer, or free legal aid on **15100** for families who qualify).
+- No representation before institutions, no claim-linked fees, no selling or referring financial products. **The Pilot is free.**
+
+The full assessment — data inventory, legal basis, processors, retention, rights and open legal questions and our cautious positions — is in [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
 
 ### 11.3 Reliability
 
@@ -747,7 +756,7 @@ Detailed, cited answers on what is legally and technically feasible — licences
 ### 15.2 Pilot — may start when
 
 - Privacy policy, retention policy, AI and speech providers, and hosting are approved (D-05, D-09).
-- Identity and authority rules are approved by qualified reviewers (D-02).
+- Identity and authority rules are approved by the founder following the cautious legal positions (§11.2, D-02).
 - Current claim procedures are verified for each Pilot institution (D-10).
 - The AI evaluation (FL-53) has passed on realistic documents.
 - Operators are trained and support hours are defined (D-07).
@@ -776,9 +785,9 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | ID | Decision | Owner |
 | --- | --- | --- |
 | D-01 | **Pilot focus:** the product serves everyone (§4). **Decided:** the Pilot starts with bereaved families (Journey C) — see [BRD §4.3](BRD.md#43-why-bereaved-families-first). Still open: Pilot institutions, channels, success targets, and which NRI situations are supported. | Founder |
-| D-02 | Identity, relationship and authority: what evidence is required, for which roles and actions, and for how long it is valid | Product + qualified legal reviewers |
-| D-03 | Source and channel access: our eligible role, partners and contracts; which sources apply to living vs deceased subjects | Integrations + qualified reviewers |
-| D-04 | Collaboration, family sharing and release after death: recipient verification, notices, disputes and holds | Product + qualified reviewers |
+| D-02 | Identity, relationship and authority: what evidence is required, for which roles and actions, and for how long it is valid | Product (legal review before charging money or partnering) |
+| D-03 | Source and channel access: our eligible role, partners and contracts; which sources apply to living vs deceased subjects | Integrations |
+| D-04 | Collaboration, family sharing and release after death: recipient verification, notices, disputes and holds | Product |
 | D-05 | Privacy and security: hosting, processors, minimum data, retention, deletion, holds and backup expiry | Privacy / security lead |
 | D-06 | Evidence freshness, and how amounts and totals work for each asset type | Product + operations |
 | D-07 | Workload, cost, capacity, recovery, support hours, case limits and service targets | Engineering + operations |
@@ -786,7 +795,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026, revised after research):** speech recognition by Gemini audio on Vertex AI in Mumbai (Google Speech-to-Text isn't offered in India; Chirp only as a disclosed fallback), replies by Google Cloud Text-to-Speech; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
 | D-10 | Institution procedures: who keeps them current, how often they are reviewed, and how legal, fraud and complaint escalations work | Operations |
 | D-11 | Whether native mobile apps are needed, and device, session, storage and accessibility rules for them | Product + engineering |
-| D-12 | **Fee model — decided (17 Oct 2026):** flat or capped fees only; no percentage of recovered money; the family signs and submits; no representation before institutions ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2). Still open: price points and payer (D-08) | Founder |
+| D-12 | **Fee model — decided (17 Oct 2026):** flat or capped fees only; no percentage of recovered money; the family signs and submits; no representation before institutions ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2). **The Pilot is free.** Still open: price points and payer after the Pilot (D-08) | Founder |
 | D-13 | **Approvals roadmap** — DLT registration, DigiLocker requester, UIDAI OVSE, KYC vendor, advocate panel, legal opinion — owners and dates ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §8) | Founder + integrations |
 
 ---

@@ -137,3 +137,7 @@ Four research passes (data protection law, licensing and integrations, official 
 - **Data protection:** SPDI Rules apply today; DPDP Rules notified 13 Nov 2025, most duties from ~13 May 2027. Build to the 2027 standard now.
 - **Voice (revises the earlier D-09 decision — confirmed by the founder):** Google Speech-to-Text is not available in India; prefer Gemini audio on Vertex AI in Mumbai for recognition, Google TTS in Mumbai for replies; Chirp outside India only as a disclosed fallback.
 - **Sign-in (revises the earlier decision — confirmed by the founder):** OTP SMS needs TRAI DLT registration; prefer a DLT-registered Indian SMS gateway with our own OTP check (keeps phone numbers in India); Google sign-in stays as an option.
+
+## Cautious legal positions instead of a lawyer — 17 Oct 2026
+
+No lawyer is available, so for each point the law leaves unclear the product follows the strictest reading (`docs/FEASIBILITY_AND_COMPLIANCE.md` §9, PRD §11.2): deceased persons' data fully protected and processed only with the claimant's consent plus documented authority; fraud checks always consented; the product never contacts co-heirs or nominees; full DPDP compliance by January 2027; institution forms and standard formats only, with legal questions referred out (including free legal aid on 15100 for families who qualify); no representation or claim-linked fees; **the Pilot is free**. A paid legal review is recommended before charging money or partnering with institutions.

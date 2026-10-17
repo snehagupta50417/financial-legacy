@@ -7,7 +7,7 @@
 | **Owner** | Privacy / security lead (PRD decision D-05) |
 | **Required by** | [PRD §11.2](../PRD.md#112-privacy-and-data-protection) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
 | **Law** | Digital Personal Data Protection Act, 2023 ("DPDP Act") and the Digital Personal Data Protection Rules, 2025 ("DPDP Rules") |
-| **Status** | **Not legal advice.** A first-principles assessment by the product team to prepare for review by qualified counsel. Items marked ⚖️ need a lawyer's answer before the Pilot. |
+| **Status** | **Not legal advice.** A first-principles assessment by the product team. Where the law is unclear (⚖️), the product follows the cautious position in §10 and [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §9, so no lawyer is needed to build or run a free Pilot; a paid legal review is recommended before charging money or partnering. |
 
 ---
 
@@ -58,7 +58,7 @@ The DPDP Act allows processing on the basis of **consent** or certain **legitima
 | Discover and list assets | Documents, search outcomes | Consent per source | Each search/source has its own consent |
 | Prepare claims and legacy records | Holdings, evidence | Consent | Exact approval before anything leaves the product |
 | Reminders and tasks | Contact, due dates | Consent | In-app in the MVP |
-| Safety (fraud checks, freezing duplicate cases) | Names, DOB, PAN hash | ⚖️ consent or legitimate use? | Ask counsel whether fraud prevention needs separate consent |
+| Safety (fraud checks, freezing duplicate cases) | Names, DOB, PAN hash | Consent (covered explicitly in the claim flow) | Cautious position: always disclosed and consented |
 | Product improvement and metrics | Aggregated, de-identified events | ⚖️ | No document text, identifiers or balances in analytics (FL-54) |
 
 ## 4. Notice and consent (DPDP Act ss. 5–6)
@@ -144,22 +144,22 @@ These periods are proposals for D-05, to be confirmed before the Pilot.
 - **Today:** IT Act s.43A and the **SPDI Rules 2011** (financial information is sensitive personal data — written consent, reasonable security such as ISO 27001, transfer only with equivalent protection and consent or necessity). **CERT-In Directions (28 Apr 2022): report cyber incidents within 6 hours** *(S — confirm)*.
 - **DPDP Rules 2025** (G.S.R. 846(E), 13 Nov 2025): Data Protection Board in force now; consent-manager registration from ~13 Nov 2026; notice, security, breach reporting, retention, children, rights, cross-border and SDF rules from **~13 May 2027**, when s.43A is also repealed. **Build to the 2027 standard now.**
 - **Breach reporting from 2027 (Rule 7):** tell each affected person without delay (nature, likely impact, mitigation, safety steps, contact); tell the Board without delay and send a detailed report **within 72 hours**.
-- **Logs:** keep security logs at least 1 year (Rules 6(1)(e), 8(3)) — this replaces the 3-year audit proposal in §7 only if counsel agrees; keep the longer of the two until then.
+- **Logs:** keep security logs at least 1 year (Rules 6(1)(e), 8(3)) — we keep the longer of the two (3 years of minimal audit metadata, §7).
 
-## 10. Questions for legal counsel ⚖️
+## 10. Open legal questions and our positions ⚖️
 
 **Research answers (17 Oct 2026)** — detail and citations in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §5:
 
-| # | Question | What research found | Still for counsel |
+| # | Question | What research found | Our position (cautious reading) |
 | --- | --- | --- | --- |
-| 1 | Deceased persons' data | The Act doesn't say whether a deceased person is a "Data Principal"; s.14 nomination implies protection continues. **Unsettled.** Basis we use: living claimant's consent + documented authority | Yes |
-| 2 | Fraud prevention | s.7 has **no** fraud or legitimate-interest ground (full list: voluntary provision, State functions, legal duty to the State, court orders, medical emergency, epidemics, disasters, employment). Use explicit consent; s.17(1)(c) and s.17(1)(a) as backups | Whether s.17 can be relied on |
-| 3 | Third parties in documents | s.7(a) doesn't cover them; minimise, user warrants authority, notice on contact, delete at closure | Whether notice is needed before contact |
-| 4 | Commencement | Notified 13 Nov 2025; phases ~Nov 2026 and ~May 2027 (above); no shortened timeline found notified | 13 vs 14 Nov start date |
-| 5 | Significant Data Fiduciary | Not notified; unlikely at seed stage; obligations known (DPO in India, annual DPIA/audit, possible localisation) | Monitor |
-| 6 | Sector rules | SPDI applies now; banks owe confidentiality and deal only with claimants or authorised agents; RBI/IRDAI/SEBI don't regulate a family-chosen facilitator (see licensing in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §2) | IRDAI point |
-| 7 | Fees | Percentage fees not illegal for non-lawyers but risky (unconscionability, consumer protection); advocates can't take contingency fees. **Decision: flat or capped fees only** | Confirm disclosures |
-| 8 | DPDP nomination | Rule 14(4): per our own terms, no prescribed form, from ~May 2027; a planner feature, not a replacement for financial nominations or a will | Proof of death for nominees |
+| 1 | Deceased persons' data | The Act doesn't say whether a deceased person is a "Data Principal"; s.14 nomination implies protection continues. **Unsettled.** Basis we use: living claimant's consent + documented authority | Treat as fully protected; process only with the claimant's consent + documented authority; hold disputed assets |
+| 2 | Fraud prevention | s.7 has **no** fraud or legitimate-interest ground (full list: voluntary provision, State functions, legal duty to the State, court orders, medical emergency, epidemics, disasters, employment). Use explicit consent; s.17(1)(c) and s.17(1)(a) as backups | Explicit consent for fraud checks; don't rely on exemptions |
+| 3 | Third parties in documents | s.7(a) doesn't cover them; minimise, user warrants authority, notice on contact, delete at closure | We never contact co-heirs or nominees; minimal data; delete at closure |
+| 4 | Commencement | Notified 13 Nov 2025; phases ~Nov 2026 and ~May 2027 (above); no shortened timeline found notified | Comply fully by January 2027 |
+| 5 | Significant Data Fiduciary | Not notified; unlikely at seed stage; obligations known (DPO in India, annual DPIA/audit, possible localisation) | Design a DPIA now; watch for notifications |
+| 6 | Sector rules | SPDI applies now; banks owe confidentiality and deal only with claimants or authorised agents; RBI/IRDAI/SEBI don't regulate a family-chosen facilitator (see licensing in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §2) | No representation, no claim-linked fee, no insurance selling; Pilot free |
+| 7 | Fees | Percentage fees not illegal for non-lawyers but risky (unconscionability, consumer protection); advocates can't take contingency fees. **Decision: flat or capped fees only** | Free Pilot; later a flat published price with refund rules |
+| 8 | DPDP nomination | Rule 14(4): per our own terms, no prescribed form, from ~May 2027; a planner feature, not a replacement for financial nominations or a will | Offer DPDP nomination from 2027 with death evidence reviewed by an operator |
 
 Original questions (kept for reference):
 

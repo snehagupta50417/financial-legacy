@@ -79,7 +79,7 @@ gcloud run deploy finlegacy --source . --region asia-south1 --allow-unauthentica
 ## 5. Guardrails to set now
 
 - **Budget alert** on the billing account (e.g. at 50% / 90% / 100% of a monthly limit).
-- **Region check (researched 17 Oct 2026):** Gemini (GA models), Text-to-Speech, Cloud Run, Cloud SQL, Secret Manager and Cloud Storage are available in `asia-south1`. **Google Speech-to-Text (Chirp) is not** — only US/EU/Singapore. Get written confirmation from Google that the Gemini model you use processes in India. Any processing outside India must be disclosed and checked with counsel ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
+- **Region check (researched 17 Oct 2026):** Gemini (GA models), Text-to-Speech, Cloud Run, Cloud SQL, Secret Manager and Cloud Storage are available in `asia-south1`. **Google Speech-to-Text (Chirp) is not** — only US/EU/Singapore. Get written confirmation from Google that the Gemini model you use processes in India. Any processing outside India must be disclosed in the consent notice ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
 - **Data processing terms:** accept Google Cloud's data processing addendum for the account.
 - **Access:** give team members the least access they need; no shared personal accounts.
 - **Synthetic data only** in development, always.
