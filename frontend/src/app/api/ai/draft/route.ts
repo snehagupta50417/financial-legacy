@@ -10,7 +10,7 @@ import { logEvent } from "@/server/domain/case-service";
 export const dynamic = "force-dynamic";
 
 /**
- * Draft generator: follow-up letters, will drafts, expert enquiries.
+ * Draft generator: follow-up letters, notes for a lawyer, expert enquiries.
  * Everything produced here is a DRAFT for user review — clearly labelled,
  * never auto-submitted anywhere.
  */
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
   const body = await req.json().catch(() => null);
   const caseId = String(body?.caseId ?? "");
-  const kind = String(body?.kind ?? ""); // followup | will | expert
+  const kind = String(body?.kind ?? ""); // followup | lawyer_notes | expert (no will drafting — PRD)
   const extraContext: string = typeof body?.context === "string" ? body.context.slice(0, 2000) : "";
   const expertType: string = typeof body?.expertType === "string" ? body.expertType : "";
 
@@ -62,13 +62,15 @@ Holder: ${legacyCase.assetHolderName ?? "[HOLDER NAME]"} (${legacyCase.holderLiv
 Assets: ${assetLines || "(none recorded)"}
 Documents on file: ${docLines || "(none)"}
 Extra context (e.g., rejection reason, claim ref): ${extraContext || "(none provided)"}`;
-  } else if (kind === "will") {
-    system = `You are the Estate Planning assistant of Financial Legacy. Produce a structured DRAFT will template populated from the user's verified inventory. India-specific guidance: testamentary capacity, two witnesses, no beneficiary should be a witness, sign each page, safe storage. Rules: this is a DRAFT for review, not legal advice or a valid executed will; include placeholders like [NAME] where facts are missing; keep clauses plain-language; include revocation of prior wills, executor appointment, beneficiary schedule from the inventory, residuary clause, guardianship placeholder if minors possible, attestation block. Output format: a markdown document with headings.`;
-    user = `Testator: ${legacyCase.assetHolderName ?? "[YOUR FULL NAME]"}
+  } else if (kind === "lawyer_notes") {
+    // DESIGN §7.1: replaces will drafting in the UI — the PRD rules out drafting legally binding wills.
+    system = `You are the legacy planning assistant of Financial Legacy. Write "Notes for your lawyer": a structured, plain-language summary a lawyer or chartered accountant can use when advising the person. It is NOT a will and must say so at the top in one sentence. Sections: About me (placeholders where unknown), What I hold (from the inventory only, masked references exactly as given, with its evidence status in words), Nominations and gaps (what is unknown or missing), My wishes (only what the person wrote, otherwise [TO DISCUSS]), Questions for my lawyer. Rules: facts only from the input; never invent amounts, names, nominees or legal conclusions; no clauses, no attestation block. Output: markdown with headings.`;
+    user = `Person: ${legacyCase.assetHolderName ?? "[YOUR FULL NAME]"}
 Jurisdiction: ${legacyCase.jurisdiction}
-Verified inventory:
-${assetLines || "(inventory empty — use placeholders)"}
-Beneficiary notes: ${extraContext || "(none provided)"}`;
+Inventory:
+${assetLines || "(inventory empty)"}
+Documents on file: ${docLines || "(none)"}
+Their notes and wishes: ${extraContext || "(none provided)"}`;
   } else if (kind === "expert") {
     system = `You are the Expert Escalation Agent of Financial Legacy. Produce: (1) a concise, structured case summary a qualified professional can act on, and (2) a short enquiry message (max 200 words) the user can send. Facts only from the case; masked references; no legal conclusions; state what the user wants help with.`;
     user = `Expert type requested: ${expertType || "estate/inheritance lawyer"}
@@ -93,8 +95,8 @@ User's question/context: ${extraContext || "(none)"}`;
   const label =
     kind === "followup"
       ? "Follow-up letter draft"
-      : kind === "will"
-        ? "Draft will (template, for review)"
+      : kind === "lawyer_notes"
+        ? "Notes for your lawyer (not a will)"
         : "Expert enquiry pack";
 
   await logEvent(legacyCase.id, "ai", `${label} generated for user review`, "ai");

@@ -21,8 +21,12 @@ export default function ClaimsOverview({ ws }: { ws: CaseWorkspace }) {
   const records = caseHref(ws.case.id, "records");
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2 rounded-xl border border-navy/15 bg-card px-4 py-3 text-[13px] leading-relaxed text-ink/85">
+    <div className="max-w-[1000px] space-y-6">
+      <div className="max-w-2xl">
+        <h1 className="font-display text-[26px] font-semibold text-navy">Claims</h1>
+        <p className="mt-1 text-[15px] leading-relaxed text-muted-foreground">One card for each holding. Claim paths, paperwork and tracking per claim are coming next.</p>
+      </div>
+      <div className="flex items-start gap-2 rounded-xl border border-navy/15 bg-card px-4 py-3 text-[15px] leading-relaxed text-ink/85">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-teal-brand" />
         <p>
           One card for each holding we know about. Claim packs and tracking are coming next; for now, follow each
@@ -33,9 +37,9 @@ export default function ClaimsOverview({ ws }: { ws: CaseWorkspace }) {
       {holdings.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-            <FolderOpen className="h-7 w-7 text-muted-foreground/50" />
-            <div className="text-[14px] font-medium text-navy">No holdings to claim yet</div>
-            <p className="max-w-md text-[12.5px] leading-relaxed text-muted-foreground">
+            <FolderOpen className="h-9 w-7 text-muted-foreground/50" />
+            <div className="text-[16px] font-medium text-navy">No holdings to claim yet</div>
+            <p className="max-w-md text-[14px] leading-relaxed text-muted-foreground">
               Upload a statement or policy in Records, or add a holding you already know about.
             </p>
             <Button asChild size="sm" variant="outline" className="mt-1">
@@ -64,10 +68,10 @@ export default function ClaimsOverview({ ws }: { ws: CaseWorkspace }) {
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-[14.5px] font-semibold leading-snug text-navy">{a.institution}</h3>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+                      <h3 className="text-[16px] font-semibold leading-snug text-navy">{a.institution}</h3>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[14px] text-muted-foreground">
                         <span>{CATEGORY_LABEL[a.category] ?? a.category}</span>
-                        {a.maskedRef && <><span>·</span><span className="font-mono text-[11.5px]">{a.maskedRef}</span></>}
+                        {a.maskedRef && <><span>·</span><span className="font-mono text-[13px]">{a.maskedRef}</span></>}
                         {a.valueBand && <><span>·</span><span>{a.valueBand}</span></>}
                       </div>
                     </div>
@@ -75,7 +79,7 @@ export default function ClaimsOverview({ ws }: { ws: CaseWorkspace }) {
                   <VerificationBadge asset={a} />
                 </div>
 
-                <dl className="grid gap-1.5 text-[12.5px]">
+                <dl className="grid gap-1.5 text-[14px]">
                   <div className="flex flex-wrap gap-x-2">
                     <dt className="font-medium text-ink/70">Entitlement:</dt>
                     <dd className="text-ink">
@@ -93,17 +97,17 @@ export default function ClaimsOverview({ ws }: { ws: CaseWorkspace }) {
                 </dl>
 
                 {potential && (
-                  <div className="flex items-start gap-2 rounded-lg border border-gold/40 bg-gold-soft/60 px-3 py-2 text-[12px] leading-relaxed text-[#7a5a1c]">
+                  <div className="flex items-start gap-2 rounded-lg border border-gold/40 bg-gold-soft/60 px-3 py-2 text-[14px] leading-relaxed text-[#7a5a1c]">
                     <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     This is a possible match — please check the source in Records before starting a claim.
                   </div>
                 )}
 
                 <div className="flex flex-wrap justify-end gap-1.5">
-                  <Button asChild size="sm" variant="outline" className="h-9 text-[12px]">
+                  <Button asChild size="sm" variant="outline" className="h-9 text-[14px]">
                     <Link href={records}><FolderOpen className="mr-1 h-3.5 w-3.5" /> Open in Records</Link>
                   </Button>
-                  <Button asChild size="sm" className="h-9 bg-navy text-[12px] text-white hover:bg-navy-deep">
+                  <Button asChild size="sm" className="h-9 bg-navy text-[14px] text-white hover:bg-navy-deep">
                     <Link href={caseHref(ws.case.id, "steps")}><Route className="mr-1 h-3.5 w-3.5" /> See steps</Link>
                   </Button>
                 </div>

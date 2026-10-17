@@ -9,7 +9,7 @@ export default function StartPage() {
   return (
     <>
       <h1 className="sr-only">Tell us what happened</h1>
-      <Intake onWorkspace={(id) => router.push(caseHref(id))} onCaseCreated={() => {}} />
+      <Intake onWorkspace={(id) => router.push(caseHref(id))} />
     </>
   );
 }

@@ -208,3 +208,51 @@
 .pulse-ring {
   animation: pulse-ring 2s infinite;
 }
+
+/* ── Revamp (issue #37): readable defaults for older users (DESIGN §3.2) ── */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (min-width: 768px) {
+  body {
+    font-size: 17px;
+  }
+}
+
+/* A soft paper wash used behind the assistant column */
+.paper-wash {
+  background:
+    radial-gradient(900px 380px at 0% 0%, color-mix(in srgb, var(--teal-brand) 7%, transparent), transparent 70%),
+    var(--background);
+}
+
+/* Assistant speech: the case manager's own voice */
+.assistant-bubble {
+  position: relative;
+  border-radius: 1.25rem;
+  border-top-left-radius: 0.35rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+/* Visible keyboard focus everywhere (DESIGN §8.2) */
+:where(a, button, [role="button"], input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -146,7 +146,7 @@ frontend/
       rules/                  (to build) claim-path.ts · evidence.ts · totals.ts
       pdf/                    (to build) claim-pack templates
       connectors/             (Later) base.ts · mock/* · real/*
-    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts
+    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts
     components/
       fl/                     product components: landing, intake, case-shell, area pages, field-review, gate-panel, ask-panel …
       ui/                     stock shadcn components
@@ -438,7 +438,7 @@ To build:
 | Document extraction | `/api/documents` | Propose fields with page references | Accept fields; store unredacted identifiers |
 | Death-certificate scan | `providers/death-proof.ts` | Read the certificate | Decide the match — code compares fields |
 | Ask about this case | `/api/ai/ask` | Answer from the masked case view, citing evidence | See data above the user's gate |
-| Checklists and drafts | `/api/ai/checklist`, `/api/ai/draft` | Draft letters and checklists | Send anything; give legal advice; draft a binding will |
+| Checklists and drafts | `/api/ai/checklist`, `/api/ai/draft` (kinds: `followup`, `lawyer_notes`, `expert`) | Draft letters, notes for a lawyer and checklists | Send anything; give legal advice; draft a will (the `will` kind was removed) |
 
 ### 13.3 Safety rules
 

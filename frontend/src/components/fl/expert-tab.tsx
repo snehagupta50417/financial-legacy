@@ -48,13 +48,13 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
       <div className="space-y-4">
         <Card>
           <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-navy">
+            <div className="flex items-center gap-2 text-[15px] font-semibold text-navy">
               <Handshake className="h-4 w-4 text-teal-brand" /> Prepare a professional pack
             </div>
             <div>
-              <div className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">Type of expert needed</div>
+              <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Type of expert needed</div>
               <Select value={expertType} onValueChange={setExpertType}>
-                <SelectTrigger className="text-[13px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="text-[15px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {EXPERT_TYPES.map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -63,20 +63,20 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
               </Select>
             </div>
             <div>
-              <div className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">Your question / situation note</div>
+              <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Your question / situation note</div>
               <Textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder="e.g., My father's will names me as executor but my brother contests it. What are my options?"
-                className="min-h-[90px] text-[13px]"
+                className="min-h-[90px] text-[15px]"
               />
             </div>
             <Button onClick={generate} disabled={busy} className="w-full bg-navy text-white hover:bg-navy-deep">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Generate case summary &amp; enquiry draft
             </Button>
-            <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold-soft/60 px-3 py-2.5 text-[11.5px] leading-relaxed text-ink/75">
-              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+            <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold-soft/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink/75">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7a5a1c]" />
               Financial Legacy does not provide legal advice or broker professionals. This pack helps you brief a qualified
               expert efficiently — you choose and engage them yourself.
             </div>
@@ -87,12 +87,12 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
       <Card className="self-start">
         <CardContent className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-[13px] font-semibold text-navy">Expert enquiry pack</div>
+            <div className="text-[15px] font-semibold text-navy">Expert enquiry pack</div>
             {pack && (
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-[12px]"
+                className="h-9 text-[14px]"
                 onClick={() => {
                   navigator.clipboard.writeText(pack).then(
                     () => toast({ title: "Copied", description: "Pack copied to clipboard." }),
@@ -105,11 +105,11 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
             )}
           </div>
           {pack ? (
-            <div className="nice-scroll max-h-[620px] overflow-y-auto rounded-lg border bg-background p-4 text-[13px] leading-relaxed">
+            <div className="nice-scroll max-h-[620px] overflow-y-auto rounded-lg border bg-background p-4 text-[15px] leading-relaxed">
               <ReactMarkdown
                 components={{
                   h1: (p) => <h1 className="font-display mb-3 text-[16px] font-bold text-navy" {...p} />,
-                  h2: (p) => <h2 className="font-display mb-2 mt-4 text-[14.5px] font-semibold text-navy" {...p} />,
+                  h2: (p) => <h2 className="font-display mb-2 mt-4 text-[16px] font-semibold text-navy" {...p} />,
                   p: (p) => <p className="mb-2.5 text-ink/85" {...p} />,
                   li: (p) => <li className="mb-1 ml-4 list-disc text-ink/85" {...p} />,
                   strong: (p) => <strong className="font-semibold text-navy" {...p} />,
@@ -120,8 +120,8 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2 py-16 text-center">
-              <Handshake className="h-7 w-7 text-muted-foreground/40" />
-              <p className="max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">
+              <Handshake className="h-9 w-7 text-muted-foreground/40" />
+              <p className="max-w-xs text-[14px] leading-relaxed text-muted-foreground">
                 Disputed inheritance, contested wills, complex succession or cross-border tax — describe the question
                 and get a structured pack a professional can act on immediately.
               </p>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Landing from "@/components/fl/landing";
 import { DemoDialog } from "@/components/fl/dialogs";
 import { caseHref } from "@/components/fl/case-nav";
+import { setStartMessage } from "@/lib/start-message";
 
 export default function Page() {
   const router = useRouter();
@@ -13,7 +14,10 @@ export default function Page() {
   return (
     <main id="main" className="flex min-h-screen flex-col bg-background">
       <Landing
-        onStart={() => router.push("/start")}
+        onStart={(message) => {
+          if (message) setStartMessage(message);
+          router.push("/start");
+        }}
         onDemo={() => setDemoOpen(true)}
         onResources={() => router.push("/resources")}
         onCases={() => router.push("/cases")}

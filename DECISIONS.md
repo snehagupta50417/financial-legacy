@@ -168,3 +168,18 @@ No lawyer is available, so for each point the law leaves unclear the product fol
 - **"Important" fields** (names, identifiers, ownership, amounts, dates, institution — FL-06) are recognised from the field label by a simple rule in `src/lib/field-review.ts`; the extractor should tag critical fields itself once its schema allows.
 - **Mobile:** bottom navigation for Conversation, Records, Plan/Claims and Steps below 768 px; Get help stays one tap away under the case header; the floating assistant is desktop-only and sits inline in Conversation on mobile. Desktop uses tabs under the case header instead of DESIGN's sidebar for now.
 - Fixed horizontal overflow at 375 px on the intake, official-portals and assets screens (grid/flex children without `min-w-0`).
+
+## Frontend revamp — 17 Oct 2026 (issue #37)
+
+Full authority to revamp the frontend from the one-pager's vision ("one capable assistant that remembers the case", not a financial dashboard). The PRD/DESIGN rules still bind: four evidence statuses, trust gates, masking, "Simulated" labels, never implying complete discovery or that we submit claims.
+
+- **Six-step journey everywhere.** `src/lib/journey.ts` works out the one-pager's six steps (tell us → verify → discover → check and organise → prepare or claim → track) from saved data only. Discovery is shown as "in progress" with a count, never "done"; possible matches keep "check and organise" open. Shown in the desktop sidebar and, on mobile, inside Conversation.
+- **Conversation is the case manager's home.** It opens with a deterministic summary (not an AI call) of where things stand, then action cards from `caseActions()` — while the gate is locked only verification is offered, while frozen only help. The assistant thread is not saved yet (needs `GET /api/cases/:id/messages`), and the UI says so.
+- **Desktop sidebar** (DESIGN §2.3) replaces the round-2 tabs; mobile keeps the bottom navigation.
+- **Readable by default** (DESIGN §3.2): body 16/17 px, 44 px controls, focus ring, reduced motion. Older screens had their text sizes raised by one mapping (e.g. 11 px → 13 px, 13 px → 15 px). Gold text replaced by `#7a5a1c` (gold fails contrast as text, DESIGN §3.1). The base `Card` no longer adds its own vertical padding, because every card in the app sets its own.
+- **Landing starts the conversation.** The hero is a composer with the one-pager's three journeys as one-tap starters; added the six steps, pilot coverage (bank deposits, mutual funds, insurance — one-pager §10) and "What we can and can't do" (one-pager §8). The first message reaches `/start` through `sessionStorage`, read once and deleted, so the person's words never go into the URL.
+- **Records** groups holdings by evidence status with possible matches apart (DESIGN §6); buttons say "Yes, this is theirs/mine" and "Not a match". Amounts show the masked band or "No reviewed value", never ₹0.
+- **Plan** becomes "Your legacy record": holdings without amounts, a gaps checklist from `legacyGaps()`, a "who should be told" placeholder (not built — would send nothing), and "Notes for your lawyer". **The `will` draft kind is removed from `/api/ai/draft`** (the PRD rules out drafting wills); new kind `lawyer_notes`.
+- **My cases** shows subject, goal, state and next step per case; no balances or document previews.
+- Removed: `overview-tab.tsx`, `estate-tab.tsx`, the cases dialog.
+- **Known limitation, not frontend:** without a model key the intake falls back to rules that classify "make sure my family can find everything" as recover-forgotten-assets.

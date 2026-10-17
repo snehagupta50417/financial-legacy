@@ -32,7 +32,7 @@ const INTEGRATION_LABEL: Record<string, { label: string; tone: string }> = {
     label: "Official website — you act, Financial Legacy prepares & tracks",
     tone: "border-teal-brand/30 bg-teal-soft text-teal-brand",
   },
-  guided_workflow: { label: "Guided workflow", tone: "border-gold/30 bg-gold-soft text-gold" },
+  guided_workflow: { label: "Guided workflow", tone: "border-gold/30 bg-gold-soft text-[#7a5a1c]" },
   public_api: { label: "Live public API", tone: "border-teal-brand/40 bg-teal-soft text-teal-brand" },
 };
 
@@ -49,7 +49,7 @@ export default function ResourcesPage({ onHome }: { onHome: () => void }) {
   return (
     <div className="flex min-h-screen flex-col">
       <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        <Button variant="ghost" size="sm" onClick={onHome} className="-ml-2 mb-4 text-[12.5px] text-muted-foreground hover:text-navy">
+        <Button variant="ghost" size="sm" onClick={onHome} className="-ml-2 mb-4 text-[14px] text-muted-foreground hover:text-navy">
           <ArrowLeft className="mr-1 h-4 w-4" /> Home
         </Button>
         <SectionHeading
@@ -71,30 +71,30 @@ export default function ResourcesPage({ onHome }: { onHome: () => void }) {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-[14.5px] font-semibold leading-snug text-navy">{r.name}</div>
-                        <div className="mt-0.5 text-[12px] text-muted-foreground">{r.authority}</div>
+                        <div className="text-[16px] font-semibold leading-snug text-navy">{r.name}</div>
+                        <div className="mt-0.5 text-[14px] text-muted-foreground">{r.authority}</div>
                       </div>
                     </div>
                   </div>
 
-                  <p className="mt-3 flex-1 text-[13px] leading-relaxed text-ink/75">{r.purpose}</p>
+                  <p className="mt-3 flex-1 text-[15px] leading-relaxed text-ink/75">{r.purpose}</p>
 
-                  <div className="mt-3 rounded-lg bg-background px-3 py-2.5 text-[12px] leading-relaxed text-ink/70">
+                  <div className="mt-3 rounded-lg bg-background px-3 py-2.5 text-[14px] leading-relaxed text-ink/70">
                     <span className="font-semibold text-navy">What you do there: </span>
                     {r.whatUserDoes}
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={`h-auto whitespace-normal rounded-full text-left text-[10.5px] ${integ.tone}`}>
+                      <Badge variant="outline" className={`h-auto whitespace-normal rounded-full text-left text-[12px] ${integ.tone}`}>
                         {integ.label}
                       </Badge>
-                      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
+                      <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
                         <CalendarCheck2 className="h-3 w-3" /> verified {r.lastVerified}
                       </span>
                     </div>
                     <a href={r.url} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="h-8 bg-navy text-[12px] text-white hover:bg-navy-deep">
+                      <Button size="sm" className="h-10 bg-navy text-[14px] text-white hover:bg-navy-deep">
                         Open official site <ExternalLink className="ml-1.5 h-3 w-3" />
                       </Button>
                     </a>
