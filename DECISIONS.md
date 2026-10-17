@@ -124,3 +124,16 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 
 - Removed `demo/` (standalone hackathon demo, not the product) and `BACKEND_PLAN.md` (hackathon plan; its milestones are summarised in LLD §21). Both remain in git history; to restore the demo locally: `git checkout 7672340 -- demo`.
 - Everything else was reviewed and is needed: the documents, `docs/`, `frontend/` app and configuration, the banner and the PR template.
+
+## Feasibility and compliance research — 17 Oct 2026
+
+Four research passes (data protection law, licensing and integrations, official sources, Google Cloud and SMS), written up in `docs/FEASIBILITY_AND_COMPLIANCE.md`:
+
+- **Fee model (PRD D-12):** flat or capped fees only; no percentage of recovered money; the family signs and submits; we never represent them before institutions.
+- **Legal advice:** case-specific questions go to an advocate panel (Advocates Act s.33).
+- **Identity (G1):** Aadhaar offline verification (UIDAI OVSE), PAN via a licensed KYC vendor, DigiLocker requester once approved. Aadhaar authentication, PAN API, CKYC and V-CIP are not open to us directly.
+- **Account Aggregator:** not for deceased persons' data; at most a regulated partner for living users' own assets, Later.
+- **Insurance timelines verified:** 15 days from intimation (45 if investigated), Bank Rate + 2% for delay (IRDAI Master Circular, 5 Sep 2024).
+- **Data protection:** SPDI Rules apply today; DPDP Rules notified 13 Nov 2025, most duties from ~13 May 2027. Build to the 2027 standard now.
+- **Voice (revises the earlier D-09 decision — confirmed by the founder):** Google Speech-to-Text is not available in India; prefer Gemini audio on Vertex AI in Mumbai for recognition, Google TTS in Mumbai for replies; Chirp outside India only as a disclosed fallback.
+- **Sign-in (revises the earlier decision — confirmed by the founder):** OTP SMS needs TRAI DLT registration; prefer a DLT-registered Indian SMS gateway with our own OTP check (keeps phone numbers in India); Google sign-in stays as an option.

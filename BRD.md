@@ -206,7 +206,7 @@ All four come from the one-pager. None is selected; the pilot decides.
 - Price the **service**, not the size of the estate, by default.
 - Show the price **before** work begins; no surprise fees.
 - Basic discovery guidance is free (official search is free anyway). **Assisted discovery** — our team preparing and following up institution enquiries for a case — is a paid option, as the one-pager's "paid discovery assistance". Charge mainly for preparation, coordination and tracking.
-- A possible percentage-of-recovery model is **not** assumed; if ever tested it needs legal review, a cap and clear disclosure.
+- **No percentage-of-recovery fees.** Research (17 Oct 2026) found them legally risky — unenforceable if unconscionable, possibly an unfair trade practice for claims families can file free, and close to broker-style "claims consultancy" for insurance. Flat or capped fees only, with a clear statement that families can claim free themselves ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2).
 
 ### 7.3 Cost structure (what we will measure)
 
@@ -353,7 +353,12 @@ Not legal advice; each item needs review by qualified counsel before the pilot.
 | **Investment, tax and legal advice** | Advice can require registration or licensing | Product explains procedures only; no advice (PRD §3.3) |
 | **Account Aggregator access** | Only regulated entities in defined roles may receive data | Validate an eligible role or partner before use (D-03) |
 | **DigiLocker access** | Requires partner approval and agreements | Apply only if pilot shows clear value (D-03) |
-| **Fees for claim assistance** | Some fee structures (especially percentage of recovery) may be restricted or seen as unfair | Legal review of any pricing before launch (D-08) |
+| **Fees for claim assistance** | Percentage-of-recovery fees are risky; paid insurance "claims consultancy" is reserved for brokers | Flat or capped fees; family signs and submits; no representation before institutions |
+| **Practice of law** | Only advocates may practise law (Advocates Act s.33; *A.K. Balaji*, 2018) | Institution forms and standard templates only; case-specific legal questions go to an advocate panel |
+| **Identity checks** | Aadhaar authentication, PAN API, CKYC and V-CIP are for regulated entities | Aadhaar offline verification (OVSE registration), licensed KYC vendor for PAN |
+| **SMS** | TRAI DLT registration required for OTP SMS | DLT registration before launch |
+
+Full research, answers and the approvals roadmap: [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md).
 | **Institution terms** | Banks and insurers may restrict third-party involvement or automation | Manual submission by the family in the MVP; formal channels before automating |
 | **Consumer protection** | Clear disclosures, no misleading claims of complete discovery | Honest coverage messaging; reviewed marketing copy |
 

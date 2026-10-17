@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.1 (draft for review) |
+| **Version** | 0.2 (draft for review) — legal questions researched 17 Oct 2026 |
 | **Date** | 17 October 2026 |
 | **Owner** | Privacy / security lead (PRD decision D-05) |
 | **Required by** | [PRD §11.2](../PRD.md#112-privacy-and-data-protection) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
@@ -94,8 +94,9 @@ The Act requires a **notice** before or at the time of asking for consent, and c
 | Cloud SQL (MVP) | Database | All case data | India region | DPA; encryption at rest |
 | Cloud Storage (to build) | Encrypted originals | Documents | India region | DPA; retention rules |
 | Gemini via Vertex AI | AI extraction and conversation | Case content sent per request | India region where the model is available ⚖️ | **No training on our data**, defined retention, data residency |
-| Google Cloud Speech-to-Text and Text-to-Speech (D-09) | Voice | Audio, transcripts | India region where the models are available ⚖️ | Same as above; no audio retention by default |
-| Google Identity Platform (Firebase Authentication) | Sign-in | Phone number, email, Google account ID | Global service ⚖️ — check data location options | DPA; minimal profile data; SMS via Google's providers |
+| Speech recognition (D-09) | Voice input | Audio, transcripts | **Google Speech-to-Text is not offered in India** (Chirp: US/EU/Singapore only). Preferred: Gemini audio on Vertex AI in Mumbai; fallback: Chirp outside India with the transfer disclosed | Same as above; no audio retention by default |
+| Google Cloud Text-to-Speech | Spoken replies | Reply text | Mumbai listed; residency to confirm with Google | Same as above |
+| Sign-in (phone OTP) | Sign-in | Phone number | Google Identity Platform is **global** and keeps phone numbers for abuse prevention; an Indian DLT-registered SMS gateway with our own OTP check keeps numbers in India (recommended) | DPA; minimal data; DLT registration |
 
 The Gemini API key route (AI Studio) is for synthetic data only. Real data goes through Vertex AI with an approved configuration ([PRD FL-46](../PRD.md#111-security)).
 
@@ -138,7 +139,30 @@ These periods are proposals for D-05, to be confirmed before the Pilot.
   4. Fix the cause and record lessons.
   5. Rehearse once before the Pilot.
 
+## 9a. What applies today vs from 2027
+
+- **Today:** IT Act s.43A and the **SPDI Rules 2011** (financial information is sensitive personal data — written consent, reasonable security such as ISO 27001, transfer only with equivalent protection and consent or necessity). **CERT-In Directions (28 Apr 2022): report cyber incidents within 6 hours** *(S — confirm)*.
+- **DPDP Rules 2025** (G.S.R. 846(E), 13 Nov 2025): Data Protection Board in force now; consent-manager registration from ~13 Nov 2026; notice, security, breach reporting, retention, children, rights, cross-border and SDF rules from **~13 May 2027**, when s.43A is also repealed. **Build to the 2027 standard now.**
+- **Breach reporting from 2027 (Rule 7):** tell each affected person without delay (nature, likely impact, mitigation, safety steps, contact); tell the Board without delay and send a detailed report **within 72 hours**.
+- **Logs:** keep security logs at least 1 year (Rules 6(1)(e), 8(3)) — this replaces the 3-year audit proposal in §7 only if counsel agrees; keep the longer of the two until then.
+
 ## 10. Questions for legal counsel ⚖️
+
+**Research answers (17 Oct 2026)** — detail and citations in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §5:
+
+| # | Question | What research found | Still for counsel |
+| --- | --- | --- | --- |
+| 1 | Deceased persons' data | The Act doesn't say whether a deceased person is a "Data Principal"; s.14 nomination implies protection continues. **Unsettled.** Basis we use: living claimant's consent + documented authority | Yes |
+| 2 | Fraud prevention | s.7 has **no** fraud or legitimate-interest ground (full list: voluntary provision, State functions, legal duty to the State, court orders, medical emergency, epidemics, disasters, employment). Use explicit consent; s.17(1)(c) and s.17(1)(a) as backups | Whether s.17 can be relied on |
+| 3 | Third parties in documents | s.7(a) doesn't cover them; minimise, user warrants authority, notice on contact, delete at closure | Whether notice is needed before contact |
+| 4 | Commencement | Notified 13 Nov 2025; phases ~Nov 2026 and ~May 2027 (above); no shortened timeline found notified | 13 vs 14 Nov start date |
+| 5 | Significant Data Fiduciary | Not notified; unlikely at seed stage; obligations known (DPO in India, annual DPIA/audit, possible localisation) | Monitor |
+| 6 | Sector rules | SPDI applies now; banks owe confidentiality and deal only with claimants or authorised agents; RBI/IRDAI/SEBI don't regulate a family-chosen facilitator (see licensing in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §2) | IRDAI point |
+| 7 | Fees | Percentage fees not illegal for non-lawyers but risky (unconscionability, consumer protection); advocates can't take contingency fees. **Decision: flat or capped fees only** | Confirm disclosures |
+| 8 | DPDP nomination | Rule 14(4): per our own terms, no prescribed form, from ~May 2027; a planner feature, not a replacement for financial nominations or a will | Proof of death for nominees |
+
+Original questions (kept for reference):
+
 
 1. How does the DPDP Act apply to personal data of **deceased individuals**, and whose consent or authority governs it (nominee, legal heir, executor)?
 2. Can **fraud prevention** (freezing duplicate cases, comparing certificates) rely on a legitimate use, or does it need separate consent?

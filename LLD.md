@@ -257,7 +257,16 @@ The PRD separates identity, relationship, authority and consent (FL-03, FL-04). 
 
 ### 7.5 Real providers (Pilot)
 
-Mock providers are replaced behind the same interface (`src/server/providers/types.ts`) — e.g. DigiLocker for identity and death certificates once partner approval exists (D-03). Real identity evidence rules are decision D-02.
+Mock providers are replaced behind the same interface (`src/server/providers/types.ts`). What is legally open to us ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §3):
+
+| Gate | Real route for the Pilot |
+| --- | --- |
+| G1 Identity | **Aadhaar offline verification** (register with UIDAI as an OVSE: QR / offline e-KYC / Aadhaar app); PAN through a **licensed KYC vendor**; DigiLocker documents once we are an approved requester. Aadhaar authentication (AUA/KUA), PAN API, CKYC and V-CIP are not open to us directly |
+| G2 Death | Death certificate **QR / registration-number check on crsorgi.gov.in** (no API — operator or user check), or DigiLocker if the certificate was issued to the claimant |
+| G3 Relationship or role | Legal heir certificate (state e-District; mostly manual review), nomination records, will/executor evidence — operator review |
+| G4 Entitlement | Institution nomination or joint-holder evidence; legal heir/succession certificate — operator review |
+
+Real identity evidence rules are decision D-02.
 
 ---
 
@@ -448,9 +457,9 @@ Today the "case manager" is the deterministic **journey engine** (next-best task
 ### 14.1 Design
 
 - **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `src/server/voice/`, same pattern as the AI provider.
-- **Provider (decided 17 Oct 2026, D-09):** **Google Cloud Speech-to-Text (Chirp models) and Text-to-Speech**, in the same Google Cloud project as hosting and Gemini, under one data agreement.
+- **Provider (D-09, decided 17 Oct 2026; revised after research and confirmed 17 Oct 2026):** Google Cloud **Text-to-Speech** in Mumbai for spoken replies (Chirp 3 HD voices for Hindi, Tamil and English-India). For **speech recognition**, Google Speech-to-Text is **not offered in India** (Chirp 3: US/EU; Chirp 2: Singapore; Tamil in Preview; no Hindi-English code-mixed model). Decision: **Gemini audio understanding on Vertex AI in Mumbai**, so audio stays in India; evaluate it against Chirp on the Hindi, Hinglish and Tamil test set. Fallback: Chirp outside India with the transfer disclosed in consent. See [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7.
 - **Launch languages:** **English (India), Hindi, Hinglish (mixed Hindi-English) and Tamil.** Each must pass its own evaluation ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) §3.4) before it is offered.
-- **Region:** use an India region where the chosen models are available; Chirp availability in `asia-south1` must be checked — if a model is only available outside India, that is a data-residency question for counsel ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
+- **Region:** Vertex AI and Text-to-Speech in `asia-south1`; any processing outside India is disclosed ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
 - **Flow:** user taps the mic (explicit action + browser permission) → audio streamed to the server → transcript shown for correction → corrected text sent through the normal conversation route → reply shown and optionally spoken.
 - Raw audio is **not stored** by default; transcripts follow the conversation's retention.
 - Names, account numbers and amounts from speech are always shown for correction before use.
@@ -514,7 +523,7 @@ Remove the leftover `/api` "Hello, world" route.
 ### 16.1 Authentication
 
 - **v0 (built):** anonymous session UUID in `localStorage`, sent as `x-session-id`. Acceptable only for synthetic demo data.
-- **MVP (to build):** real sign-in with **Google Identity Platform** (Firebase Authentication) — **phone-number OTP** as the main method (suits older and Indian users), **Google sign-in** as an option. Decided 17 Oct 2026. The server verifies Identity Platform ID tokens and issues its own session; `next-auth` is not needed and can be removed. SMS costs and abuse limits (reCAPTCHA, per-number rate limits) to be configured. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
+- **MVP (to build):** real sign-in with **phone-number OTP** as the main method (suits older and Indian users) and **Google sign-in** as an option (decided 17 Oct 2026). **Revised after research and confirmed 17 Oct 2026:** Indian OTP SMS must go through **TRAI DLT** registration (entity, header, template), and Google Identity Platform stores phone numbers globally and doesn't document its DLT handling. Decision: send OTPs through a **DLT-registered Indian SMS gateway** with our own OTP verification (numbers stay in India), keep Google sign-in via Identity Platform or OAuth. Alternative: Identity Platform phone auth once Google confirms India DLT handling ($0.07 per SMS, SMS region policy = India only, reCAPTCHA). Either way: per-number rate limits, short OTP expiry, and the server issues its own session. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
 
 ### 16.2 Data protection (built unless noted)
 

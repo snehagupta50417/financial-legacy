@@ -51,7 +51,9 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
 | Speech-to-Text, Text-to-Speech | Voice (build step B8) |
 | Identity Toolkit (Identity Platform) | Phone OTP and Google sign-in (build step B3) |
 
-**Turn on Identity Platform sign-in:** in the console, go to *Identity Platform → Providers*, enable **Phone** and **Google**, and add the app's domain to *Authorized domains*. Phone sign-in sends SMS, which is billed; set a budget alert (step 5).
+**Sign-in:** enable **Google** in *Identity Platform → Providers* and add the app's domain to *Authorized domains*. For **phone OTP**, the recommended route is a DLT-registered Indian SMS gateway with our own OTP check ([FEASIBILITY_AND_COMPLIANCE.md §7](FEASIBILITY_AND_COMPLIANCE.md#7-platform-feasibility-google-cloud-and-sms)). If Identity Platform phone auth is used instead: set the **SMS region policy to India only**, enforce reCAPTCHA, set per-number quotas, and confirm with Google how India DLT registration is handled (about $0.07 per SMS). Either way, complete **TRAI DLT registration** (entity, header, OTP template) before launch.
+
+**Vertex AI settings for privacy:** always call the **regional** endpoint `asia-south1-aiplatform.googleapis.com` (never `global`); use GA models such as `gemini-2.5-flash` / `gemini-2.5-pro`; **turn off caching** (`cacheConfig.disableCache=true`); keep request-response logging off; don't use Grounding with Google Search for case data; request the **abuse-monitoring exception** (or a Cloud Master Agreement) for zero retention.
 
 ## 3. Secrets
 
@@ -77,7 +79,7 @@ gcloud run deploy finlegacy --source . --region asia-south1 --allow-unauthentica
 ## 5. Guardrails to set now
 
 - **Budget alert** on the billing account (e.g. at 50% / 90% / 100% of a monthly limit).
-- **Region check:** confirm Gemini and Speech (Chirp) models are available in `asia-south1`. If a model is only available outside India, record it and ask counsel before real data uses it ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
+- **Region check (researched 17 Oct 2026):** Gemini (GA models), Text-to-Speech, Cloud Run, Cloud SQL, Secret Manager and Cloud Storage are available in `asia-south1`. **Google Speech-to-Text (Chirp) is not** — only US/EU/Singapore. Get written confirmation from Google that the Gemini model you use processes in India. Any processing outside India must be disclosed and checked with counsel ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
 - **Data processing terms:** accept Google Cloud's data processing addendum for the account.
 - **Access:** give team members the least access they need; no shared personal accounts.
 - **Synthetic data only** in development, always.
