@@ -25,7 +25,7 @@ export function redactIdentifiers(text: string): string {
 export function redactAmounts(text: string): string {
   return text.replace(
     /(₹|\bRs\.?|\bINR)\s?[\d,]+(?:\.\d+)?(?:\s?(?:lakh|lakhs|L|crore|cr)\b)?/gi,
-    "₹[amount hidden]"
+    "₹ ••••"
   );
 }
 

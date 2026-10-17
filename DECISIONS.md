@@ -149,3 +149,12 @@ No lawyer is available, so for each point the law leaves unclear the product fol
 - **Demo cases A, B, C rebuilt** with the same stories: real branches and IFSCs, fund values computed as units × real NAV on the statement date (with indicative value at today's NAV), scheme names as they were at the time, LIC plan names, and demo B changed from a fictional insurer's rejection to an LIC claim-requirements letter (IRDAI: no rejection for want of documents; delay interest at Bank Rate + 2% computed from the live Bank Rate).
 - Added `frontend/test/global-setup.ts` (throwaway SQLite DB) so `npm test` runs; first tests in `test/synthetic-data.test.ts`.
 - **Found while doing this:** `frontend/.gitignore` ignored the whole `test` folder, which is why the tests described under M1–M3 were never committed. It now ignores only `/test/.tmp`.
+
+## Frontend round 1 — 17 Oct 2026 (issue #33)
+
+- Product name in the UI is **Financial Legacy** (was "FinLegacy AI"); page title uses the tagline.
+- Landing page rewritten to be calm and family-first: three journeys, four steps, five promises, honest official-sources section; investor-pitch sections removed.
+- Asset cards show the **four evidence statuses** (derived per LLD §10.1) instead of "User-confirmed" and an AI-confidence bar; masked amounts read "₹ ••••".
+- Contrast fixes from DESIGN §3.1 applied (`--accent-foreground` #0b6b6a, `--input` #8a9aab).
+- Demo assets now link to their source document, so confirming one shows "Document-backed".
+- Mobile: compact case header, sticky tab bar, plainer tab names (Assets, Steps, Planning, Get help), space for the floating Ask button.

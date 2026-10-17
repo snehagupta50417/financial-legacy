@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConfidenceMeter, EvidenceBox, CATEGORY_ICON, CATEGORY_LABEL, VerificationBadge } from "./ui-bits";
+import { EvidenceBox, CATEGORY_ICON, CATEGORY_LABEL, VerificationBadge } from "./ui-bits";
 import { toast } from "@/hooks/use-toast";
 import { CircleCheckBig, CircleX, RotateCcw, Plus, BookCheck, KeyRound, Lock, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -175,10 +175,10 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
 
                 {a.masked && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                    <Lock className="h-3 w-3" /> Masked — full details after you prove you may claim this asset
+                    <Lock className="h-3 w-3" /> Amounts and full numbers are hidden until you show you can claim this asset
                   </div>
                 )}
-                {a.evidence && <EvidenceBox label="Evidence (why the AI thinks this exists)">{a.evidence}</EvidenceBox>}
+                {a.evidence && <EvidenceBox label="Why we think this exists">{a.evidence}</EvidenceBox>}
                 {srcDoc && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
                     <BookCheck className="h-3 w-3" /> Source: {srcDoc.fileName}
@@ -186,10 +186,7 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
                   </div>
                 )}
 
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    AI confidence <ConfidenceMeter value={a.confidence} />
-                  </div>
+                <div className="mt-3 flex items-center justify-end">
                   <div className="flex flex-wrap justify-end gap-1.5">
                     {a.masked && a.discoveryStatus !== "dismissed" && (
                       <Button size="sm" variant="outline" disabled={busyId === a.id} onClick={() => setEntitleFor(a.id)} className="h-8 border-navy/25 text-[12px] text-navy hover:bg-teal-soft">

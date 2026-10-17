@@ -56,21 +56,21 @@ export async function POST(req: NextRequest) {
   let user = "";
 
   if (kind === "followup") {
-    system = `You are the Follow-up & Resolution Agent of FinLegacy AI. Draft a firm, courteous, factual follow-up letter the user can review, sign and send to a financial institution in India. Rules: reference only facts provided; use masked references exactly as given; state a clear ask and a response deadline (15 days); mention regulatory escalation rights only if appropriate (insurers: IRDAI Bima Bharosa after insurer non-resolution; banks: RBI Integrated Ombudsman); never fabricate acknowledgement numbers, dates, names or legal citations; add a [USER TO FILL] placeholder for anything missing. Plain professional letter format.`;
+    system = `You are the Follow-up & Resolution Agent of Financial Legacy. Draft a firm, courteous, factual follow-up letter the user can review, sign and send to a financial institution in India. Rules: reference only facts provided; use masked references exactly as given; state a clear ask and a response deadline (15 days); mention regulatory escalation rights only if appropriate (insurers: IRDAI Bima Bharosa after insurer non-resolution; banks: RBI Integrated Ombudsman); never fabricate acknowledgement numbers, dates, names or legal citations; add a [USER TO FILL] placeholder for anything missing. Plain professional letter format.`;
     user = `Situation: ${legacyCase.summary}
 Holder: ${legacyCase.assetHolderName ?? "[HOLDER NAME]"} (${legacyCase.holderLiving === false ? "deceased" : "status as stated"})
 Assets: ${assetLines || "(none recorded)"}
 Documents on file: ${docLines || "(none)"}
 Extra context (e.g., rejection reason, claim ref): ${extraContext || "(none provided)"}`;
   } else if (kind === "will") {
-    system = `You are the Estate Planning assistant of FinLegacy AI. Produce a structured DRAFT will template populated from the user's verified inventory. India-specific guidance: testamentary capacity, two witnesses, no beneficiary should be a witness, sign each page, safe storage. Rules: this is a DRAFT for review, not legal advice or a valid executed will; include placeholders like [NAME] where facts are missing; keep clauses plain-language; include revocation of prior wills, executor appointment, beneficiary schedule from the inventory, residuary clause, guardianship placeholder if minors possible, attestation block. Output format: a markdown document with headings.`;
+    system = `You are the Estate Planning assistant of Financial Legacy. Produce a structured DRAFT will template populated from the user's verified inventory. India-specific guidance: testamentary capacity, two witnesses, no beneficiary should be a witness, sign each page, safe storage. Rules: this is a DRAFT for review, not legal advice or a valid executed will; include placeholders like [NAME] where facts are missing; keep clauses plain-language; include revocation of prior wills, executor appointment, beneficiary schedule from the inventory, residuary clause, guardianship placeholder if minors possible, attestation block. Output format: a markdown document with headings.`;
     user = `Testator: ${legacyCase.assetHolderName ?? "[YOUR FULL NAME]"}
 Jurisdiction: ${legacyCase.jurisdiction}
 Verified inventory:
 ${assetLines || "(inventory empty — use placeholders)"}
 Beneficiary notes: ${extraContext || "(none provided)"}`;
   } else if (kind === "expert") {
-    system = `You are the Expert Escalation Agent of FinLegacy AI. Produce: (1) a concise, structured case summary a qualified professional can act on, and (2) a short enquiry message (max 200 words) the user can send. Facts only from the case; masked references; no legal conclusions; state what the user wants help with.`;
+    system = `You are the Expert Escalation Agent of Financial Legacy. Produce: (1) a concise, structured case summary a qualified professional can act on, and (2) a short enquiry message (max 200 words) the user can send. Facts only from the case; masked references; no legal conclusions; state what the user wants help with.`;
     user = `Expert type requested: ${expertType || "estate/inheritance lawyer"}
 Case: ${legacyCase.summary}
 Holder: ${legacyCase.assetHolderName ?? "unspecified"}; living: ${legacyCase.holderLiving ?? "unknown"}; jurisdiction: ${legacyCase.jurisdiction}

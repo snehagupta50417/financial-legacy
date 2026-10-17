@@ -54,7 +54,7 @@
 
 :root {
   --radius: 0.75rem;
-  /* FinLegacy palette: deep navy, off-white, muted teal, subtle gold */
+  /* Financial Legacy palette: deep navy, off-white, muted teal, subtle gold */
   --navy: #0a2540;
   --navy-deep: #071a2f;
   --teal-brand: #0e7c7b;
@@ -77,10 +77,10 @@
   --muted: #eef1f5;
   --muted-foreground: #5a6b7d;
   --accent: #e3f1f0;
-  --accent-foreground: #0e7c7b;
+  --accent-foreground: #0b6b6a; /* 4.5:1+ on --accent (DESIGN §3.1) */
   --destructive: #b3403a;
   --border: #dfe5ec;
-  --input: #d3dbe4;
+  --input: #8a9aab; /* control outline, 3:1+ on white (DESIGN §3.1) */
   --ring: #0e7c7b;
   --chart-1: #0e7c7b;
   --chart-2: #0a2540;

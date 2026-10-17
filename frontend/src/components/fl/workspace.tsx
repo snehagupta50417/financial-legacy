@@ -32,11 +32,11 @@ import {
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "assets", label: "Asset Inventory", icon: PieChart },
+  { key: "assets", label: "Assets", icon: PieChart },
   { key: "documents", label: "Documents", icon: FileScan },
-  { key: "journey", label: "Journey Tracker", icon: Route },
-  { key: "estate", label: "Estate Planning", icon: FileSignature },
-  { key: "expert", label: "Expert Escalation", icon: Scale },
+  { key: "journey", label: "Steps", icon: Route },
+  { key: "estate", label: "Planning", icon: FileSignature },
+  { key: "expert", label: "Get help", icon: Scale },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -109,9 +109,9 @@ export default function Workspace({
   const c = ws.case;
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+    <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-4 sm:pb-10 sm:pt-6">
       {/* Case header */}
-      <div className="rounded-2xl border bg-navy p-6 text-white shadow-sm">
+      <div className="rounded-2xl border bg-navy p-4 text-white shadow-sm sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -129,7 +129,7 @@ export default function Workspace({
               </Badge>
               {ws.gate.discoveryUnlocked && ws.gate.journeyKind !== "personal" && (
                 <Badge variant="outline" className="rounded-full border-[#7cc5c4]/40 text-[10.5px] text-[#7cc5c4]">
-                  <ShieldCheck className="mr-1 h-3 w-3" /> Verified heir · assets masked until entitlement
+                  <ShieldCheck className="mr-1 h-3 w-3" /> Relationship verified
                 </Badge>
               )}
               {c.holderLiving === false && (
@@ -138,15 +138,14 @@ export default function Workspace({
                 </Badge>
               )}
             </div>
-            <h1 className="font-display truncate text-[22px] font-semibold leading-snug">
-              {c.assetHolderName ? `${c.assetHolderName} — ` : ""}
-              Legacy case
+            <h1 className="font-display line-clamp-2 text-[20px] font-semibold leading-snug sm:text-[22px]">
+              {c.assetHolderName ?? "Your case"}
             </h1>
-            <p className="mt-1.5 line-clamp-3 max-w-3xl text-[13px] leading-relaxed text-white/65">{c.summary}</p>
+            <p className="mt-1.5 line-clamp-2 max-w-3xl text-[14px] leading-relaxed text-white/70 sm:line-clamp-3">{c.summary}</p>
           </div>
           <div className="w-full shrink-0 sm:w-64">
             <div className="mb-1 flex items-center justify-between text-[11.5px] text-white/60">
-              <span className="uppercase tracking-wider">Journey progress</span>
+              <span className="uppercase tracking-wider">Steps done</span>
               <span className="tabular-nums text-white">{Math.round(c.progress)}%</span>
             </div>
             <Progress value={c.progress} className="h-2 bg-white/10 [&_[data-slot=progress-indicator]]:bg-[#7cc5c4]" />
@@ -154,7 +153,7 @@ export default function Workspace({
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7cc5c4]" />
                 <div>
-                  <div className="text-[10.5px] font-semibold uppercase tracking-wider text-[#7cc5c4]">Next best action</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#7cc5c4]">Next step</div>
                   <div className="mt-0.5 text-[12.5px] leading-relaxed text-white/85">
                     {c.nextBestAction ?? "All actions completed — well done."}
                   </div>
@@ -173,12 +172,12 @@ export default function Workspace({
       )}
 
       {/* Tabs */}
-      <div className="mt-5 flex gap-1.5 overflow-x-auto pb-1 nice-scroll">
+      <div className="sticky top-0 z-10 -mx-4 mt-4 flex gap-1.5 overflow-x-auto bg-background/95 px-4 py-2 backdrop-blur nice-scroll sm:static sm:mx-0 sm:mt-5 sm:bg-transparent sm:px-0 sm:py-0 sm:pb-1">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
+            className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-colors ${
               tab === t.key
                 ? "border-navy bg-navy text-white"
                 : "border-border bg-card text-ink/70 hover:border-teal-brand/40 hover:bg-teal-soft"

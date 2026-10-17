@@ -3,7 +3,7 @@ import type { OfficialResource } from "@/lib/types";
 /**
  * Official Resources registry — REAL, verified public destinations only.
  * Every entry corresponds to an actual government / regulator portal.
- * FinLegacy never claims an API that does not exist: where a portal requires
+ * Financial Legacy never claims an API that does not exist: where a portal requires
  * interactive login / CAPTCHA / OTP, we route the user there (official_website),
  * we do not bypass it.
  */

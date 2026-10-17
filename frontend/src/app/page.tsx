@@ -40,7 +40,7 @@ export default function Page() {
           <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
             <button onClick={() => setView("landing")} className="flex min-w-0 shrink-0 items-center gap-2 text-white">
               <LeafLogo className="h-6 w-6 shrink-0 text-[#7cc5c4]" />
-              <span className="font-display truncate text-[15px] font-semibold sm:text-[16px]">FinLegacy AI</span>
+              <span className="font-display truncate text-[15px] font-semibold sm:text-[16px]">Financial Legacy</span>
             </button>
             <nav className="flex shrink-0 items-center gap-0.5 sm:gap-1.5" aria-label="Main">
               <Button

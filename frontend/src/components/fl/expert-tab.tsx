@@ -77,7 +77,7 @@ export default function ExpertTab({ ws }: { ws: CaseWorkspace }) {
             </Button>
             <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold-soft/60 px-3 py-2.5 text-[11.5px] leading-relaxed text-ink/75">
               <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
-              FinLegacy does not provide legal advice or broker professionals. This pack helps you brief a qualified
+              Financial Legacy does not provide legal advice or broker professionals. This pack helps you brief a qualified
               expert efficiently — you choose and engage them yourself.
             </div>
           </CardContent>

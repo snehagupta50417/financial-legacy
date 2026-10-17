@@ -29,7 +29,7 @@ const CATEGORY_ICON: Record<string, React.ElementType> = {
 
 const INTEGRATION_LABEL: Record<string, { label: string; tone: string }> = {
   official_website: {
-    label: "Official website — you act, FinLegacy prepares & tracks",
+    label: "Official website — you act, Financial Legacy prepares & tracks",
     tone: "border-teal-brand/30 bg-teal-soft text-teal-brand",
   },
   guided_workflow: { label: "Guided workflow", tone: "border-gold/30 bg-gold-soft text-gold" },
@@ -55,7 +55,7 @@ export default function ResourcesPage({ onHome }: { onHome: () => void }) {
         <SectionHeading
           eyebrow="Official resources centre"
           title="Verified destinations. Nothing invented."
-          sub="Every portal below is a real government or regulator website, last-checked and labelled by integration type. Where a portal requires login, CAPTCHA or OTP, FinLegacy routes you there — it never impersonates or bypasses official controls."
+          sub="Every portal below is a real government or regulator website, last-checked and labelled by integration type. Where a portal requires login, CAPTCHA or OTP, Financial Legacy routes you there — it never impersonates or bypasses official controls."
         />
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">

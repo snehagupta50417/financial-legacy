@@ -100,6 +100,9 @@ export async function POST(req: NextRequest) {
     "system"
   );
 
+  // Link each asset to the document it was found in (by institution + reference),
+  // so a confirmed demo asset is shown as document-backed, not self-declared.
+  const sourceFor = new Map<string, string>();
   for (const d of seed.documents) {
     const doc = await db.documentRecord.create({
       data: {
@@ -115,6 +118,7 @@ export async function POST(req: NextRequest) {
         isSynthetic: true,
       },
     });
+    for (const clue of d.extracted.assetClues) sourceFor.set(`${clue.institution}|${clue.reference ?? ""}`, doc.id);
     await logEvent(legacyCase.id, "document", `DEMO document "${d.fileName}" analysed — ${d.extracted.fields.length} fields extracted`, "ai", doc.id);
   }
 
@@ -131,6 +135,10 @@ export async function POST(req: NextRequest) {
         confidence: a.confidence,
         discoveryStatus: "possible",
         verificationStatus: a.verificationStatus,
+        sourceDocumentId:
+          sourceFor.get(`${a.institution}|${a.maskedRef ?? ""}`) ??
+          [...sourceFor.entries()].find(([k]) => k.startsWith(`${a.institution}|`))?.[1] ??
+          null,
       },
     });
   }
