@@ -69,6 +69,7 @@ model LegacyCase {
   documents       DocumentRecord[]
   tasks           JourneyTask[]
   events          CaseEvent[]
+  chunks          KnowledgeChunk[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -113,6 +114,7 @@ model DocumentRecord {
   isSynthetic      Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  chunks           KnowledgeChunk[]
 }
 
 model JourneyTask {
@@ -316,4 +318,29 @@ model CheckResult {
   reason    String
   evidence  String   @default("[]") // JSON
   createdAt DateTime @default(now())
+}
+
+// Search index for the case assistant (RAG). "library" rows are the official
+// procedure library (no case); "case" rows are chunks of a case's redacted
+// document text. Vectors are JSON in SQLite; pgvector on Cloud SQL later.
+model KnowledgeChunk {
+  id             String          @id @default(cuid())
+  scope          String // library | case
+  caseId         String?
+  case           LegacyCase?     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  documentId     String?
+  document       DocumentRecord? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sourceId       String // library passage id or document id
+  ordinal        Int             @default(0)
+  title          String
+  url            String?
+  checkedOn      String?
+  text           String
+  contentHash    String
+  embedding      String? // JSON number[] (unit length)
+  embeddingModel String?
+  createdAt      DateTime        @default(now())
+
+  @@index([scope, caseId])
+  @@index([documentId])
 }

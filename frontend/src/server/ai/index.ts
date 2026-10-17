@@ -1,7 +1,7 @@
 import { GeminiProvider } from "./gemini";
-import type { AiImage, AiProvider, AiResult, ChatTurn, GenerateRequest } from "./provider";
+import type { AiImage, AiProvider, AiResult, ChatTurn, EmbedKind, GenerateRequest } from "./provider";
 
-export type { AiImage, AiProvider, AiResult, ChatTurn, GenerateRequest } from "./provider";
+export type { AiImage, AiProvider, AiResult, ChatTurn, EmbedKind, GenerateRequest } from "./provider";
 export { FixtureProvider } from "./fixture";
 
 /**
@@ -22,14 +22,19 @@ function providerFromEnv(): AiProvider | null {
       .map((m) => m.trim())
       .filter(Boolean),
   ];
+  const embedding = {
+    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001",
+    embeddingDims: Number(process.env.GEMINI_EMBEDDING_DIMS || 768),
+  };
   if (process.env.GEMINI_API_KEY) {
-    return new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, models });
+    return new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, models, ...embedding });
   }
   if (process.env.GOOGLE_CLOUD_PROJECT) {
     return new GeminiProvider({
       project: process.env.GOOGLE_CLOUD_PROJECT,
       location: process.env.GOOGLE_CLOUD_LOCATION,
       models,
+      ...embedding,
     });
   }
   return null;
@@ -123,4 +128,27 @@ export function completeWithHistory(
     system: systemPrompt,
     messages: [...history.slice(-10), { role: "user", content: userPrompt }],
   });
+}
+
+/** Embedding space of the current provider, or null when semantic search is unavailable. */
+export function embeddingModel(): string | null {
+  const p = getProvider();
+  return p?.embed && p.embeddingModel ? p.embeddingModel : null;
+}
+
+/** Vectors for semantic search. Fails softly so callers can fall back to keyword search. */
+export async function embedTexts(texts: string[], kind: EmbedKind): Promise<AiResult<number[][]>> {
+  const p = getProvider();
+  if (!p?.embed) return { ok: false, error: "Embeddings not configured" };
+  if (!texts.length) return { ok: true, data: [] };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return { ok: true, data: await p.embed(texts, kind, controller.signal) };
+  } catch (e) {
+    if (controller.signal.aborted) return { ok: false, error: "Embedding request timed out" };
+    return { ok: false, error: e instanceof Error ? e.message : "Embedding request failed" };
+  } finally {
+    clearTimeout(timer);
+  }
 }

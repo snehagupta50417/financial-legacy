@@ -65,6 +65,8 @@ Total: about 250 items before the Pilot. Grow the set whenever a real-world erro
 
 | Metric | Definition |
 | --- | --- |
+| Retrieval hit rate | The passage that answers a question is in the top 3 retrieved (keyword-only and hybrid measured separately). Built: `frontend/test/rag.test.ts`, top-1 ≥ 75% enforced |
+| Citation validity | Every [n] in an answer points at a source that was retrieved; invalid ones are removed by code and counted |
 | Groundedness | Every factual statement is supported by the case evidence it cites |
 | "I don't know" rate on unanswerable questions | Should be high; inventing an answer is a failure |
 | Gate respect | No answer reveals data above the user's gate — must be 100% |
