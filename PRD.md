@@ -5,7 +5,7 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.6.2 (draft for review) |
+| **Version** | 0.6.3 (draft for review) |
 | **Status** | Complete draft, awaiting product-owner review |
 | **Source of truth** | [ONE_PAGER.md](ONE_PAGER.md). Where this PRD and the one-pager disagree, the one-pager wins and this PRD is corrected. |
 | **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · exact data formats: the Prisma schema and Zod types in [`frontend/`](frontend/) (LLD §5) |
@@ -640,9 +640,9 @@ Exact fields and formats are defined in the Prisma schema (`frontend/prisma/sche
 
 | Integration | Used for | MVP status |
 | --- | --- | --- |
-| Document upload and reading | Extracting facts from user documents | Built (Gemini extraction on synthetic documents; fixture provider for tests and for running without a cloud key) |
-| AI provider (Google Gemini) | Conversation, extraction, drafting | Used on synthetic data only in the MVP; approved terms (data residency, retention, no training) required before real data in the Pilot |
-| Speech: Google Cloud Text-to-Speech; speech recognition via Gemini audio on Vertex AI (preferred) or Google Speech-to-Text | Voice input and output | Required for MVP (D-09, revised 17 Oct 2026): recognition via Gemini audio in Mumbai because Google Speech-to-Text isn't offered in India — [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7 |
+| Document upload and reading | Extracting facts from user documents | Built: Gemini extraction, or local OCR and text rules when there is no key (synthetic documents only) |
+| AI provider (Google Gemini, free API key) | Conversation, extraction, drafting, search | Free tier only (D-14), so **synthetic data only**: the unpaid tier lets Google use prompts and forbids personal data. Real data needs AI off or an approved paid tier with no-training terms |
+| Speech: recognition via Gemini audio (free key) or the browser; replies via Cloud Text-to-Speech (free quota) or the browser | Voice input and output | Required for MVP (D-09, revised 17 Oct 2026 for the free-tier rule) — [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md) |
 | RBI UDGAM, SEBI MITRA / MFCentral, insurer unclaimed searches, government common portal | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
 | DigiLocker | Fetching official documents | Later — requires partner approval |
 | Account Aggregator | Fetching financial data with consent | Later — requires an eligible regulated role |
@@ -792,11 +792,12 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | D-06 | Evidence freshness, and how amounts and totals work for each asset type | Product + operations |
 | D-07 | Workload, cost, capacity, recovery, support hours, case limits and service targets | Engineering + operations |
 | D-08 | Distribution, pricing and professional-services model (billing needs a PRD change) | Founder |
-| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026, revised after research):** speech recognition by Gemini audio on Vertex AI in Mumbai (Google Speech-to-Text isn't offered in India; Chirp only as a disclosed fallback), replies by Google Cloud Text-to-Speech; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
+| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026), revised the same day for the free-tier rule (D-14):** recognition by Gemini audio on the free API key or the browser's speech recognition (Vertex AI in Mumbai dropped — it bills; Google Speech-to-Text isn't offered in India), replies by Cloud Text-to-Speech within its free quota or the browser's voice; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
 | D-10 | Institution procedures: who keeps them current, how often they are reviewed, and how legal, fraud and complaint escalations work | Operations |
 | D-11 | Whether native mobile apps are needed, and device, session, storage and accessibility rules for them | Product + engineering |
 | D-12 | **Fee model — decided (17 Oct 2026):** flat or capped fees only; no percentage of recovered money; the family signs and submits; no representation before institutions ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2). **The Pilot is free.** Still open: price points and payer after the Pilot (D-08) | Founder |
-| D-13 | **Approvals roadmap** — DLT registration, DigiLocker requester, UIDAI OVSE, KYC vendor, advocate panel, legal opinion — owners and dates ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §8) | Founder + integrations |
+| D-13 | **Approvals roadmap** — DLT registration (only if SMS is ever used — not needed for Google sign-in), DigiLocker requester, UIDAI OVSE, KYC vendor, advocate panel, legal opinion — owners and dates ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §8) | Founder + integrations |
+| D-14 | **Free tier only — decided (17 Oct 2026):** only free tiers and existing free credits; AI through a free Gemini API key (synthetic data only); hosted on Google Cloud. Sign-in is Google sign-in (phone OTP dropped — SMS bills). Still open: the permanent database, and whether real cases run without AI or a paid AI tier is approved ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)) | Founder |
 
 ---
 

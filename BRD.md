@@ -356,7 +356,7 @@ Not legal advice. Where the law is unclear, the product follows the cautious pos
 | **Fees for claim assistance** | Percentage-of-recovery fees are risky; paid insurance "claims consultancy" is reserved for brokers | Flat or capped fees; family signs and submits; no representation before institutions |
 | **Practice of law** | Only advocates may practise law (Advocates Act s.33; *A.K. Balaji*, 2018) | Institution forms and standard templates only; case-specific legal questions go to an advocate panel |
 | **Identity checks** | Aadhaar authentication, PAN API, CKYC and V-CIP are for regulated entities | Aadhaar offline verification (OVSE registration), licensed KYC vendor for PAN |
-| **SMS** | TRAI DLT registration required for OTP SMS | DLT registration before launch |
+| **SMS** | TRAI DLT registration is required for OTP SMS | Not needed for now: sign-in is Google sign-in (free-tier rule, [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)). Register only if SMS is ever added |
 
 Full research, answers and the approvals roadmap: [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md).
 | **Institution terms** | Banks and insurers may restrict third-party involvement or automation | Manual submission by the family in the MVP; formal channels before automating |

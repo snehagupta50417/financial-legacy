@@ -4,12 +4,12 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.5.1 (draft for review) |
+| **Version** | 0.6 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
-| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, targeting Google Cloud Run (deployment is milestone M7, not yet done). |
+| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, targeting Google Cloud Run (deployment is milestone M7, not yet done). **Free tier only** — every service must be free or within existing free credits ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)). |
 | **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. The separate hackathon plan (`BACKEND_PLAN.md`) was folded into §21 and removed; it remains in git history. |
-| **Status** | Hackathon milestones M0–M3 are built (§21). Large parts of the PRD MVP are not built yet — see the gap analysis in §20. |
+| **Status** | Built: M0–M3, the document pipeline with OCR, grounded Q&A (RAG), evidence statuses and field review (B4), claims (B6), tests and CI (B1). Not built: real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see §20. |
 
 ---
 
@@ -78,16 +78,18 @@ These turn the PRD's product principles into engineering rules.
  │   core/           session · access guards · gate engine · masking · crypto ·
  │                   rate limit · name matching · upload validation · http
  │   domain/         case service · journey engine · gates
- │   ai/             provider interface · Gemini adapter · fixture provider
+ │   ai/             provider interface · Gemini adapter · fixture provider (tests)
+ │   ocr/            Tesseract OCR · no-AI text rules
+ │   knowledge/      procedure library · hybrid search · citations (RAG)
  │   providers/      identity · death proof · relationship · entitlement (mock now)
  │   rules/          evidence · observations · totals · duplicates · claim path · pack · lifecycle
  │   connectors/     connector interface · mock connectors       (Later)
  │   pdf/            claim-pack PDF (pdf-lib)
-│   procedures/     versioned, cited claim procedures
+ │   procedures/     versioned, cited claim procedures
  │   data/           official resources · demo data · synthetic registries
  ▼
- Prisma ─► SQLite (v0) ─► Cloud SQL PostgreSQL (MVP)
- Gemini API / Vertex AI  (text + vision; synthetic data only until Pilot)
+ Prisma ─► SQLite (v0) ─► permanent free database (open decision — FREE_TIER_PLAN §3)
+ Gemini API key, free tier (text, vision, embeddings; synthetic data only)
 ```
 
 ### 2.2 The one-pager's six layers, mapped to code
@@ -98,8 +100,8 @@ These turn the PRD's product principles into engineering rules.
 | Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
 | AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
 | Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
-| Asset and document records | Prisma models, `api/documents`, `api/assets`, masking | Built; evidence-status model to update (§10) |
-| Claims and workflow | `JourneyTask`, journey engine; `ClaimPack` model | Tasks built; claim packs to build |
+| Asset and document records | Prisma models, `api/documents`, `api/assets`, masking, `rules/`, `domain/evidence-service.ts` | Built: four evidence statuses, field review with history, dated amounts, totals, duplicates (§10) |
+| Claims and workflow | `JourneyTask`, journey engine; `Claim`, `ClaimPack`, `Approval`, `domain/claim-service.ts` | Built: tasks and claims to outcome (§11) |
 
 `src/server/` must never import from `src/app/` or React code, so it can later move into a standalone service with the same API (§21, M9).
 
@@ -113,15 +115,16 @@ These turn the PRD's product principles into engineering rules.
 | Web framework | Next.js 16 (App Router), React 19, TypeScript 5 | `frontend/AGENTS.md`: read the bundled Next.js docs before changing framework code — this version has breaking changes |
 | UI | Tailwind CSS 4, shadcn/ui (Radix), lucide icons, sonner toasts, framer-motion | Accessible primitives from Radix |
 | Validation | Zod 4 at every API boundary | Enums enforced by Zod (SQLite has no native enums) |
-| Database | Prisma 6; **SQLite in v0**, **Cloud SQL PostgreSQL for the MVP** | Provider switch only; no raw SQL |
-| AI | Google Gemini via `@google/genai` (API key or Vertex AI) | Provider interface + fixture provider for tests (§13) |
+| Database | Prisma 6; **SQLite in v0**; the permanent database is an open decision limited to free options ([FREE_TIER_PLAN §3](docs/FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) — Cloud SQL is not free | Provider switch only; no raw SQL |
+| AI | Google Gemini via `@google/genai`, **free-tier API key** (Vertex AI code path kept but not used — it bills) | Provider interface + fixture provider for tests (§13) |
 | PDF text | `unpdf` | Text layer first; scanned pages are rendered to images (`@napi-rs/canvas`) for OCR |
 | OCR | `tesseract.js` (WASM, runs on the server) | English + Hindi by default (`OCR_LANGS`); used when there is no AI key or Gemini fails (§8.1) |
-| Tests | Vitest (unit and route), Playwright (end-to-end, to add) | No tests are committed yet (§19) |
+| Claim pack PDF | `pdf-lib` (MIT) | Standard fonts; "₹" written "Rs." (§11.3) |
+| Tests | Vitest (unit and route); Playwright (end-to-end, to add) | 106 tests in `frontend/test/`; GitHub Actions CI on every PR (§19) |
 | Deploy | Google Cloud Run, **from source via buildpacks — no Docker** | `npm run build`, `npm start`, listens on `$PORT` |
 | Secrets | Google Secret Manager | Never in the repo |
 
-Installed but unused: `next-auth` (candidate for real sign-in), `next-intl` (candidate for Indian-language UI). Remove what is not adopted.
+`next-auth` and `next-intl` were removed (unused). Real sign-in (B3) uses Google sign-in through Identity Platform / Firebase Authentication, free up to 50,000 monthly active users.
 
 ---
 
@@ -140,9 +143,10 @@ frontend/
       ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
       knowledge/              library.ts (official procedure passages) · search.ts (BM25, vectors, fusion) · retrieve.ts · citations.ts (§13.5)
       ocr/                    ocr.ts (Tesseract, scanned-PDF pages) · rule-extract.ts (no-AI extraction) (§8.1)
+      db.ts                   Prisma client
       core/                   access.ts · crypto.ts · gate-engine.ts · http.ts · masking.ts ·
                               name-match.ts · rate-limit.ts · session.ts · upload.ts
-      domain/                 case-service.ts · gates.ts · journey-engine.ts
+      domain/                 case-service.ts · gates.ts · journey-engine.ts · intake-fallback.ts (rule-based intake)
       providers/              identity.ts · death-proof.ts · relationship.ts · entitlement.ts · types.ts
       data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
         reference/            real public reference snapshot: fund schemes + NAVs, bank branches, pincodes, RBI rates (SOURCES.md)
@@ -153,14 +157,18 @@ frontend/
       domain/evidence-service.ts  applies the rules to stored records (fields, review history, statuses, amounts, duplicates)
       pdf/claim-pack.ts       the approved pack as a PDF the family submits themselves
       connectors/             (Later) base.ts · mock/* · real/*
-    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts
+    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts · starters.ts
     components/
       fl/                     product components: landing, intake, case-shell, area pages, field-review, gate-panel, ask-panel …
       ui/                     stock shadcn components
   test/                       Vitest unit and route tests (test/.tmp holds the test database)
+  scripts/                    fetch-reference-data.mjs (public reference snapshot) · make_test_pdf.py
+.github/workflows/ci.yml      type-check, lint, tests and build on every PR
 ```
 
-**Housekeeping to do:** delete the leftover `src/app/api/route.ts` ("Hello, world"); rename the package from `nextjs_tailwind_shadcn_ts`. (`worklog.md`, the old screenshots in `scripts/` and `download/README.md` were removed on 17 Oct 2026; `DECISIONS.md` is the decision log.)
+`ClaimView` (the claim page's data) is defined in `src/server/domain/claim-service.ts` and imported by the claim page as a type only — the one exception to keeping shared types in `src/lib/types.ts`.
+
+Housekeeping done on 17 Oct 2026: the leftover "Hello, world" route was deleted, the package renamed to `financial-legacy`, and unused models and packages removed. `DECISIONS.md` is the decision log.
 
 ---
 
@@ -168,29 +176,27 @@ frontend/
 
 The Prisma schema in `frontend/prisma/schema.prisma` is the **source of truth for data**. The tables below summarise it and map it to the PRD's concepts ([PRD §12.1](PRD.md#121-the-main-things-the-product-keeps-track-of)).
 
-### 5.1 Existing models
+### 5.1 Models
 
 | Model | Purpose | PRD concept |
 | --- | --- | --- |
 | `Session` | Anonymous browser session (v0 identity) | Participant (temporary) |
-| `UserProfile` | Preferred name, state, language, relationship (unused) | Participant |
 | `LegacyCase` | One case: type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
 | `DeceasedPerson` | Name, name variants, DOB, PAN **hash**, date of death, death-proof status | Subject (deceased) |
 | `Claimant` | Relationship, role (lead / co-heir), identity and relationship status | Participant + role |
 | `Proof` | Identity / death / relationship / entitlement proof: provider, status, matched fields | Authority evidence |
-| `AssetRecord` | Category, institution, masked ref, last-4, value band, discovery and verification status, `entitled` | Holding |
-| `DocumentRecord` | Category, extraction status, redacted text, extracted fields, user-verified flag | Document + evidence |
-| `Signal` | Extracted fields and a ≤300-character snippet from a source; no raw bodies | Evidence (from sources) |
-| `Institution` | Reference data: names, aliases, sender IDs, email domains, claim template | Institution |
+| `AssetRecord` | Category, institution, masked ref, last-4, value band, `discoveryStatus` (possible / confirmed / dismissed), `evidenceStatus` (§10.1), duplicate review, `nomineeStatus`, `jointHolderStatus`, `entitled` (G4) | Holding |
+| `Observation` | Dated amount for a holding: decimal string, type, currency, as-of date, source field; append-only (superseded, never overwritten) | Observation |
+| `DocumentRecord` | Category, extraction status, redacted text, the AI's original proposal (`extractedFields`), `userVerified` (derived: every field has a decision) | Document |
+| `DocumentField`, `FieldReviewEvent` | Each extracted value with its review state; append-only history of every decision (who, when, why, previous value) | Evidence + review |
+| `KnowledgeChunk` | Search index for the assistant: procedure library and case document chunks, optional vectors | — (RAG, §13.5) |
+| `Claim`, `ClaimPack`, `Approval`, `ClaimEvent` | One claim per holding; versioned pack snapshots with hash; approval of an exact pack; claim timeline | Claim, claim pack, approval |
 | `JourneyTask` | Task with instructions, official URL, required documents, dependencies, priority, next-best flag | Task |
-| `ClaimPack` | Claim path, checklist, generated forms, status | Claim pack |
 | `ConsentRecord` | Per case and source: purpose, scope, status, expiry, revocation | Consent |
-| `CaseEvent` | Append-only timeline with event type and actor | Audit event |
-| `IntakeMessage`, `QaMessage`, `Draft` | Conversation, questions and answers, drafted letters | Conversation |
-| `ResourceVisit` | User opened an official portal; outcome logged back | Discovery attempt |
-| `InstitutionClaim`, `CheckResult` | Institution-side claim review (Verify) | Later (§22) |
+| `CaseEvent` | Append-only case timeline with event type and actor | Audit event |
+| `IntakeMessage`, `QaMessage` | Intake conversation; saved assistant answers | Conversation |
 
-Models defined but not yet used by code: `ClaimPack`, `Signal`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`.
+Removed on 17 Oct 2026 because no code used them: `UserProfile`, `Signal`, `Institution`, `Draft`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`, and the holding fields `verificationStatus`, `sourceSignalIds`, `institutionId`. Each comes back with the build step that needs it (e.g. a search-visit model with B5).
 
 ### 5.2 Changes required for the PRD MVP
 
@@ -201,13 +207,14 @@ Models defined but not yet used by code: `ClaimPack`, `Signal`, `QaMessage`, `Re
 | **Built (#14):** `DocumentField` (per-field `state: proposed \| accepted \| corrected \| rejected`, `proposedValue`, `value`, `critical`, reviewer, reason) + append-only `FieldReviewEvent` (from/to state and value, reason, actor). `extractedFields` JSON keeps the AI's original proposal | Critical fields must be reviewed before use | FL-06, FL-26 |
 | **Built (#16):** `Approval`: exact content hash, recipient, channel, purpose, expiry, state (active / used / expired / invalidated) | Approval of exactly what is sent | FL-14 |
 | **Built (#16):** `Claim` (one per holding) with status, path, situation, procedure id/version/check date, checklist, declarations, owner and due date, submission and outcome; `ClaimPack` is now a versioned snapshot per claim (content + hash); `ClaimEvent` timeline; `AssetRecord.nomineeStatus` / `jointHolderStatus` | Claims tracked independently to an outcome | FL-09, FL-12–FL-16 |
+| Add a search-visit model: portal, outcome (found / not found / partial / blocked / failed), resulting potential match | Guided discovery outcomes | FL-10 |
 | Add `Hold`: scope, reason, created/resolved by | Pause specific actions | FL-47 |
 | Add `LegacySnapshot`: frozen record, date, known gaps; `TrustedContact` (intent only) | Legacy planning | FL-11, FL-31, FL-34 |
 | Add `User` + real auth link; replace session-only ownership | Real sign-in | FL-45, FL-48 |
-| Store money as **decimal strings**, never floats | Exact amounts | FL-29 |
-| Add `insurance` asset category and claim paths (if not already covered) | Life insurance is in the MVP | PRD §8.1 |
+| **Built:** money as **decimal strings** (`Observation.amount`, `Claim.outcomeAmount`), never floats | Exact amounts | FL-29 |
+| **Built:** `insurance` category with the LIC claim procedure | Life insurance is in the MVP | PRD §8.1 |
 
-Every change ships with a Prisma migration and is reflected in `src/lib/types.ts`.
+Until the permanent database is chosen, schema changes are applied with `prisma db push` (no migration files). Once it is chosen, switch to versioned migrations (`prisma migrate`). Changes are reflected in `src/lib/types.ts`.
 
 ---
 
@@ -283,7 +290,7 @@ Real identity evidence rules are decision D-02.
 
 ## 8. Documents and extraction
 
-**PRD:** FL-05, FL-06, FL-25, FL-26. **Built:** upload, validation, extraction, side-by-side field review screen (per-field decisions held in the browser, saved as one `PATCH`; `src/lib/field-review.ts`). **To build:** per-field review records on the server (decision, previous value, who, why) and invalidation of dependants.
+**PRD:** FL-05, FL-06, FL-25, FL-26. **Built:** upload, validation, extraction (Gemini, local OCR, text rules), side-by-side field review saved per field on the server with history (`PUT /api/documents/:id/review`), and invalidation of claim packs that used a changed value. **To build:** malware scanning (before real uploads).
 
 ### 8.1 Pipeline
 
@@ -309,8 +316,8 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
 - Encrypted or unreadable files return a clear message and a "get help" path; we never ask for a document password (FL-25).
 - **Critical fields** — names, identifiers, ownership, amounts, dates, institution — must be reviewed before they count (FL-06).
 - A correction keeps the old value, who changed it and why; it invalidates any pending claim pack or approval that used it (FL-26).
-- **Original files:** not stored in v0. For the MVP with real users, store originals encrypted in Cloud Storage with a retention policy (D-05), because claim packs need them.
-- **Malware scanning:** to add before real uploads (Cloud Storage + a scanning service) (FL-05).
+- **Original files:** not stored (read, extract, forget). The family keeps their originals and attaches them to the claim themselves. Cloud Storage's free tier is US-only, so storing originals would need a decision (FREE_TIER_PLAN §2).
+- **Malware scanning:** not built. No free scanner fits Cloud Run from source; until one is chosen, uploads stay limited to byte-checked types and sizes and synthetic data (FL-05).
 
 ---
 
@@ -321,12 +328,12 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
 ### 9.1 MVP discovery
 
 1. **Documents** the user uploads (statements, CAS, policy bonds, passbooks) → extraction (§8) → holdings.
-2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build** — today only the resources directory exists and `ResourceVisit` is unused. The product will:
+2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build (B5)** — today only the resources directory exists; a search-visit model will be added. The product will:
    - proposes which searches fit this case (discovery plan, FL-10);
-   - opens the official portal for the user (`ResourceVisit` created);
+   - opens the official portal for the user (a visit is recorded);
    - asks the user to log the outcome — **found / not found / partial / blocked** (e.g. the portal needs an identifier the family doesn't have) **/ failed** (portal unavailable) — recorded on the visit;
-   - turns a "found" outcome into a `POTENTIAL_MATCH` holding for review.
-3. **Inference** from documents (e.g. recurring interest credits suggesting an FD) creates `POTENTIAL_MATCH` holdings only — never confirmed.
+   - turns a "found" outcome into a `potential_match` holding for review.
+3. **Inference** from documents (e.g. recurring interest credits suggesting an FD) creates `potential_match` holdings only — never confirmed.
 
 Each discovery attempt records what was checked and when. Results distinguish **nothing found**, **partial**, **blocked** and **failed**; the product never says "you have no other assets".
 
@@ -356,10 +363,10 @@ interface Connector {
 
 | Status | Set when | Set by |
 | --- | --- | --- |
-| `SELF_DECLARED` | The user told us | User |
-| `POTENTIAL_MATCH` | A search or inference suggests it; not yet supported by a document | System (search outcome, inference) |
-| `DOCUMENT_BACKED` | A reviewed document supports it | User review of extracted fields |
-| `INSTITUTION_VERIFIED` | Reviewed evidence **from the institution** confirms it | Operator only, with attributable institution evidence |
+| `self_declared` | The user told us | User |
+| `potential_match` | A search or inference suggests it; not yet supported by a document | System (search outcome, inference) |
+| `document_backed` | A reviewed document supports it | User review of extracted fields |
+| `institution_verified` | Reviewed evidence **from the institution** confirms it | Operator only, with attributable institution evidence |
 
 Rules as built: not yet confirmed by the user → `potential_match`, whatever a document says. Confirmed + a linked document whose critical fields all have a decision and whose identifying reference wasn't rejected → `document_backed`; otherwise `self_declared`. `institution_verified` is sticky and set only by an operator (no route sets it yet — B9). `dismissed` stays a separate lifecycle flag. Old rows are upgraded the first time a case is opened (`backfillCase`). `verificationStatus` is kept only for old rows and is no longer read. AI confidence and name similarity can **never** raise a status.
 
@@ -369,7 +376,7 @@ Same institution (normalised, with aliases such as LIC / Life Insurance Corporat
 
 ### 10.3 Totals (built — `rules/totals.ts`)
 
-- Count **one** reviewed, dated observation per holding: the latest with `amountType` in {`CASH_BALANCE`, `CURRENT_VALUE`}.
+- Count **one** reviewed, dated observation per holding: the latest with `amountType` in {`cash_balance`, `current_value`}.
 - Exclude, with a stated reason: potential matches, duplicates, conflicts, holdings on hold, undated values, historical values, FD principal/maturity, insurance sum assured, units, negative balances, and amounts hidden below G4 for this person. (Holds arrive with B9.)
 - Statement "Cr" / "Dr" mean credit / debit; only spelled-out lakh / crore scale an amount. Amounts are summed in paise with BigInt.
 - Amounts are **decimal strings**; currencies are never mixed.
@@ -424,7 +431,7 @@ DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR
 
 ## 12. Legacy planning
 
-**PRD:** FL-11, FL-31, FL-34 (MVP); FL-32, FL-33 (Later). The existing "estate" tab drafts a will with AI; **the PRD says we do not draft legally binding wills** (PRD §3.3), so that feature must be relabelled as "notes for your lawyer" or removed.
+**PRD:** FL-11, FL-31, FL-34 (MVP); FL-32, FL-33 (Later). The AI does not draft wills (PRD §3.3): the `will` draft kind was removed and replaced by "notes for your lawyer" (`lawyer_notes`).
 
 To build:
 
@@ -442,11 +449,12 @@ To build:
 
 - `provider.ts` defines the interface; `gemini.ts` implements it; `fixture.ts` returns canned responses (and optional fake embeddings) for tests; `index.ts` exposes `complete`, `completeJson`, `completeWithHistory` and `embedTexts`.
 - **Embeddings** (for §13.5): `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`) at `GEMINI_EMBEDDING_DIMS` (768), normalised to unit length, task type `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`, batches of 100.
-- **Auth order:** `GEMINI_API_KEY`, else Vertex AI (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, Application Default Credentials on Cloud Run), else "not configured" — callers degrade gracefully, never fake output.
+- **Auth:** `GEMINI_API_KEY` (free tier, the configuration we use), else Vertex AI (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, default `asia-south1`) — kept in code for a future paid setup but **not used** (it bills), else "not configured": intake uses rules, documents use OCR and text rules, questions return matching passages, drafts are off. Never fake output.
+- **Free-tier terms:** Google may use unpaid-tier prompts to improve its products and human reviewers may read them; personal information must not be sent. **Synthetic data only** ([FREE_TIER_PLAN §4](docs/FREE_TIER_PLAN.md#4-what-the-free-ai-terms-mean)).
 - **Models:** `GEMINI_MODEL` (default `gemini-flash-latest`), fallbacks `GEMINI_FALLBACK_MODELS` (default `gemini-3.5-flash,gemini-flash-lite-latest`). Model aliases change; pin explicit versions before the Pilot and record them per response.
 - **Retries:** transient errors (429/5xx/UNAVAILABLE) get one retry after 800 ms, then the next model; 404 skips to the next model; others fail fast. Overall timeout `AI_TIMEOUT_MS` (45 s).
 - System prompts go in `systemInstruction`; JSON calls set `responseMimeType: application/json` and are **validated with Zod** before use.
-- **Rate limit:** per session, `RATE_LIMIT_AI_PER_MINUTE` (20). Per instance in v0; move to a shared store (e.g. the database or Memorystore) before scaling.
+- **Rate limit:** per session, `RATE_LIMIT_AI_PER_MINUTE` (20). Per instance in v0; move to the database before running more than one instance (Memorystore has no free tier). The free Gemini tier also has its own per-minute and per-day limits — callers already degrade when it refuses.
 
 ### 13.2 Where AI is used
 
@@ -463,8 +471,8 @@ To build:
 - **Grounding:** prompts include only the masked, gate-appropriate case view and passages retrieved for the question (§13.5).
 - **Prompt injection:** document text and retrieved passages are fenced (`<<<` … `>>>`) and labelled as reference material, not instructions; model output can never trigger a tool, change a gate or alter permissions.
 - **No invented facts:** if a value isn't in the evidence, the answer says so.
-- **Data to AI:** synthetic data only until the Pilot; for the Pilot, an approved provider configuration with data-residency, retention and no-training terms (D-05, FL-46).
-- **Logging:** store model, model version, prompt template version and output; never log raw sensitive inputs.
+- **Data to AI:** synthetic data only. The free tier's terms rule out personal data, so real cases either run without AI or wait for an approved paid tier with no-training terms (D-05, FL-46; FREE_TIER_PLAN §4).
+- **Logging (to build):** store model, model version and prompt template version with each answer; never log raw sensitive inputs. Today only the question and answer are saved (`QaMessage`).
 
 ### 13.4 Case manager
 
@@ -486,7 +494,7 @@ question ─► sync procedure library (once per process; changed passages repla
 ```
 
 - **Two sources.** The **procedure library** (`library.ts`) is a plain-language summary of each official source in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) — RBI, SEBI, IRDAI, LIC, discovery portals — plus the official resources directory. Each passage carries the link and the date it was checked; passages not confirmed on an official page say so in their text. **Case documents** are the same redacted text the family can open in field review, searched only once `canDiscover()` is true, and redacted again on the way out.
-- **Storage:** `KnowledgeChunk` (scope `library` or `case`; vectors as JSON with the model name). On Cloud SQL the vector column becomes pgvector; nothing else changes.
+- **Storage:** `KnowledgeChunk` (scope `library` or `case`; vectors as JSON with the model name). If the permanent database is Postgres, the vector column becomes pgvector; nothing else changes.
 - **Without a key:** search is keyword-only and the route returns the best-matching passages (`mode: "passages"`) instead of a 503.
 - **Response:** `{ mode, answer, sources[{ n, kind, title, publisher, url, checkedOn, documentId, excerpt }], grounded, retrieval, caseDocumentsSearched }`. The panel lists the cited sources; official pages open in a new tab, documents open in the case. Answers are saved to `QaMessage`.
 - **Quality:** `test/rag.test.ts` holds an evaluation set of family questions → the passage(s) that answer them; each must be in the top 3 with keyword search alone, and top-1 accuracy must stay ≥ 75%. Add a question whenever a passage is added.
@@ -501,9 +509,9 @@ question ─► sync procedure library (once per process; changed passages repla
 ### 14.1 Design
 
 - **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `src/server/voice/`, same pattern as the AI provider.
-- **Provider (D-09, decided 17 Oct 2026; revised after research and confirmed 17 Oct 2026):** Google Cloud **Text-to-Speech** in Mumbai for spoken replies (Chirp 3 HD voices for Hindi, Tamil and English-India). For **speech recognition**, Google Speech-to-Text is **not offered in India** (Chirp 3: US/EU; Chirp 2: Singapore; Tamil in Preview; no Hindi-English code-mixed model). Decision: **Gemini audio understanding on Vertex AI in Mumbai**, so audio stays in India; evaluate it against Chirp on the Hindi, Hinglish and Tamil test set. Fallback: Chirp outside India with the transfer disclosed in consent. See [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7.
+- **Provider (D-09, revised 17 Oct 2026 for the free-tier rule):** recognition with **Gemini audio understanding on the free API key** (synthetic data only) or the browser's built-in speech recognition; spoken replies with **Cloud Text-to-Speech** inside its free monthly quota (4M Standard / 1M Neural2 characters) or the browser's built-in voice. The earlier plan (Gemini on Vertex AI in Mumbai) is dropped because Vertex bills; Google Speech-to-Text is not offered in India and only 60 minutes a month are free. Choose at B8 after evaluating Hindi, Hinglish and Tamil. See [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7 and [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md).
 - **Launch languages:** **English (India), Hindi, Hinglish (mixed Hindi-English) and Tamil.** Each must pass its own evaluation ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) §3.4) before it is offered.
-- **Region:** Vertex AI and Text-to-Speech in `asia-south1`; any processing outside India is disclosed ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
+- **Region:** the Gemini API key endpoint doesn't let us choose a region; any processing outside India is disclosed ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
 - **Flow:** user taps the mic (explicit action + browser permission) → audio streamed to the server → transcript shown for correction → corrected text sent through the normal conversation route → reply shown and optionally spoken.
 - Raw audio is **not stored** by default; transcripts follow the conversation's retention.
 - Names, account numbers and amounts from speech are always shown for correction before use.
@@ -539,7 +547,7 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | POST | `/api/cases/:id/proofs/:kind` | Identity / death / relationship proof | → G1/G2/G3 | Built (mock providers) |
 | POST | `/api/assets`, PATCH `/api/assets/:id` | Add / update holdings | G3 | Built |
 | POST | `/api/assets/:id/entitlement` | Per-asset entitlement proof | → G4 | Built (mock) |
-| POST | `/api/documents`, PATCH `/api/documents/:id` | Upload + extract; review fields | G3 for deceased | Built |
+| POST | `/api/documents`, PATCH `/api/documents/:id` | Upload + extract (AI or OCR + rules); change a document's type (values are reviewed with PUT …/review) | G3 for deceased | Built |
 | GET | `/api/documents/:id` | Stored, redacted text of one document, for field review | G3 for deceased | Built |
 | PATCH | `/api/tasks/:id` | Update a journey task | Owner | Built |
 | POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | Q&A, drafts, checklists | Owner | Built |
@@ -558,7 +566,6 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | DELETE | `/api/cases/:id`, `/api/session` | Delete case / all my data | Owner | To build |
 | — | `/api/cases/:id/connectors/*`, `/api/console/*` | Connectors, Verify console | — | Later (§22) |
 
-Remove the leftover `/api` "Hello, world" route.
 
 ---
 
@@ -569,7 +576,7 @@ Remove the leftover `/api` "Hello, world" route.
 ### 16.1 Authentication
 
 - **v0 (built):** anonymous session UUID in `localStorage`, sent as `x-session-id`. Acceptable only for synthetic demo data.
-- **MVP (to build):** real sign-in with **phone-number OTP** as the main method (suits older and Indian users) and **Google sign-in** as an option (decided 17 Oct 2026). **Revised after research and confirmed 17 Oct 2026:** Indian OTP SMS must go through **TRAI DLT** registration (entity, header, template), and Google Identity Platform stores phone numbers globally and doesn't document its DLT handling. Decision: send OTPs through a **DLT-registered Indian SMS gateway** with our own OTP verification (numbers stay in India), keep Google sign-in via Identity Platform or OAuth. Alternative: Identity Platform phone auth once Google confirms India DLT handling ($0.07 per SMS, SMS region policy = India only, reCAPTCHA). Either way: per-number rate limits, short OTP expiry, and the server issues its own session. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
+- **MVP (to build, B3):** **Google sign-in** through Identity Platform / Firebase Authentication — free up to 50,000 monthly active users (3,000 a day on the Spark plan). **Phone OTP is dropped** under the free-tier rule (17 Oct 2026): SMS is billed per message beyond 10 a day and Indian DLT registration has costs. The earlier phone-OTP decisions (DECISIONS.md) are superseded. The server issues its own session after Google sign-in. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
 
 ### 16.2 Data protection (built unless noted)
 
@@ -578,12 +585,12 @@ Remove the leftover `/api` "Hello, world" route.
 | Masking by default | `masking.ts` on every asset response below G4 |
 | PAN | Stored only as HMAC (`PAN_HASH_SECRET`, required in production) |
 | Redaction before storage | Identifiers removed from stored text and extracted fields |
-| No raw originals | v0 stores no original files; MVP stores them encrypted in Cloud Storage (to build) |
-| Encryption at rest | Cloud SQL and Cloud Storage default encryption; customer-managed keys considered for the Pilot (to decide, D-05) |
+| No raw originals | Original files are not stored (read, extract, forget) |
+| Encryption at rest | Google Cloud default encryption for whatever database is chosen (FREE_TIER_PLAN §3) |
 | Encryption in transit | HTTPS only (Cloud Run) |
 | Secrets | Secret Manager; never in the repo or logs |
-| Upload safety | Size limit, byte sniffing (built); malware scanning (to build before real uploads) |
-| Rate limiting | Per session on AI routes (built); shared store before scale |
+| Upload safety | Size limit, byte sniffing (built); malware scanning (not built — no free scanner chosen yet) |
+| Rate limiting | Per session on AI routes (built); in the database before more than one instance |
 
 ### 16.3 Audit
 
@@ -595,10 +602,12 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 
 ### 16.5 Before real data
 
-1. Purge `frontend/db/custom.db` from git history (owner action — see DECISIONS.md M0).
-2. Real authentication.
-3. Malware scanning and encrypted original storage.
-4. Approved AI and speech provider terms (data residency, retention, no training).
+1. Real authentication (Google sign-in).
+2. A permanent database (FREE_TIER_PLAN §3).
+3. Malware scanning.
+4. AI terms that allow personal data — the free Gemini tier does not (FREE_TIER_PLAN §4) — or real cases run without AI.
+
+(`frontend/db/custom.db` was purged from git history on 17 Oct 2026.)
 5. Threat model and DPDP privacy assessment reviewed — drafts in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) and [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
 
 ---
@@ -611,20 +620,20 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 
 - **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository). **No Dockerfile, docker-compose or Caddy.**
 - Scripts: `build` = `prisma generate && next build`; `start` = `prisma db push --skip-generate && next start` (v0 SQLite); `postinstall` = `prisma generate`.
-- **MVP:** Cloud SQL PostgreSQL with versioned Prisma migrations (`prisma migrate deploy`), replacing `db push`. Environments: **two for now — development and production** (decided 17 Oct 2026), each with its own database and secrets; add staging before the Pilot uses real data. Setup steps: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md).
+- **Database:** on Cloud Run, SQLite in `/tmp` (`DATABASE_URL=file:/tmp/finlegacy.db`) is wiped on every restart — demos only. The permanent database is an open, free-only decision ([FREE_TIER_PLAN §3](docs/FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)); once chosen, use versioned Prisma migrations (`prisma migrate deploy`). Environments: development now; production only when real users are approved. Setup: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Cloud Run runs with minimum instances 0 so nothing bills while idle.
 
 ### 17.2 Operating
 
 - `/api/health` for uptime checks.
-- Structured JSON logs (level from `LOG_LEVEL`) with request IDs; no sensitive values.
-- Error reporting and basic metrics (Cloud Logging / Error Reporting / Monitoring).
+- **To build:** structured JSON logs with request IDs; no sensitive values. Cloud Logging's free tier (50 GiB a month) covers it.
+- Error reporting and basic metrics through Cloud Logging and Monitoring free tiers.
 - AI failures degrade gracefully: the user keeps their work and sees the next usable step (FL-40).
 - Long operations (extraction, pack generation) show progress; move to a job table with retries when they exceed request time limits (FL-51).
 - Working targets (to confirm under D-07): assistant reply starts within ~2 s; a typical statement extracted within ~30 s.
 
 ### 17.3 Running without a cloud key
 
-For the reference build, `AI_PROVIDER=fixture` (to add) makes the app use the fixture provider at runtime, so all three journeys run locally on sample data without any cloud credentials (PRD §15.1). The UI labels fixture answers "Sample AI response". In production, the fixture provider is refused at startup.
+Built: without any key the app runs all three journeys — rule-based intake, local OCR and text rules for documents, keyword search returning matching passages, deterministic gates and claim rules. Only drafting (letters, lawyer notes, checklists) needs the model. A runtime fixture provider (`AI_PROVIDER=fixture`) is not needed and is no longer planned.
 
 ### 17.4 Reference workload
 
@@ -632,7 +641,7 @@ Used to measure FL-52 before agreeing production targets (D-07): one Cloud Run i
 
 ### 17.5 Demo operations
 
-`/api/admin/reset` (planned) wipes and reseeds demo data; disabled in production unless `DEMO_MODE=true`. Every demo and mock is visibly labelled "Simulated".
+Demo cases are loaded fresh per session with `POST /api/demo`; a separate reset endpoint isn't needed while SQLite resets on restart. Every demo and mock is visibly labelled "Simulated".
 
 ---
 
@@ -643,8 +652,8 @@ All variables are listed in `frontend/.env.example`. Secrets come from Secret Ma
 | Variable | Purpose | Used now |
 | --- | --- | --- |
 | `DATABASE_URL` | Prisma connection | Yes |
-| `GEMINI_API_KEY` | Gemini API key (or use Vertex) | Yes |
-| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI | Yes |
+| `GEMINI_API_KEY` | Gemini API key, free tier (Secret Manager on Cloud Run) | Yes |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI — kept for a future paid setup; leave empty | Read, not used |
 | `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | Model selection | Yes |
 | `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMS` | Embeddings for the case assistant's search (§13.5) | Yes |
 | `OCR_LANGS`, `OCR_MAX_PDF_PAGES` | Local OCR languages and scanned-PDF page limit (§8.1) | Yes |
@@ -652,18 +661,17 @@ All variables are listed in `frontend/.env.example`. Secrets come from Secret Ma
 | `RATE_LIMIT_AI_PER_MINUTE` | AI rate limit per session (20) | Yes |
 | `PAN_HASH_SECRET` | HMAC key for PAN (required in production) | Yes |
 | `MAX_UPLOAD_MB` | Upload size limit (8) | Yes |
-| `CONNECTOR_MODE_EMAIL`, `_TAX_RECORD`, `_SMS`, `_REGISTRY`, `_SCAN` | Connector mock/real | Not yet (Later) |
-| `CONSOLE_KEY` | Verify console access | Not yet (Later) |
-| `DEMO_MODE` | Allow demo reset in production | Not yet |
-| `LOG_LEVEL` | Logging level | Not yet |
+| `LIVE_AI` | Tests only: `LIVE_AI=1` lets tests call the real model | Yes (tests) |
 
-Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing, when connectors are set to `real` without approved configuration, or when demo data would be served to real users.
+Unused variables (connector modes, console key, demo mode, log level) were removed from `.env.example` on 17 Oct 2026; they return with the feature that needs them.
+
+**To build:** startup should refuse to run in production when `PAN_HASH_SECRET` is missing or when demo data would be served to real users.
 
 ---
 
 ## 19. Testing and evaluation
 
-**PRD:** FL-53, FL-55; PRD §15.1. **Current state: no tests are committed** (`vitest.config.ts` expects `frontend/test/**`, which does not exist). DECISIONS.md M1 mentions tests that were not committed. Adding them is the first engineering priority after the hackathon.
+**PRD:** FL-53, FL-55; PRD §15.1. **Current state:** 106 Vitest tests in 11 files under `frontend/test/` — route tests against a throwaway SQLite database, the fixture AI provider, and no network calls to a model. Covered: intake fallback, journey stages, synthetic demo data, document text access, OCR and no-AI extraction, RAG retrieval with an evaluation set, field review, evidence statuses, amounts and totals, duplicates, claim paths, packs, approval and the claim lifecycle. **Not yet covered by dedicated tests:** the gate engine, masking, name matching, redaction and upload validation on their own (they are exercised indirectly by route tests).
 
 | Level | Tool | Must cover |
 | --- | --- | --- |
@@ -674,7 +682,7 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | AI evaluation | Labelled set of synthetic Indian bank statements, CAS, policy bonds, death certificates — including adversarial documents ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Critical-field accuracy reported separately; any false "verified", gate bypass or wrong disclosure fails the release (FL-53) |
 | Accessibility | Playwright + axe | WCAG 2.2 AA checks on core screens (FL-50) |
 
-**CI (to add):** GitHub Actions on every PR — install, type-check (`tsc --noEmit`), lint, unit + route tests, build. End-to-end on main.
+**CI (built):** `.github/workflows/ci.yml` on every PR and push to main — install, type-check, lint, tests, production build. Free: GitHub Actions includes 2,000 minutes a month for private repositories. End-to-end tests to add.
 
 **Traceability (FL-55):** each test names the FL IDs it covers.
 
@@ -686,18 +694,19 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | --- | --- | --- | --- |
 | Intake and journeys | FL-01, FL-02, FL-22 | Intake with AI + fallback; 7 case types; journey engine | Restore chat (`/messages`); user correction of journey type |
 | Trust gates and authority | FL-03, FL-04, FL-23 | G0–G4 with mock providers; guards; freeze; masking | Proof expiry, reviewer/reason, operator unfreeze, real providers |
-| Real sign-in | FL-45, FL-48 | Session UUID only | **Real authentication** |
-| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction (AI, OCR, rules), redaction; per-field review with history (#14) | Invalidation of claim packs on material change (B6); malware scan; encrypted originals |
-| Discovery | FL-10 | Resources directory | Discovery plan; `ResourceVisit` flow; outcome logging; no-result/partial states |
-| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Four evidence statuses, append-only observations, honest totals, duplicate review (#14) | Nominee information per holding (B6); holds (B9) |
+| Real sign-in | FL-45, FL-48 | Session UUID only | **Google sign-in** (free); cases owned by users |
+| Database | FL-51 | SQLite (wiped on Cloud Run restart) | **Choose a free permanent database** (FREE_TIER_PLAN §3); migrations |
+| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction (AI, OCR, rules), redaction; per-field review with history (#14); claim packs invalidated on a material change (#16) | Malware scan (no free option chosen) |
+| Discovery | FL-10 | Resources directory | Discovery plan; search-visit model; outcome logging; no-result/partial states |
+| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Four evidence statuses, append-only observations, honest totals, duplicate review (#14); nominee and joint-holder information (#16) | Holds (B9) |
 | Insurance in MVP | PRD §8.1 | LIC death-claim procedure and pack (#16) | Procedures for other insurers |
 | Claims | FL-12–FL-17, FL-36, FL-37 | Claim model, versioned procedures, path rules, packs + PDF, hash-bound approval, manual submission, outcomes, reopen (#16) | Operator review queue for claims sent to review (B9); reminders on due dates (B9) |
-| Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
-| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks; grounded Q&A with retrieval and citations (§13.5); retrieval evaluation set; synthetic data only | Case-manager coordinator; full AI evaluation set (AI_EVALUATION); fixture provider at runtime; approved provider terms before real data (FL-46) |
-| Voice | FL-20, FL-41 | — | **Not started** |
-| Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks | Reminders; operator queue; holds; help/complaints; procedure versioning |
+| Legacy | FL-11, FL-31, FL-34 | Legacy gaps list; "notes for your lawyer" drafts (no will drafting) | Legacy record, trusted contacts (intent), snapshot, export |
+| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks; grounded Q&A with retrieval and citations (§13.5); retrieval evaluation set; synthetic data only | Case-manager coordinator; full AI evaluation set (AI_EVALUATION); per-answer model logging; AI terms that allow personal data — not available on the free tier (FL-46) |
+| Voice | FL-20, FL-41 | — | **Not started**; free-tier provider to choose at B8 |
+| Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks; versioned claim procedures (#16) | In-app reminders; operator queue; holds; help/complaints |
 | Audit, deletion | FL-18, FL-19 | `CaseEvent` timeline | User-visible audit; delete endpoints; retention |
-| Quality | FL-50–FL-55 | Type-check passes | **No tests, no CI**; accessibility checks; metrics |
+| Quality | FL-50–FL-55 | 106 tests, GitHub Actions CI (type-check, lint, tests, build) | Dedicated unit tests for gates, masking, redaction, upload; end-to-end tests; accessibility checks; metrics |
 
 ---
 
@@ -711,10 +720,10 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | M1 | Gemini provider, fixture provider, fallbacks, rate limits | Done |
 | M2 | Schema, trust gates, masking, name matching, one case per deceased, audit events | Done |
 | M3 | Gate UI: proof screens; locked, masked and frozen states | Done |
-| M4 | Discovery: guided searches with outcome logging, document pipeline, synthetic demo case | Next |
+| M4 | Discovery: document pipeline (AI, OCR, rules) and realistic synthetic demo — **done**; guided search outcome logging — moved to B5 | Partly done |
 | M5 | Verify console — demo of the Later capability FL-56, labelled "Simulated" | Optional |
-| M6 | Claim paths (§11.1) and packs for bank, mutual fund and LIC; approve + receipt | Next |
-| M7 | Deploy to Cloud Run ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) | Next |
+| M6 | Claim paths (§11.1) and packs for bank, mutual fund and LIC; approve + receipt | Done (B6, #16) |
+| M7 | Deploy to Cloud Run on the free tier ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) — needs the project ID | Next |
 
 Phase A does not change PRD scope. Mock connectors and the Verify console may appear in the hackathon demo only, labelled "Simulated". The original plan (`BACKEND_PLAN.md` v3) is in git history.
 
@@ -724,21 +733,21 @@ Ordered so that each step leaves a working product:
 
 | # | Work | PRD |
 | --- | --- | --- |
-| B1 | Tests + CI for what exists (gates, masking, routes); remove leftovers; `AI_PROVIDER=fixture` for running without a key | FL-55 |
-| B2 | Postgres on Cloud SQL with migrations; environments | FL-51 |
-| B3 | Real sign-in; cases owned by users; re-authentication for sensitive actions; chat restore; journey-type correction | FL-01, FL-02, FL-45, FL-48 |
+| B1 | **Done:** tests, CI, leftovers removed. Still open: dedicated unit tests for gates, masking, redaction, upload | FL-55 |
+| B2 | **On hold:** permanent database — choose a free option (FREE_TIER_PLAN §3), then migrations | FL-51 |
+| B3 | Google sign-in (free); cases owned by users; re-authentication for sensitive actions; chat restore; journey-type correction | FL-01, FL-02, FL-45, FL-48 |
 | B3a | Gate completion: proof expiry, reviewer and reason on proofs, nominee/executor/joint-holder routes to G3, encrypted full identifiers for G4 | FL-03, FL-04 |
-| B4 | Evidence statuses, observations, field review, totals | FL-06–FL-09, FL-26, FL-28, FL-29 |
-| B5 | Guided discovery plan and `ResourceVisit` outcomes | FL-10 |
-| B6 | Claims: model, versioned procedures (bank/FD, MF, life insurance), packs, approval, manual submission, outcomes | FL-12–FL-16, FL-36, FL-37, FL-44 |
+| B4 | **Done (#14):** evidence statuses, observations, field review, totals, duplicates | FL-06–FL-09, FL-26, FL-28, FL-29 |
+| B5 | Guided discovery plan and search-visit outcomes | FL-10 |
+| B6 | **Done (#16):** claims model, versioned procedures (bank/FD, MF, LIC), packs, approval, manual submission, outcomes. Open: procedures for other insurers | FL-12–FL-16, FL-36, FL-37, FL-44 |
 | B7 | Legacy record, trusted contacts (intent), snapshot, export | FL-11, FL-31, FL-34 |
-| B8 | Voice (after D-09); case-manager coordinator and prompt-injection hardening | FL-20, FL-38, FL-39, FL-41 |
+| B8 | Voice on free tiers (after D-09); case-manager coordinator and prompt-injection hardening | FL-20, FL-38, FL-39, FL-41 |
 | B9 | Audit view, deletion, holds, operator queue (including unfreezing a case), help, in-app reminders | FL-17–FL-19, FL-42, FL-43, FL-47, FL-49 |
 | B10 | AI evaluation set, accessibility pass, metrics, reference-workload measurement (§17.4) | FL-46, FL-50, FL-52, FL-53, FL-54 |
 
 ### Phase C — Pilot readiness
 
-Real providers where approved, encrypted originals, malware scanning, threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when).
+Real providers where approved, a permanent database, malware scanning, AI terms that allow personal data (or AI off for real cases), threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when), within the free-tier rule ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)).
 
 ### M9 — Optional service extraction
 
@@ -753,7 +762,7 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 | Capability | Design | PRD |
 | --- | --- | --- |
 | **Connectors** (Gmail read-only, tax record AIS/26AS, consolidated statements via email, Android SMS companion) | §9.2 interface; mock mode for demos | FL-27 |
-| **Verify console** for banks and insurers | Institution claim queue; checks stored as `CheckResult`: cross-document consistency, authenticity signals (flagged, not proof), duplicate claims, completeness; **risk score computed by code**, never by the AI; approve / request documents / escalate, all logged. Access via real institution accounts (v0 demo uses `CONSOLE_KEY`) | FL-56 (Later) |
+| **Verify console** for banks and insurers | Institution claim queue; check results (model to add): cross-document consistency, authenticity signals (flagged, not proof), duplicate claims, completeness; **risk score computed by code**, never by the AI; approve / request documents / escalate, all logged. Access via real institution accounts | FL-56 (Later) |
 | Account Aggregator, DigiLocker | Behind the provider/connector interfaces after approval | FL-27, D-03 |
 | Direct claim submission | Through permitted institution channels, with execution-time checks and receipts | FL-35 |
 | Family collaboration, sharing and release after death | Verified recipients, scoped and expiring access, release policy | FL-24, FL-32, FL-33 |
@@ -769,6 +778,11 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 - **`BACKEND_PLAN.md`** (hackathon plan) and **`demo/`** (standalone hackathon demo) were removed on 17 Oct 2026 to keep the repo to what the product needs; both remain in git history. Phase A is summarised in §21.
 - **`contracts/`** (`openapi.json`, `schema.sql`, `fixtures.json`) described the superseded Python/FastAPI design and was **removed** on 17 Oct 2026; it remains in git history. Once the MVP API stabilises, generate an OpenAPI spec from the Zod schemas.
 - **LLD v0.4** (Python/FastAPI, Keycloak, Docker Compose, PostgreSQL RLS) is superseded by this version. Its useful rules — exact approvals, unknown-outcome reconciliation, append-only evidence, honest totals, deletion markers — are carried forward above.
+
+### Changes in version 0.6 (17 Oct 2026)
+
+- **Free tier only** (founder rule): Cloud SQL, Vertex AI, Memorystore, Cloud Storage for originals, phone OTP and Speech-to-Text dropped; Google sign-in; Gemini API key with synthetic data only; the permanent database is an open free-only decision. See [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md).
+- Status brought up to date: OCR, RAG, B4 and B6 built; tests and CI built; unused models, packages, env vars and the "Hello, world" route removed; model table rewritten (§5.1).
 
 ### Changes in versions 0.5 – 0.5.1
 

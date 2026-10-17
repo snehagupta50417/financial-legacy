@@ -2,10 +2,11 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.1 |
+| **Version** | 0.2 — free tier only |
 | **Date** | 17 October 2026 |
-| **Decided** | Existing Google Cloud project with billing; **two environments** (development and production); region **`asia-south1` (Mumbai)**; deploy to Cloud Run **from source, no Docker** ([LLD §17](../LLD.md#17-reliability-operations-and-deployment)) |
-| **Fill in** | Replace `<PROJECT_ID>` below with the existing project's ID (shown on the Google Cloud console home page) |
+| **Decided** | Existing Google Cloud project; region **`asia-south1` (Mumbai)**; deploy to Cloud Run **from source, no Docker** ([LLD §17](../LLD.md#17-reliability-operations-and-deployment)); **only free-tier services**, AI through a **Gemini API key** ([FREE_TIER_PLAN.md](FREE_TIER_PLAN.md)) |
+| **Fill in** | Replace `<PROJECT_ID>` below with the project's ID (shown on the Google Cloud console home page) |
+| **Changed in 0.2** | Dropped Cloud SQL, Vertex AI, Speech-to-Text and phone OTP (not free). Gemini now uses the API key from Secret Manager. |
 
 Commands use the `gcloud` CLI ([install guide](https://cloud.google.com/sdk/docs/install)). Run each once; they are safe to repeat.
 
@@ -16,11 +17,9 @@ Commands use the `gcloud` CLI ([install guide](https://cloud.google.com/sdk/docs
 | Environment | Project | Purpose | Data |
 | --- | --- | --- | --- |
 | **Development** | `<PROJECT_ID>` (the existing project) | Building, testing, demos | Synthetic only |
-| **Production** | a second project, e.g. `<PROJECT_ID>-prod`, created **before the Pilot** | Real users | Real data, after the Pilot gates in [PRD §15.2](../PRD.md#152-pilot--may-start-when) |
+| **Production** | a second project, created only when real users are approved | Real users | Not before the Pilot gates in [PRD §15.2](../PRD.md#152-pilot--may-start-when) and the AI decision in [FREE_TIER_PLAN.md §4](FREE_TIER_PLAN.md#4-what-the-free-ai-terms-mean) |
 
-Separate projects keep real data, keys and permissions fully apart from development. Add a staging project before the Pilot handles real data.
-
-## 2. One-time setup for the development project
+## 2. One-time setup
 
 **Sign in and select the project:**
 
@@ -36,54 +35,56 @@ gcloud config set project <PROJECT_ID>
 gcloud config set run/region asia-south1
 ```
 
-**Turn on the services the app uses:**
+**Turn on only the services the app uses (all have a free tier):**
 
 ```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com sqladmin.googleapis.com aiplatform.googleapis.com speech.googleapis.com texttospeech.googleapis.com identitytoolkit.googleapis.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
 ```
 
-| Service | Used for |
-| --- | --- |
-| Cloud Run, Cloud Build, Artifact Registry | Deploying from source with buildpacks |
-| Secret Manager | `PAN_HASH_SECRET`, database password, other secrets |
-| Cloud SQL Admin | PostgreSQL (build step B2) |
-| Vertex AI (`aiplatform`) | Gemini through Vertex instead of an API key |
-| Speech-to-Text, Text-to-Speech | Voice (build step B8) |
-| Identity Toolkit (Identity Platform) | Phone OTP and Google sign-in (build step B3) |
+| Service | Used for | Free limit |
+| --- | --- | --- |
+| Cloud Run | Running the app | 2M requests, 180,000 vCPU-seconds, 360,000 GB-seconds a month |
+| Cloud Build, Artifact Registry | Building from source with buildpacks | 2,500 build-minutes a month; 0.5 GB images |
+| Secret Manager | `GEMINI_API_KEY`, `PAN_HASH_SECRET` | 6 active secret versions, 10,000 accesses a month |
 
-**Sign-in:** enable **Google** in *Identity Platform → Providers* and add the app's domain to *Authorized domains*. For **phone OTP**, the recommended route is a DLT-registered Indian SMS gateway with our own OTP check ([FEASIBILITY_AND_COMPLIANCE.md §7](FEASIBILITY_AND_COMPLIANCE.md#7-platform-feasibility-google-cloud-and-sms)). If Identity Platform phone auth is used instead: set the **SMS region policy to India only**, enforce reCAPTCHA, set per-number quotas, and confirm with Google how India DLT registration is handled (about $0.07 per SMS). Either way, complete **TRAI DLT registration** (entity, header, OTP template) before launch.
+Don't enable Cloud SQL Admin, Vertex AI (`aiplatform`), Memorystore or Speech-to-Text — they bill. Google sign-in (B3) will enable Identity Platform (`identitytoolkit.googleapis.com`) when it is built; it is free up to 50,000 monthly active users.
 
-**Vertex AI settings for privacy:** always call the **regional** endpoint `asia-south1-aiplatform.googleapis.com` (never `global`); use GA models such as `gemini-2.5-flash` / `gemini-2.5-pro`; **turn off caching** (`cacheConfig.disableCache=true`); keep request-response logging off; don't use Grounding with Google Search for case data; request the **abuse-monitoring exception** (or a Cloud Master Agreement) for zero retention.
+**Gemini API key:** create it in [Google AI Studio](https://aistudio.google.com/apikey) for this project, and restrict it to the *Generative Language API*. The free tier's terms allow Google to use prompts to improve its products and forbid personal information — **synthetic data only** ([FREE_TIER_PLAN.md §4](FREE_TIER_PLAN.md#4-what-the-free-ai-terms-mean)).
 
 ## 3. Secrets
+
+```bash
+printf '%s' "<the AI Studio key>" | gcloud secrets create GEMINI_API_KEY --data-file=-
+```
 
 ```bash
 printf '%s' "<a long random value>" | gcloud secrets create PAN_HASH_SECRET --data-file=-
 ```
 
-Never commit secret values. Each environment has its own secrets.
+Never commit secret values. Give the Cloud Run service account the *Secret Manager Secret Accessor* role.
 
-## 4. First deploy (milestone M7)
+## 4. Deploy (milestone M7)
 
 From the `frontend/` folder:
 
 ```bash
-gcloud run deploy finlegacy --source . --region asia-south1 --allow-unauthenticated --set-env-vars GOOGLE_CLOUD_PROJECT=<PROJECT_ID>,GOOGLE_CLOUD_LOCATION=asia-south1 --set-secrets PAN_HASH_SECRET=PAN_HASH_SECRET:latest
+gcloud run deploy finlegacy --source . --region asia-south1 --allow-unauthenticated --min-instances 0 --max-instances 2 --set-env-vars DATABASE_URL=file:/tmp/finlegacy.db --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,PAN_HASH_SECRET=PAN_HASH_SECRET:latest
 ```
 
-- The app reads `$PORT` and starts with `npm start` (see [DECISIONS.md](../DECISIONS.md) M0).
-- With `GOOGLE_CLOUD_PROJECT` set and no `GEMINI_API_KEY`, the app uses Gemini through Vertex AI with the Cloud Run service account.
-- Until Cloud SQL is set up (B2), the development app uses SQLite in `/tmp`, which resets when the instance restarts — acceptable for demos only.
-- Grant the Cloud Run service account the roles it needs: *Vertex AI User*, *Secret Manager Secret Accessor*, and later *Cloud SQL Client*.
+- The app reads `$PORT` and starts with `npm start`, which creates the SQLite tables (see [DECISIONS.md](../DECISIONS.md) M0).
+- **Data:** SQLite in `/tmp` is wiped whenever the instance restarts, and each instance has its own copy. That is acceptable for demos only; the permanent database is an open decision ([FREE_TIER_PLAN.md §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)).
+- **No key?** The app still runs: rule-based intake, local OCR and text rules for documents, keyword search with matching passages for questions.
+- Minimum instances 0 means the first request after idle is slower (cold start), but nothing runs — or bills — while idle.
 
 ## 5. Guardrails to set now
 
-- **Budget alert** on the billing account (e.g. at 50% / 90% / 100% of a monthly limit).
-- **Region check (researched 17 Oct 2026):** Gemini (GA models), Text-to-Speech, Cloud Run, Cloud SQL, Secret Manager and Cloud Storage are available in `asia-south1`. **Google Speech-to-Text (Chirp) is not** — only US/EU/Singapore. Get written confirmation from Google that the Gemini model you use processes in India. Any processing outside India must be disclosed in the consent notice ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
-- **Data processing terms:** accept Google Cloud's data processing addendum for the account.
-- **Access:** give team members the least access they need; no shared personal accounts.
-- **Synthetic data only** in development, always.
+- **Budget alert** on the billing account at a very small amount (for example ₹100), alerting at 50%, 90% and 100%.
+- **Artifact Registry cleanup policy** keeping only the latest few images, so storage stays under 0.5 GB.
+- **Free Trial credit** ($300, 90 days for new accounts) is a safety margin only — don't build on it.
+- **Region:** Cloud Run and Secret Manager run in `asia-south1`. The Gemini API key endpoint doesn't let us pick a region; with synthetic data that is acceptable, and it must be disclosed before any real data ([PRIVACY_ASSESSMENT.md §6](PRIVACY_ASSESSMENT.md#6-processors-and-data-location)).
+- **Access:** least access for each team member; no shared personal accounts.
+- **Synthetic data only**, always, while on the free AI tier.
 
-## 6. Before the Pilot (production project)
+## 6. Before any real users
 
-Create the production project, link billing, repeat §2–§5, then add Cloud SQL with backups, encrypted Cloud Storage for originals, logging and alerting, and a staging project. Track this in issue [#23](https://github.com/snehagupta50417/financial-legacy/issues/23).
+Settle the database ([FREE_TIER_PLAN.md §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) and the AI terms ([§4](FREE_TIER_PLAN.md#4-what-the-free-ai-terms-mean)), then create the production project and repeat §2–§5. Track this in issue [#23](https://github.com/snehagupta50417/financial-legacy/issues/23).

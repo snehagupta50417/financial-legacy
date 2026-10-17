@@ -21,7 +21,7 @@ Financial Legacy processes some of the most sensitive personal data there is: id
 
 1. Privacy notice and consent screens that meet the Act (§4).
 2. Real authentication and the security safeguards in [THREAT_MODEL.md](THREAT_MODEL.md).
-3. Processor agreements with Google Cloud (hosting, Gemini/Vertex AI, speech) — data in India, no training on our data (§6).
+3. Processor terms that allow personal data. Under the free-tier rule ([FREE_TIER_PLAN.md](FREE_TIER_PLAN.md)) the Gemini API runs on its **unpaid tier**, whose terms let Google use prompts to improve its products and forbid personal information — so real cases must run **without AI** until a paid tier with no-training terms is approved (§6).
 4. Retention schedule and working deletion (§7).
 5. Grievance officer and a 72-hour-ready breach procedure (§8, §9).
 6. Legal answers to the ⚖️ questions in §10.
@@ -90,15 +90,19 @@ The Act requires a **notice** before or at the time of asking for consent, and c
 
 | Processor | Role | Data | Location | Required terms |
 | --- | --- | --- | --- | --- |
-| Google Cloud Run | Hosting the app | All, in transit and memory | India region (`asia-south1`, Mumbai) recommended | DPA (data processing addendum) |
-| Cloud SQL (MVP) | Database | All case data | India region | DPA; encryption at rest |
-| Cloud Storage (to build) | Encrypted originals | Documents | India region | DPA; retention rules |
-| Gemini via Vertex AI | AI extraction and conversation | Case content sent per request | India region where the model is available ⚖️ | **No training on our data**, defined retention, data residency |
-| Speech recognition (D-09) | Voice input | Audio, transcripts | **Google Speech-to-Text is not offered in India** (Chirp: US/EU/Singapore only). Preferred: Gemini audio on Vertex AI in Mumbai; fallback: Chirp outside India with the transfer disclosed | Same as above; no audio retention by default |
-| Google Cloud Text-to-Speech | Spoken replies | Reply text | Mumbai listed; residency to confirm with Google | Same as above |
-| Sign-in (phone OTP) | Sign-in | Phone number | Google Identity Platform is **global** and keeps phone numbers for abuse prevention; an Indian DLT-registered SMS gateway with our own OTP check keeps numbers in India (recommended) | DPA; minimal data; DLT registration |
+*Revised 17 Oct 2026 for the free-tier rule ([FREE_TIER_PLAN.md](FREE_TIER_PLAN.md)).*
 
-The Gemini API key route (AI Studio) is for synthetic data only. Real data goes through Vertex AI with an approved configuration ([PRD FL-46](../PRD.md#111-security)).
+| Processor | Role | Data | Location | Terms and status |
+| --- | --- | --- | --- | --- |
+| Google Cloud Run | Hosting the app | All, in transit and memory | India region (`asia-south1`, Mumbai) | DPA (data processing addendum); free tier |
+| Database (open decision) | All case data | All case data | Depends on the choice — a free Compute Engine VM is US-only; a free external Postgres may be in Mumbai ([FREE_TIER_PLAN §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) ⚖️ | Must be settled before real data |
+| Original documents | — | — | **Not stored** (read, extract, forget) | — |
+| Gemini API, unpaid tier | AI extraction, conversation, embeddings | Case content sent per request | No region control | Google may use prompts to improve products; human review; **no personal information allowed** → **synthetic data only** |
+| Speech recognition (D-09, B8) | Voice input | Audio, transcripts | Gemini audio (same unpaid terms) or the browser's own speech service | Synthetic only on the unpaid tier; no audio retention |
+| Google Cloud Text-to-Speech | Spoken replies | Reply text | Mumbai listed; residency to confirm | Free monthly quota |
+| Google sign-in (Identity Platform / Firebase Authentication) | Sign-in | Name, email, Google account ID | **Global** | DPA; minimal data; free up to 50,000 monthly users. Phone OTP dropped (SMS is billed) |
+
+**Consequence:** the free AI tier cannot process real people's data. Real cases either run with AI off (the app already works without a key) or wait for a paid tier with no-training terms, which would change the free-tier rule ([PRD FL-46](../PRD.md#111-security)).
 
 ## 7. Retention and deletion (s. 8)
 

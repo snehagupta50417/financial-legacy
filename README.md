@@ -47,7 +47,8 @@ Later: more asset types (shares, IEPF, EPF, NPS, PPF, lockers), approved live co
 
 | Part | State |
 | --- | --- |
-| `frontend/` — the product | Next.js app with intake chat, case workspace, trust gates G0–G4 (simulated providers), document extraction with Gemini, masking. Voice, claims, real sign-in and tests are not built yet — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| `frontend/` — the product | Built: intake (AI or rules), case workspace, trust gates G0–G4 (simulated providers), document extraction (Gemini, local OCR, text rules), per-field review with history, four evidence statuses, dated amounts and honest totals, grounded Q&A with sources (RAG), claims for bank / mutual fund / LIC with packs, approval and tracking. 106 tests and CI. **Not built:** real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| Hosting and cost | **Free tier only** — Google Cloud free tier, a free Gemini API key (synthetic data only), GitHub Actions free minutes. See [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md). |
 
 ## Documents
 
@@ -60,7 +61,7 @@ Read in this order. Each document follows the one above it; if they disagree, th
 | [BRD.md](BRD.md) | Why the business should exist: market figures, competitors, value proposition, revenue hypotheses, go-to-market, risks |
 | [LLD.md](LLD.md) | How it is built: architecture, data model, trust gates, AI, voice, API, security, testing, gap analysis, build plan |
 | [DESIGN.md](DESIGN.md) | How it looks and behaves: navigation, visual style, screens, states, accessibility, voice |
-| [docs/](docs/README.md) | Pre-Pilot documents: threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix, Google Cloud setup |
+| [docs/](docs/README.md) | Pre-Pilot documents: free-tier plan, Google Cloud setup, threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix, feasibility and compliance |
 | [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
 
 ## Running it
@@ -83,4 +84,28 @@ npm run db:push
 npm run dev
 ```
 
-Opens on http://localhost:3000 (health check: `/api/health`). Use `.env` rather than `.env.local` so both Next.js and Prisma read it. `npm run db:push` creates the local SQLite database in `frontend/prisma/db/`. Set `GEMINI_API_KEY` (or Vertex AI settings) in `.env` for AI features; without a key, AI features say they are unavailable. The target deployment is Google Cloud Run from source, with no Docker (LLD §17); it is not deployed yet.
+Opens on http://localhost:3000 (health check: `/api/health`). Use `.env` rather than `.env.local` so both Next.js and Prisma read it. `npm run db:push` creates the local SQLite database in `frontend/prisma/db/`.
+
+**AI key (optional):** put a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) in `GEMINI_API_KEY`. Use synthetic data only — the free tier's terms let Google use prompts to improve its products. Without a key the app still works: rule-based intake, local OCR and text rules for documents, keyword search with matching passages for questions; only drafting is off. Every setting is explained in [`frontend/.env.example`](frontend/.env.example).
+
+**Checks** (the same ones CI runs on every PR):
+
+```bash
+npm run typecheck
+```
+
+```bash
+npm run lint
+```
+
+```bash
+npm test
+```
+
+```bash
+npm run build
+```
+
+Tests use a throwaway SQLite database and never call a real model (set `LIVE_AI=1` to allow it). The OCR tests download Tesseract's English and Hindi data once.
+
+**Deploying:** Google Cloud Run from source, no Docker, free tier only — [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Not deployed yet.

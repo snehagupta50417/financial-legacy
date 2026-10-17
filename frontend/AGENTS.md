@@ -20,3 +20,4 @@ Read before changing code. The documents win over this file if they ever disagre
 6. **Honesty in the UI.** Four evidence statuses only (self-declared, potential match, document-backed, institution-verified); never imply complete discovery; never say we submitted a claim for the user; label anything simulated "Simulated".
 7. **Never commit** secrets, `.env` files or database files.
 8. **Record implementation decisions** in [`../DECISIONS.md`](../DECISIONS.md), newest last.
+9. **Free tier only.** Use only free tiers and existing free credits — no service that bills (no Cloud SQL, Vertex AI, Memorystore, SMS). AI through the free Gemini API key, synthetic data only. Check [`../docs/FREE_TIER_PLAN.md`](../docs/FREE_TIER_PLAN.md) before adding any service or dependency.

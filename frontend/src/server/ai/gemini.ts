@@ -33,7 +33,7 @@ export class GeminiProvider implements AiProvider {
     this.embeddingModel = `${opts.embeddingModel ?? "gemini-embedding-001"}@${this.embedDims}`;
     this.client = opts.apiKey
       ? new GoogleGenAI({ apiKey: opts.apiKey })
-      : new GoogleGenAI({ vertexai: true, project: opts.project, location: opts.location ?? "us-central1" });
+      : new GoogleGenAI({ vertexai: true, project: opts.project, location: opts.location ?? "asia-south1" });
   }
 
   async generate(req: GenerateRequest, signal: AbortSignal): Promise<string> {

@@ -1,0 +1,47 @@
+# Checks every pull request and every push to main: types, lint, tests, production build.
+# Free: GitHub Actions includes 2,000 minutes a month for private repositories.
+# No secrets are needed — tests never call a real model (frontend/vitest.config.ts).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      DATABASE_URL: file:./db/ci.db
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Tesseract language data (English + Hindi) is downloaded once and reused.
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/finlegacy-ocr
+          key: ocr-langs-eng-hin-v1
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

@@ -23,7 +23,7 @@
 | DigiLocker requester (with audit) · Aadhaar offline verification (OVSE registration) · death-certificate QR check on CRS · DLT-registered SMS | PAN verification · CKYC · Account Aggregator data (own assets only) | Aadhaar authentication (AUA/KUA) for now · Account Aggregator for a deceased person's data · any automated search of the official portals |
 
 4. **Data protection:** the DPDP Rules were notified on **13 Nov 2025**; most duties (notice, security, breach reporting, rights, retention) start around **13 May 2027**. Until then the **IT Act s.43A and SPDI Rules 2011** still apply. We build to the 2027 standard now (§5).
-5. **Two platform decisions were adjusted** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT).
+5. **Two platform decisions were adjusted** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT). Both were revised again for the free-tier rule (Google sign-in only; voice on free tiers) — see §7 and [FREE_TIER_PLAN.md](FREE_TIER_PLAN.md).
 6. **Where the law is unclear, we take the cautious reading** (§9), so no lawyer is needed to build the product or run a free Pilot.
 
 ---
@@ -112,10 +112,16 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 | **Identity Platform phone sign-in** | Global service | $0.07 per SMS to India; set SMS region policy to India only; reCAPTCHA; **phone numbers stored globally** for abuse prevention; **DLT responsibility not documented** | V price / U DLT |
 | Google's DPA and DPDP | No DPDP-specific statement found | Our own legal mapping needed | V / U |
 
-**Adjustments — confirmed by the founder on 17 Oct 2026:**
+**Adjustments — confirmed by the founder on 17 Oct 2026** *(superseded by the free-tier revision below)*:
 
 1. **Voice input:** use **Gemini audio understanding on Vertex AI in Mumbai** for speech-to-text (keeps audio in India), evaluated against Chirp in Singapore on our Hindi, Hinglish and Tamil test set. If Gemini's quality is not good enough, use Chirp with the cross-border transfer disclosed in consent. Text-to-Speech stays on Google Cloud TTS in Mumbai.
 2. **Sign-in:** keep phone OTP as the main method, but send OTPs through a **DLT-registered Indian SMS gateway** (e.g. MSG91, Exotel) with our own OTP verification, so phone numbers stay in India and DLT is under our control; Google sign-in remains an option. Alternatively keep Identity Platform after Google confirms its India DLT handling and we accept global storage of phone numbers.
+
+**Revised again on 17 Oct 2026 — free tier only** ([FREE_TIER_PLAN.md](FREE_TIER_PLAN.md)). The research above still holds, but the two adjustments change because Vertex AI, SMS and Cloud SQL bill:
+
+- **Voice input:** Gemini audio on the **free API key** (synthetic data only) or the browser's built-in speech recognition; replies with Cloud Text-to-Speech inside its free quota or the browser's voice. Chosen at B8.
+- **Sign-in:** **Google sign-in only** (free up to 50,000 monthly users). Phone OTP is dropped — SMS is billed per message beyond 10 a day and DLT registration has costs.
+- **Real data:** the unpaid Gemini tier may use prompts to improve Google's products and forbids personal information, so real cases run without AI until a paid tier is approved.
 
 ## 8. Approvals roadmap
 
