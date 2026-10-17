@@ -245,7 +245,7 @@ export function buildJourney(
         {
           title: "Prepare and review claim forms with AI-assisted field population",
           instructions:
-            "Let FinLegacy pre-fill the fields it can from your verified records, review every field yourself, then sign and submit. Nothing is submitted externally without your explicit approval.",
+            "Let Financial Legacy pre-fill the fields it can from your verified records, review every field yourself, then sign and submit. Nothing is submitted externally without your explicit approval.",
           rationale:
             "Assisted pre-fill reduces errors while keeping the human in control of every submission.",
           priority: 28,
@@ -293,7 +293,7 @@ export function buildJourney(
           instructions:
             "Generate the draft will from your verified inventory and beneficiary decisions. Read it fully, correct details, then print on plain paper.",
           rationale:
-            "A clear, well-structured draft reduces ambiguity; FinLegacy marks it as a draft, not a legally executed document.",
+            "A clear, well-structured draft reduces ambiguity; Financial Legacy marks it as a draft, not a legally executed document.",
           dependencies: [
             "Build the complete asset & liability inventory",
             "Decide beneficiaries, shares and special instructions",
@@ -411,7 +411,7 @@ export function buildJourney(
         {
           title: "Consolidate and organise what matters into one place",
           instructions:
-            "Digitise key documents, note locker locations, and maintain the single inventory FinLegacy keeps for you — updated as things change.",
+            "Digitise key documents, note locker locations, and maintain the single inventory Financial Legacy keeps for you — updated as things change.",
           rationale: "An organised estate now is the kindest gift to the family later.",
           priority: 30,
         },
@@ -458,7 +458,7 @@ export function buildJourney(
           instructions:
             "Inheritance, FEMA and tax treatment differ by country and asset type. Engage qualified cross-border tax/legal professionals for the binding positions.",
           rationale:
-            "Cross-border mistakes are expensive; FinLegacy flags issues but does not give binding tax/legal advice.",
+            "Cross-border mistakes are expensive; Financial Legacy flags issues but does not give binding tax/legal advice.",
           status: "needs_expert",
           priority: 46,
         }

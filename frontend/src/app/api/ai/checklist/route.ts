@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     .join("\n");
 
   const res = await completeJson<Checklist>(
-    `You are the Checklist Agent of FinLegacy AI for Indian BFSI processes. Generate a precise, practical document checklist for a specific institution interaction. Rules: only include documents genuinely standard for this process in India; explain where each is obtained; never invent portal URLs or fees; mark truly mandatory items critical=true. Respond with JSON: {"institution": string, "purpose": string, "items": [{"document": string, "why": string, "whereToGet": string, "critical": boolean}], "tips": string[]}`,
+    `You are the Checklist Agent of Financial Legacy for Indian BFSI processes. Generate a precise, practical document checklist for a specific institution interaction. Rules: only include documents genuinely standard for this process in India; explain where each is obtained; never invent portal URLs or fees; mark truly mandatory items critical=true. Respond with JSON: {"institution": string, "purpose": string, "items": [{"document": string, "why": string, "whereToGet": string, "critical": boolean}], "tips": string[]}`,
     `Institution: ${institution}
 Purpose: ${purpose}
 Case context: ${legacyCase.scenarioLabel ?? legacyCase.caseType}; holder: ${legacyCase.assetHolderName ?? "unspecified"}; holder living: ${legacyCase.holderLiving ?? "unknown"}; jurisdiction: ${legacyCase.jurisdiction}.

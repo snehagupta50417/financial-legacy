@@ -12,7 +12,7 @@ import { ASSET_CATEGORIES, type AssetCategory } from "@/lib/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const EXTRACT_SYSTEM = `You are the Document Intelligence Agent of FinLegacy AI (BFSI, India).
+const EXTRACT_SYSTEM = `You are the Document Intelligence Agent of Financial Legacy (BFSI, India).
 You receive the raw text of a financial document (bank statement, insurance policy/receipt, mutual fund CAS/folio statement, claim/rejection letter, will, death certificate, or notes) and extract structured facts.
 
 STRICT EVIDENCE RULES:

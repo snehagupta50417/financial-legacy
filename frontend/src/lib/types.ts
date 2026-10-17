@@ -1,4 +1,4 @@
-// ─── Shared domain types for FinLegacy AI ───────────────────────────────────
+// ─── Shared domain types for Financial Legacy ───────────────────────────────────
 
 export const CASE_TYPES = [
   "living_individual",

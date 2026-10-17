@@ -79,18 +79,57 @@ export function TaskStatusBadge({ status }: { status: string }) {
   );
 }
 
-export function VerificationBadge({ asset }: { asset: { discoveryStatus: string; verificationStatus: string } }) {
-  if (asset.discoveryStatus === "dismissed")
-    return <Badge variant="outline" className="rounded-full text-[11px] text-muted-foreground">Dismissed</Badge>;
-  if (asset.verificationStatus === "user_confirmed")
-    return (
-      <Badge className="rounded-full bg-teal-brand text-white text-[11px] font-medium">
-        <ShieldCheck className="mr-1 h-3 w-3" /> User-confirmed
-      </Badge>
-    );
+/**
+ * The four evidence statuses from PRD FL-07 / DESIGN §6, derived from today's two
+ * status fields as LLD §10.1 specifies. Always written in words, never a bare icon.
+ */
+export type EvidenceStatus = "self_declared" | "potential_match" | "document_backed" | "institution_verified" | "dismissed";
+
+export function evidenceStatusOf(asset: {
+  discoveryStatus: string;
+  verificationStatus: string;
+  sourceDocumentId?: string | null;
+}): EvidenceStatus {
+  if (asset.discoveryStatus === "dismissed") return "dismissed";
+  if (asset.verificationStatus === "institution_verified") return "institution_verified";
+  if (asset.discoveryStatus === "possible") return "potential_match";
+  return asset.sourceDocumentId ? "document_backed" : "self_declared";
+}
+
+const EVIDENCE_LABEL: Record<EvidenceStatus, { label: string; hint: string; className: string }> = {
+  institution_verified: {
+    label: "Institution-verified",
+    hint: "The bank, fund house or insurer confirmed it",
+    className: "bg-teal-brand text-white",
+  },
+  document_backed: {
+    label: "Document-backed",
+    hint: "A document you reviewed supports it",
+    className: "border border-teal-brand/40 bg-teal-soft text-[#0b6b6a]",
+  },
+  self_declared: {
+    label: "Self-declared",
+    hint: "You told us about it; no document yet",
+    className: "border border-navy/20 bg-secondary text-navy",
+  },
+  potential_match: {
+    label: "Potential match",
+    hint: "A search or a clue suggests it — not confirmed",
+    className: "border border-gold/40 bg-gold-soft text-[#7a5a1c]",
+  },
+  dismissed: { label: "Dismissed", hint: "You marked this as not relevant", className: "border text-muted-foreground" },
+};
+
+export function VerificationBadge({
+  asset,
+}: {
+  asset: { discoveryStatus: string; verificationStatus: string; sourceDocumentId?: string | null };
+}) {
+  const s = EVIDENCE_LABEL[evidenceStatusOf(asset)];
   return (
-    <Badge variant="outline" className="rounded-full border-gold/40 bg-gold-soft text-gold text-[11px] font-medium">
-      Possible clue — verify
+    <Badge title={s.hint} className={cn("rounded-full text-[11.5px] font-medium", s.className)}>
+      {evidenceStatusOf(asset) === "institution_verified" && <ShieldCheck className="mr-1 h-3 w-3" />}
+      {s.label}
     </Badge>
   );
 }
@@ -129,7 +168,7 @@ export function TrustFooter({ dark = false }: { dark?: boolean }) {
         dark ? "border-white/10 bg-navy-deep text-white/50" : "border-border bg-card text-muted-foreground"
       )}
     >
-      FinLegacy AI prepares information and guides you to official processes. It never submits claims on your behalf,
+      Financial Legacy prepares information and guides you to official processes. It never submits claims on your behalf,
       never requests banking credentials or OTPs, and clearly marks AI-generated hypotheses, user-confirmed facts, and
       live official integrations. Demo data is synthetic. Portal availability verified Oct 2026.
     </div>

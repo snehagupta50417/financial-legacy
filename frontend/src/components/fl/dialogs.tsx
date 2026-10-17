@@ -12,23 +12,23 @@ const SCENARIOS = [
   {
     key: "demo-a",
     icon: ScrollText,
-    title: "Demo A — Recover a parent's forgotten assets",
-    desc: "Your late father left an old bank statement, an LIC premium receipt and a mutual fund CAS. Watch the AI extract evidence, build an inventory of 4 potential assets, and generate per-institution claim journeys with official UDGAM / Bima Bharosa / MITRA routes.",
+    title: "A family in Delhi after a father's death",
+    desc: "An old Punjab National Bank statement, an LIC premium receipt and a 2019 mutual fund statement. See the four accounts appear with their evidence, the PNB account flagged for an RBI UDGAM search, and fund values worked out from real NAVs.",
     tag: "Family after a death",
   },
   {
     key: "demo-b",
     icon: ShieldX,
-    title: "Demo B — Resolve a rejected insurance claim",
-    desc: "A death claim was rejected citing missing documents. The AI extracts the stated reason and deadline, builds the exact fix-list, drafts a review-ready follow-up letter, and lines up the IRDAI grievance escalation path.",
-    tag: "Rejected claim",
+    title: "An LIC claim held up in Lucknow",
+    desc: "LIC wrote asking for five documents before settling a death claim. See what each one is, the IRDAI 15-day rule and late-payment interest, a covering letter to review, and the complaint path if it isn't resolved.",
+    tag: "Delayed claim",
   },
   {
     key: "demo-c",
     icon: FileSignature,
-    title: "Demo C — Organise an estate",
-    desc: "Several assets, a physical will found at home, incomplete beneficiary records. The AI builds the estate inventory, flags missing information and nomination gaps, and prepares the will checklist with legal-review flags.",
-    tag: "Estate planning",
+    title: "Organising your own records in Pune",
+    desc: "A joint HDFC account and FD, shares, a fund folio inherited from your father without a nominee, and his unregistered will. See the record come together, the nominee gaps flagged, and what needs a lawyer.",
+    tag: "Planning ahead",
   },
 ];
 
@@ -63,8 +63,7 @@ export function DemoDialog({
         <DialogHeader>
           <DialogTitle className="font-display text-navy">Explore with demo data</DialogTitle>
           <DialogDescription className="text-[13px] leading-relaxed">
-            Three fully clickable synthetic journeys — every record is labelled DEMO and represents no real person,
-            account or recovery. Progress persists in your session.
+            Three example cases. The banks, branches, funds and NAVs are real public data; the people and account numbers are made up, and every document is marked as a sample. Your progress is saved in this browser.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

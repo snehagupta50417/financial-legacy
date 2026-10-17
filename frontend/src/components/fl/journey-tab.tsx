@@ -230,7 +230,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
             <DialogTitle className="font-display text-navy">Log completion evidence</DialogTitle>
           </DialogHeader>
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            What happened when you completed this step outside FinLegacy? Reference numbers, acknowledgement IDs or a
+            What happened when you completed this step outside Financial Legacy? Reference numbers, acknowledgement IDs or a
             short note — this becomes part of the auditable case timeline. Nothing is sent to any institution.
           </p>
           <Textarea

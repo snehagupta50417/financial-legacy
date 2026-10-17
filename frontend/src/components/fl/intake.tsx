@@ -140,7 +140,7 @@ export default function Intake({
                 >
                   {m.role === "assistant" && (
                     <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-teal-brand">
-                      <Bot className="h-3 w-3" /> FinLegacy Agent
+                      <Bot className="h-3 w-3" /> Financial Legacy assistant
                     </div>
                   )}
                   <div className="whitespace-pre-wrap">{m.content}</div>

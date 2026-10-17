@@ -50,7 +50,7 @@ Tasks:
 ${legacyCase.tasks.map((t) => `- [${t.status}] ${t.title}`).join("\n") || "(none)"}`;
 
   const res = await complete(
-    `You are FinLegacy AI's case assistant answering questions about an ongoing financial-legacy case in India. Answer ONLY from the case file below and general regulatory knowledge (RBI/IRDAI/SEBI/IEPF processes). Rules: never invent balances, account numbers, claim eligibility, timelines not in the file, or legal conclusions; if something is unknown say what would be needed to know it; keep answers under 180 words; use plain language; if the question needs a licensed professional, say so plainly.
+    `You are Financial Legacy's case assistant answering questions about an ongoing financial-legacy case in India. Answer ONLY from the case file below and general regulatory knowledge (RBI/IRDAI/SEBI/IEPF processes). Rules: never invent balances, account numbers, claim eligibility, timelines not in the file, or legal conclusions; if something is unknown say what would be needed to know it; keep answers under 180 words; use plain language; if the question needs a licensed professional, say so plainly.
 ${context}`,
     question
   );

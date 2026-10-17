@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FinLegacy AI — The AI Agent That Turns Financial Legacy Into Action",
+  title: "Financial Legacy — Find what’s yours. Make sure nothing gets left behind.",
   description:
-    "Discover potential forgotten assets, organise documents, navigate deceased-family-member claims, plan wills, and track every step — from scattered records to a clear, evidence-backed path to resolution.",
+    "An AI assistant that helps Indian families find forgotten financial assets, organise their records, and claim what a loved one left behind — step by step, with every finding backed by evidence.",
   keywords: [
-    "FinLegacy AI",
+    "Financial Legacy",
     "unclaimed assets India",
     "UDGAM",
     "Bima Bharosa",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
     "AI agent BFSI",
   ],
   openGraph: {
-    title: "FinLegacy AI",
-    description: "The AI Agent That Turns Financial Legacy Into Action.",
+    title: "Financial Legacy",
+    description: "Find what’s yours. Make sure nothing gets left behind.",
     type: "website",
   },
 };

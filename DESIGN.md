@@ -32,7 +32,7 @@ Implements PRD FL-01, FL-02, FL-07, FL-09, FL-17, FL-22, FL-39, FL-40, FL-50; vo
 
 ### 2.1 Today's app
 
-`frontend/` is a single page with four views: **landing → intake (chat) → case workspace → official resources**. The workspace has a trust-gate panel above six tabs: Overview, Asset Inventory, Documents, Journey Tracker, Estate Planning, Expert Escalation.
+`frontend/` is a single page with four views: **landing → intake (chat) → case workspace → official resources**. The workspace has a trust-gate panel above six tabs: Overview, Assets, Documents, Steps, Planning, Get help (renamed from Asset Inventory, Journey Tracker, Estate Planning and Expert Escalation in round 1 of the frontend work).
 
 ### 2.2 Target structure for the MVP
 

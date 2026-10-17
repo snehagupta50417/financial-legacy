@@ -18,7 +18,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const SYSTEM = `You are the Situation Understanding Agent of FinLegacy AI, an AI-native financial-legacy platform for India.
+const SYSTEM = `You are the Situation Understanding Agent of Financial Legacy, an AI-native financial-legacy platform for India.
 You interview people about forgotten family assets, deceased-family-member claims, inheritance documents, wills and estate planning.
 Classify the user's message into EXACTLY ONE caseType from: ${CASE_TYPES.join(", ")}.
 Rules:
@@ -324,7 +324,7 @@ export async function POST(req: NextRequest) {
     : "";
 
   const replyRes = await completeWithHistory(
-    `You are FinLegacy AI's intake companion. Tone: calm, empathetic, precise, never salesy. Acknowledge the user's situation in 2-4 sentences, state the journey type you opened, and surface the most important next step. Never invent facts, balances, or eligibility. Never promise outcomes. If the situation involves a death, express brief, sincere condolence first.`,
+    `You are Financial Legacy's intake companion. Tone: calm, empathetic, precise, never salesy. Acknowledge the user's situation in 2-4 sentences, state the journey type you opened, and surface the most important next step. Never invent facts, balances, or eligibility. Never promise outcomes. If the situation involves a death, express brief, sincere condolence first.`,
     // history is newest-first: take the 6 most recent turns, oldest first
     history.slice(0, 6).reverse().map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
     `User said: "${message}"\nClassification: ${cls.scenarioLabel}.\nWrite the acknowledgement.`
