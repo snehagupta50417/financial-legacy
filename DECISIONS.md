@@ -141,3 +141,11 @@ Four research passes (data protection law, licensing and integrations, official 
 ## Cautious legal positions instead of a lawyer — 17 Oct 2026
 
 No lawyer is available, so for each point the law leaves unclear the product follows the strictest reading (`docs/FEASIBILITY_AND_COMPLIANCE.md` §9, PRD §11.2): deceased persons' data fully protected and processed only with the claimant's consent plus documented authority; fraud checks always consented; the product never contacts co-heirs or nominees; full DPDP compliance by January 2027; institution forms and standard formats only, with legal questions referred out (including free legal aid on 15100 for families who qualify); no representation or claim-linked fees; **the Pilot is free**. A paid legal review is recommended before charging money or partnering with institutions.
+
+## Realistic demo data — 17 Oct 2026 (issue #31)
+
+- **Real public reference data**, fetched by `frontend/scripts/fetch-reference-data.mjs` from free sources and snapshotted in `frontend/src/server/data/reference/` (see its SOURCES.md): AMFI scheme master + mfapi.in NAV history (15 schemes), Razorpay IFSC dataset (~290 branches of 8 banks in 10 cities), India Post pincodes, RBI repo rate and Bank Rate.
+- **Synthetic people, always-masked identifiers.** The generator in `frontend/src/server/data/synthetic/` never produces a full PAN, Aadhaar, account, folio or policy number; every document is labelled "SYNTHETIC SAMPLE — not issued by <institution>". A test enforces both.
+- **Demo cases A, B, C rebuilt** with the same stories: real branches and IFSCs, fund values computed as units × real NAV on the statement date (with indicative value at today's NAV), scheme names as they were at the time, LIC plan names, and demo B changed from a fictional insurer's rejection to an LIC claim-requirements letter (IRDAI: no rejection for want of documents; delay interest at Bank Rate + 2% computed from the live Bank Rate).
+- Added `frontend/test/global-setup.ts` (throwaway SQLite DB) so `npm test` runs; first tests in `test/synthetic-data.test.ts`.
+- **Found while doing this:** `frontend/.gitignore` ignored the whole `test` folder, which is why the tests described under M1–M3 were never committed. It now ignores only `/test/.tmp`.

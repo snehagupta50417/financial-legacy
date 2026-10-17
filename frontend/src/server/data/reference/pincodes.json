@@ -1,0 +1,2255 @@
+{
+ "fetchedOn": "2026-10-17",
+ "source": "https://api.postalpincode.in",
+ "pincodes": [
+  {
+   "pincode": "635802",
+   "district": "Vellore",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Ambur",
+    "Ambur Bazaar",
+    "Devalapuram",
+    "Gangapuram",
+    "Kumaramangalam",
+    "Naickaneri"
+   ]
+  },
+  {
+   "pincode": "600095",
+   "district": "Tiruvallur",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Ayanambakkam",
+    "Maduravoyal",
+    "Vanagaram"
+   ]
+  },
+  {
+   "pincode": "600042",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Velacheri"
+   ]
+  },
+  {
+   "pincode": "600019",
+   "district": "Tiruvallur",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Kaladipet",
+    "Shanmugapuram",
+    "Tiruvottiyur",
+    "Tiruvottiyur West",
+    "Tondiarpet Rly Colony"
+   ]
+  },
+  {
+   "pincode": "302004",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Arjun Lal Sethi Nagar",
+    "Janta Colony",
+    "Jawahar Nagar",
+    "Jhalana Doongri",
+    "Krishna Mandir",
+    "Moti Doongari Road"
+   ]
+  },
+  {
+   "pincode": "302013",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Akhepura",
+    "Harmada",
+    "Nangal Purohitan",
+    "Neendar",
+    "Road No-5 Vkia",
+    "Vishwakarma Industrial Area"
+   ]
+  },
+  {
+   "pincode": "144702",
+   "district": "Jalandhar",
+   "state": "Punjab",
+   "postOffices": [
+    "Bahamanian",
+    "Bajwa Kalan",
+    "Killi",
+    "Kotli Gujjran",
+    "Lassori",
+    "Mianwal"
+   ]
+  },
+  {
+   "pincode": "110010",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "505 A B Workshop",
+    "A F Palam",
+    "Aps Colony",
+    "Bazar Road",
+    "C.V.D.",
+    "COD (South West Delhi)"
+   ]
+  },
+  {
+   "pincode": "110085",
+   "district": "North Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Avantika",
+    "Naharpur",
+    "Prashant Vihar",
+    "Rithala",
+    "Rohini Courts",
+    "Rohini sec-11"
+   ]
+  },
+  {
+   "pincode": "110048",
+   "district": "South Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Greater Kailash",
+    "Kailash Colony",
+    "Masjid Moth"
+   ]
+  },
+  {
+   "pincode": "110053",
+   "district": "North East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Bhajan Pura",
+    "Brahampuri",
+    "Garhi Mandu",
+    "Ghonda",
+    "Jafrabad (East Delhi)",
+    "Jagjit Nagar"
+   ]
+  },
+  {
+   "pincode": "500001",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Gandhi Bhawan (Hyderabad)",
+    "Hyderabad ",
+    "Moazzampura",
+    "Seetharampet",
+    "State Bank Of Hyderabad"
+   ]
+  },
+  {
+   "pincode": "500029",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Gagan Mahal",
+    "Himayathnagar",
+    "Narayanguda",
+    "Ramakrishna Mutt"
+   ]
+  },
+  {
+   "pincode": "306308",
+   "district": "Pali",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Balunda",
+    "Banjakuri",
+    "Digarna",
+    "Kharadi",
+    "Nimbol",
+    "Sinla"
+   ]
+  },
+  {
+   "pincode": "500044",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Ambernagar",
+    "Andhra Mahila Sabha",
+    "Nallakunta",
+    "New Nallakunta",
+    "Vidyanagar (Hyderabad)"
+   ]
+  },
+  {
+   "pincode": "411001",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "C D A (O)",
+    "Dr.B.A. Chowk",
+    "Ghorpuri Bazar",
+    "N.W. College",
+    "Pune",
+    "Pune Cantt East"
+   ]
+  },
+  {
+   "pincode": "411002",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Bajirao Road",
+    "Kapad Ganj",
+    "Nana Peth",
+    "Pune City",
+    "Raviwar Peth",
+    "Shukrawar Peth (Pune)"
+   ]
+  },
+  {
+   "pincode": "737134",
+   "district": "East Sikkim",
+   "state": "Sikkim",
+   "postOffices": [
+    "Bardang",
+    "Bermiok",
+    "Beyong",
+    "Dipudara Nhpc Complex",
+    "Gangkha Busty",
+    "Khamdong"
+   ]
+  },
+  {
+   "pincode": "226004",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "A N L Colony",
+    "Aishbagh",
+    "Arya Nagar (Lucknow)",
+    "Blunt Square",
+    "Charbagh",
+    "Gurdwara"
+   ]
+  },
+  {
+   "pincode": "221208",
+   "district": "Varanasi",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Garkhara",
+    "Garthama",
+    "Hiramanpur",
+    "Katuna",
+    "Marui",
+    "Palahipatti"
+   ]
+  },
+  {
+   "pincode": "226010",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Gomtinagar",
+    "Gomtinagar Vistar",
+    "Laulai",
+    "Malesemau",
+    "Vineet Khand",
+    "Vishwas Khand"
+   ]
+  },
+  {
+   "pincode": "560078",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "J P Nagar",
+    "JP Nagar III Phase",
+    "Kumaraswamy Layout",
+    "Yelachenahalli"
+   ]
+  },
+  {
+   "pincode": "560021",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Gayathrinagar",
+    "Srirampuram"
+   ]
+  },
+  {
+   "pincode": "560064",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Attur",
+    "CRPF Campus Yelahanka",
+    "Jakkur",
+    "Rajanakunte",
+    "Singanayakanahalli",
+    "Yelahanka"
+   ]
+  },
+  {
+   "pincode": "400101",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Kandivali East"
+   ]
+  },
+  {
+   "pincode": "400034",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Haji Ali",
+    "Tulsiwadi"
+   ]
+  },
+  {
+   "pincode": "400051",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Audit Bhavan",
+    "B.N. Bhavan",
+    "Bandra(East)",
+    "Government Colony",
+    "Kherwadi"
+   ]
+  },
+  {
+   "pincode": "400002",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Kalbadevi",
+    "Ramwadi",
+    "S. C. Court",
+    "Thakurdwar"
+   ]
+  },
+  {
+   "pincode": "700027",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Alipore",
+    "Alipore Bodyguard Line",
+    "Alipore Civil Court",
+    "Alipore Dist Board",
+    "Chetla",
+    "Mominpur"
+   ]
+  },
+  {
+   "pincode": "700026",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Kalighat",
+    "Kalimandir",
+    "Keoratala",
+    "R.K.Seva Pratisthan",
+    "Sahanagar (Kolkata)",
+    "Southern Market"
+   ]
+  },
+  {
+   "pincode": "700020",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "A.J.C.Bose Road",
+    "Gokhel Road",
+    "K.M.Hospital",
+    "L.R.Sarani"
+   ]
+  },
+  {
+   "pincode": "683101",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Aluva",
+    "Aluva Bazar",
+    "Aluva Town Bus Stand",
+    "Aluva-asokapuram"
+   ]
+  },
+  {
+   "pincode": "682036",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Panampilly Nagar"
+   ]
+  },
+  {
+   "pincode": "682313",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Arakunnam",
+    "Edakkattuvayal",
+    "Kaipatoor",
+    "Thirumarayoor",
+    "Veliyanad"
+   ]
+  },
+  {
+   "pincode": "560022",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Yeshwanthpur Bazar",
+    "Yeswanthpura"
+   ]
+  },
+  {
+   "pincode": "110008",
+   "district": "Central Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Dada Ghosh Bhawan",
+    "Patel Nagar (Central Delhi)",
+    "Patel Nagar East",
+    "Patel Nagar South",
+    "Patel Nagar West"
+   ]
+  },
+  {
+   "pincode": "110026",
+   "district": "West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Ashoka Park Extn.",
+    "Punjabi Bagh",
+    "Punjabi Bagh Sec - III",
+    "Shivaji Park (West Delhi)"
+   ]
+  },
+  {
+   "pincode": "110051",
+   "district": "East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Azad Nagar (East Delhi)",
+    "Govind Pura",
+    "Krishna Nagar",
+    "Ram Nagar (East Delhi)"
+   ]
+  },
+  {
+   "pincode": "682003",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Willingdon Island"
+   ]
+  },
+  {
+   "pincode": "560001",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bangalore ",
+    "Bangalore Bazaar",
+    "CMM Court Complex",
+    "Dr. Ambedkar Veedhi",
+    "HighCourt",
+    "Legislators Home"
+   ]
+  },
+  {
+   "pincode": "560002",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bangalore City",
+    "Bangalore Corporation Building"
+   ]
+  },
+  {
+   "pincode": "560020",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Seshadripuram"
+   ]
+  },
+  {
+   "pincode": "110001",
+   "district": "Central Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Baroda House",
+    "Bengali Market",
+    "Bhagat Singh Market",
+    "Connaught Place",
+    "Constitution House",
+    "Election Commission"
+   ]
+  },
+  {
+   "pincode": "110023",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Kidwai Nagar East",
+    "Kidwai Nagar West",
+    "Laxmi Bai Nagar",
+    "Netaji Nagar (South West Delhi)",
+    "Sarojini Nagar"
+   ]
+  },
+  {
+   "pincode": "110002",
+   "district": "Central Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "A.G.C.R.",
+    "Ajmeri Gate Extn.",
+    "Darya Ganj",
+    "Gandhi Smarak Nidhi",
+    "I.P.Estate",
+    "Indraprastha"
+   ]
+  },
+  {
+   "pincode": "500004",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "A.Gs Office",
+    "Anandnagar (Hyderabad)",
+    "Bazarghat (Hyderabad)",
+    "Khairatabad",
+    "Parishram Bhawan",
+    "Vidhan Sabha (Hyderabad)"
+   ]
+  },
+  {
+   "pincode": "500082",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "I.M.Colony",
+    "Somajiguda"
+   ]
+  },
+  {
+   "pincode": "411030",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Lokmanyanagar",
+    "Narayan Peth",
+    "Rashtra Bhasha Bhavan",
+    "S.P. College",
+    "Sadashiv Peth",
+    "Shaniwar Peth (Pune)"
+   ]
+  },
+  {
+   "pincode": "400005",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Asvini",
+    "Colaba",
+    "Colaba Bazar",
+    "Holiday Camp",
+    "V.W.T.C."
+   ]
+  },
+  {
+   "pincode": "700016",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Elliot Road",
+    "Madrassa",
+    "Park Street"
+   ]
+  },
+  {
+   "pincode": "700001",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Council House Street",
+    "Customs House",
+    "Khengrapatti",
+    "Kolkatta ",
+    "Lalbazar (Kolkata)",
+    "New Secretariat Bldg."
+   ]
+  },
+  {
+   "pincode": "700046",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Abinash Chaowdhury Lane",
+    "Gobinda Khatick Road"
+   ]
+  },
+  {
+   "pincode": "110092",
+   "district": "East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Anand Vihar",
+    "IP Extension",
+    "Laxmi Nagar (East Delhi)",
+    "Mandawali Fazalpur",
+    "Nirman Vihar",
+    "Shakarpur"
+   ]
+  },
+  {
+   "pincode": "110075",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Amberhai",
+    "District Court Complex Dwarka",
+    "Dwarka Sec-6"
+   ]
+  },
+  {
+   "pincode": "412207",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Ashtapur",
+    "Dahitane",
+    "Kesnand",
+    "Koregaon Bhivar",
+    "Rahu",
+    "Telewadi"
+   ]
+  },
+  {
+   "pincode": "411005",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Congress House Road",
+    "S.S.C.Exam Board",
+    "Shivajinagar",
+    "Shivajinagar (Pune)"
+   ]
+  },
+  {
+   "pincode": "411011",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Kasba Peth",
+    "Mangalwar Peth (Pune)",
+    "Rasta Peth"
+   ]
+  },
+  {
+   "pincode": "682001",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Kochi"
+   ]
+  },
+  {
+   "pincode": "683561",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Edathala",
+    "Edathala North",
+    "Malayidumthuruth",
+    "Vilangu"
+   ]
+  },
+  {
+   "pincode": "600002",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Anna Road",
+    "Chintadripet",
+    "Madras Electricity System"
+   ]
+  },
+  {
+   "pincode": "606903",
+   "district": "Tiruvannamalai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Kalambur",
+    "Kalvasal",
+    "Kamakkur",
+    "Kasthambadi",
+    "Mukkurumbai",
+    "Nadukuppam"
+   ]
+  },
+  {
+   "pincode": "600008",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Egmore",
+    "Egmore ND",
+    "Ethiraj Salai"
+   ]
+  },
+  {
+   "pincode": "302001",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Ashok Nagar (Jaipur)",
+    "Bhura Tiba",
+    "C.P.M.G",
+    "Chandpole Bazar",
+    "Indra Bazar",
+    "Jaipur "
+   ]
+  },
+  {
+   "pincode": "302020",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Mansarovar",
+    "S.F.S.Mansarovar"
+   ]
+  },
+  {
+   "pincode": "344001",
+   "district": "Barmer",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Atimalani",
+    "Barmer",
+    "Barmer Agore",
+    "Barmer Coll",
+    "Barmer DB",
+    "Barmer PR"
+   ]
+  },
+  {
+   "pincode": "226102",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Bhadwana",
+    "Dhendhemau",
+    "Dilawarnagar",
+    "Kahla",
+    "Kakrabad",
+    "Kasmandi Kalan"
+   ]
+  },
+  {
+   "pincode": "226003",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Amberganj",
+    "Chaupatiyan",
+    "Hasnain Market",
+    "Husainabad",
+    "Lucknow Chowk",
+    "Mansoor Nagar"
+   ]
+  },
+  {
+   "pincode": "400026",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Cumballa Hill",
+    "Cumballa Sea Face",
+    "Dr Deshmukh Marg",
+    "Gowalia Tank"
+   ]
+  },
+  {
+   "pincode": "410208",
+   "district": "Raigarh(MH)",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Devichapada",
+    "Koynavale",
+    "Navde",
+    "Padghe",
+    "Taloja",
+    "Taloja A.V."
+   ]
+  },
+  {
+   "pincode": "403504",
+   "district": "North Goa",
+   "state": "Goa",
+   "postOffices": [
+    "Bicholim",
+    "Maulinge",
+    "Mayem",
+    "Pilgao"
+   ]
+  },
+  {
+   "pincode": "411004",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "A.R. Shala",
+    "Deccan Gymkhana",
+    "Film Institute"
+   ]
+  },
+  {
+   "pincode": "412105",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Alandi Devachi",
+    "Charoli BK",
+    "Chimbli",
+    "Dhanore",
+    "Markal",
+    "Moshi"
+   ]
+  },
+  {
+   "pincode": "411028",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Gondhale Nagar",
+    "Hadapsar",
+    "Sasanenagar"
+   ]
+  },
+  {
+   "pincode": "560005",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Fraser Town"
+   ]
+  },
+  {
+   "pincode": "560058",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Laggere",
+    "Peenya I Stage",
+    "Peenya Small Industries"
+   ]
+  },
+  {
+   "pincode": "600090",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Besantnagar",
+    "Rajaji Bhavan"
+   ]
+  },
+  {
+   "pincode": "600048",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Mannivakkam",
+    "Mudichur",
+    "Otteri Extension",
+    "Vandalur"
+   ]
+  },
+  {
+   "pincode": "600018",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Pr. Accountant General",
+    "Teynampet"
+   ]
+  },
+  {
+   "pincode": "500081",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Cyberabad",
+    "Madhapur"
+   ]
+  },
+  {
+   "pincode": "507002",
+   "district": "Khammam",
+   "state": "Telangana",
+   "postOffices": [
+    "Ballepalli",
+    "Collectorate (Khammam)",
+    "Gopalapuram",
+    "Industrial Area (Khammam)",
+    "Kaikondaigudem",
+    "Khanapuram Haweli"
+   ]
+  },
+  {
+   "pincode": "500089",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Manikonda"
+   ]
+  },
+  {
+   "pincode": "700029",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Dover Lane",
+    "Lake Market",
+    "Rash Behari Avenue",
+    "Sarat Bose Road"
+   ]
+  },
+  {
+   "pincode": "700006",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Beadon Street",
+    "Bidhan Sarani",
+    "Jorasanko",
+    "Manicktala",
+    "Pathuriaghata",
+    "Sahitya Parisad"
+   ]
+  },
+  {
+   "pincode": "110034",
+   "district": "North West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Anandvas Shakurpur",
+    "Maurya Enclave",
+    "Rani Bagh",
+    "Saraswati Vihar",
+    "Shakur Pur I  Block",
+    "Shakurbasti Rs"
+   ]
+  },
+  {
+   "pincode": "110007",
+   "district": "North Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "C.C.I.",
+    "Delhi University",
+    "Gulabi Bagh",
+    "Jawahar Nagar (North Delhi)",
+    "Kamla Nagar (North Delhi)",
+    "Malka Ganj"
+   ]
+  },
+  {
+   "pincode": "110006",
+   "district": "North Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Baratooti",
+    "Chandni Chowk",
+    "Chawri Bazar",
+    "Dareeba",
+    "Delhi ",
+    "Delhi Sadar Bazar"
+   ]
+  },
+  {
+   "pincode": "303702",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Chomu",
+    "Hadota",
+    "Khadi Bagh",
+    "Sirsali",
+    "Tankarda",
+    "Tripolia Chomu"
+   ]
+  },
+  {
+   "pincode": "302015",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Bajaj Nagar",
+    "Bapu Nagar",
+    "Barkat Nagar",
+    "Gandhi Nagar (Jaipur)",
+    "Rampura Roopa",
+    "S.D.M.Hospitial"
+   ]
+  },
+  {
+   "pincode": "682018",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Ernakulam North"
+   ]
+  },
+  {
+   "pincode": "682505",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Narakkal"
+   ]
+  },
+  {
+   "pincode": "682032",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Thammanam"
+   ]
+  },
+  {
+   "pincode": "226001",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "A P Sabha",
+    "Canal Colony",
+    "CPMG Campus",
+    "Darul Safa",
+    "Gokhley Marg",
+    "H C Bench"
+   ]
+  },
+  {
+   "pincode": "226020",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "D M Road",
+    "Daliganj",
+    "Diguria",
+    "Ghaila",
+    "Lonikatra",
+    "Maharishi Vidya Mandir"
+   ]
+  },
+  {
+   "pincode": "226023",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "32 Bn PAC ",
+    "Manasnagar"
+   ]
+  },
+  {
+   "pincode": "560077",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Doddagubbi",
+    "Dr. Shivarama Karanth Nagar",
+    "Kothanur"
+   ]
+  },
+  {
+   "pincode": "560037",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Doddanekkundi",
+    "Kundalahalli",
+    "Marathahalli Colony",
+    "Rameshnagar"
+   ]
+  },
+  {
+   "pincode": "560066",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "EPIP",
+    "Whitefield"
+   ]
+  },
+  {
+   "pincode": "600063",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Old Perungalathur",
+    "Srinivasanagar (Kanchipuram)",
+    "Srinivasanagar East"
+   ]
+  },
+  {
+   "pincode": "560025",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bangalore Sub Foreign Post",
+    "CMP Centre And School",
+    "Museum Road",
+    "Richmond Town"
+   ]
+  },
+  {
+   "pincode": "560010",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Industrial Estate (Bangalore)",
+    "Rajajinagar",
+    "Rajajinagar IVth Block"
+   ]
+  },
+  {
+   "pincode": "560103",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bellandur",
+    "Panathur"
+   ]
+  },
+  {
+   "pincode": "400021",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Nariman Point",
+    "New Yogakshema"
+   ]
+  },
+  {
+   "pincode": "413120",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Ghotondi",
+    "Kati",
+    "Nimgaon Ketki",
+    "Varkute KH",
+    "Vyahali"
+   ]
+  },
+  {
+   "pincode": "411017",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Kalewadi",
+    "Pimpri Colony",
+    "Pimpri Waghire"
+   ]
+  },
+  {
+   "pincode": "700064",
+   "district": "North 24 Parganas",
+   "state": "West Bengal",
+   "postOffices": [
+    "Bidhan Nagar",
+    "Bidhan Nagar AE Market",
+    "Bidhannagr CC Block",
+    "Labony Estate"
+   ]
+  },
+  {
+   "pincode": "700053",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Kalabagan",
+    "Kolkata Mint",
+    "N.R.Avenue",
+    "New Alipore"
+   ]
+  },
+  {
+   "pincode": "500094",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Sainikpuri"
+   ]
+  },
+  {
+   "pincode": "500039",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Peerzadiguda",
+    "Survey Of India",
+    "Uppal (K.V.Rangareddy)"
+   ]
+  },
+  {
+   "pincode": "682035",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Ernakulam College"
+   ]
+  },
+  {
+   "pincode": "682015",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Perumanur"
+   ]
+  },
+  {
+   "pincode": "682304",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Maradu"
+   ]
+  },
+  {
+   "pincode": "302029",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Airport Sanganer",
+    "Lakhana",
+    "Mahapura",
+    "Muhana",
+    "Neota",
+    "Sanganer Bazar"
+   ]
+  },
+  {
+   "pincode": "302021",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Heerapura",
+    "Vaishali Nagar"
+   ]
+  },
+  {
+   "pincode": "226021",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Batha Sabauli",
+    "Jankipuram",
+    "Madiyaon"
+   ]
+  },
+  {
+   "pincode": "226024",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Aliganj (Lucknow)",
+    "Aliganj Extension",
+    "Chandganj"
+   ]
+  },
+  {
+   "pincode": "110065",
+   "district": "South Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "East Of Kailash",
+    "East Of Kailash Phase-I",
+    "Nehru Nagar (South Delhi)",
+    "Sant Nagar (South Delhi)",
+    "Sriniwaspuri"
+   ]
+  },
+  {
+   "pincode": "110057",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Vasant Vihar-1",
+    "Vasant Vihar-2"
+   ]
+  },
+  {
+   "pincode": "110018",
+   "district": "West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Ashok Nagar (West Delhi)",
+    "Chand Nagar",
+    "Chaukhandi",
+    "Fateh Nagar",
+    "Khyala Phase -  I",
+    "Khyala Phase - II"
+   ]
+  },
+  {
+   "pincode": "110032",
+   "district": "North East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Babarpur (North East Delhi)",
+    "Balbir Nagar",
+    "Bhola Nath Nagar",
+    "Distt. Court (KKD)",
+    "Goverdhan Bihari Colony",
+    "Loni Road"
+   ]
+  },
+  {
+   "pincode": "110096",
+   "district": "East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Ghazipur",
+    "Mayur Vihar Ph-III",
+    "Vasundhra Enclave"
+   ]
+  },
+  {
+   "pincode": "700054",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Bengal Chemical",
+    "Cmda Abasan",
+    "Kankurgachi",
+    "Phulbagan",
+    "Ram Krishna Samadhi Road"
+   ]
+  },
+  {
+   "pincode": "700013",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Dharmatala"
+   ]
+  },
+  {
+   "pincode": "560055",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Malleswaram West"
+   ]
+  },
+  {
+   "pincode": "560082",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bolare",
+    "Kagalipura",
+    "Somanhalli",
+    "Taralu",
+    "Thataguni",
+    "Thattekuppe"
+   ]
+  },
+  {
+   "pincode": "562110",
+   "district": "Bangalore Rural",
+   "state": "Karnataka",
+   "postOffices": [
+    "Alurduddanahalli",
+    "Anneshwara",
+    "Aradeshanahalli",
+    "Devanahalli",
+    "Doddasanne",
+    "Hegganahalli"
+   ]
+  },
+  {
+   "pincode": "600040",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Anna Nagar (Chennai)"
+   ]
+  },
+  {
+   "pincode": "600041",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Neelankarai",
+    "Palavakkam (Kanchipuram)",
+    "Tiruvanmiyur",
+    "Valmiki Nagar"
+   ]
+  },
+  {
+   "pincode": "600115",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Injambakkam"
+   ]
+  },
+  {
+   "pincode": "500034",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Banjara Hills"
+   ]
+  },
+  {
+   "pincode": "500007",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Administrative Buildings",
+    "IICT",
+    "Jama I Osmania",
+    "Ngri",
+    "Tarnaka"
+   ]
+  },
+  {
+   "pincode": "500019",
+   "district": "K.V.Rangareddy",
+   "state": "Telangana",
+   "postOffices": [
+    "Lingampalli"
+   ]
+  },
+  {
+   "pincode": "682030",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Kakkanad",
+    "Kakkanad West",
+    "Kusumagiri",
+    "Thengod"
+   ]
+  },
+  {
+   "pincode": "682025",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Palarivattom"
+   ]
+  },
+  {
+   "pincode": "400093",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Chakala Midc"
+   ]
+  },
+  {
+   "pincode": "400012",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "BEST STaff Quarters",
+    "Chamarbaug",
+    "Haffkin Institute",
+    "Lal Baug",
+    "Parel",
+    "Parel Naka"
+   ]
+  },
+  {
+   "pincode": "441215",
+   "district": "Chandrapur",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Antargaon",
+    "Bormala",
+    "Gewara BK",
+    "Gunjewahi",
+    "Meha BK",
+    "Nifandra"
+   ]
+  },
+  {
+   "pincode": "226016",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Ghazipur (Lucknow)",
+    "Hal (Lucknow)",
+    "Indira Nagar (Lucknow)",
+    "Indiranagar Sec-14",
+    "Indiranagar Sec-18",
+    "Indiranagar Sec-21"
+   ]
+  },
+  {
+   "pincode": "411016",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Gokhalenagar",
+    "Govt. Polytechnic",
+    "Model Colony",
+    "Shivaji Housing Society"
+   ]
+  },
+  {
+   "pincode": "411037",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Bibvewadi",
+    "Market Yard (Pune)",
+    "Salisbury Park",
+    "T.V. Nagar"
+   ]
+  },
+  {
+   "pincode": "682002",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Mattancherry",
+    "Mattancherry Jetty",
+    "Mattancherry Town",
+    "Panayappilly"
+   ]
+  },
+  {
+   "pincode": "110094",
+   "district": "North East Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Dayalpur",
+    "Gokal Puri",
+    "Johripur",
+    "Khazuri Khas",
+    "Sabhapur"
+   ]
+  },
+  {
+   "pincode": "700019",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Ballygunge",
+    "Ballygunge RS",
+    "Ballygunge Sc College",
+    "Garcha Road",
+    "Gariahat Market",
+    "Golpark"
+   ]
+  },
+  {
+   "pincode": "110062",
+   "district": "South Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Air Force Station Tugalkabad",
+    "BSF Camp Tigri",
+    "Dakshinpuri Phase-I",
+    "Dakshinpuri Phase-II",
+    "Dakshinpuri Phase-III",
+    "Deoli"
+   ]
+  },
+  {
+   "pincode": "110058",
+   "district": "West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "D.E.S.U. Colony",
+    "Jail Road (West Delhi)",
+    "Janakpuri A-3",
+    "Janakpuri B-1",
+    "Janakpuri C-4"
+   ]
+  },
+  {
+   "pincode": "400001",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Bazargate",
+    "Elephanta Caves Po",
+    "M.P.T.",
+    "Mumbai ",
+    "Stock Exchange",
+    "Tajmahal"
+   ]
+  },
+  {
+   "pincode": "400056",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "IRLA",
+    "Vileparle(West)"
+   ]
+  },
+  {
+   "pincode": "400708",
+   "district": "Thane",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Airoli",
+    "Airoli"
+   ]
+  },
+  {
+   "pincode": "799005",
+   "district": "West Tripura",
+   "state": "Tripura",
+   "postOffices": [
+    "Abhoynagar"
+   ]
+  },
+  {
+   "pincode": "226401",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Ain",
+    "Aurawan",
+    "Bani",
+    "Banthra",
+    "Benti",
+    "Bhatgaon"
+   ]
+  },
+  {
+   "pincode": "302033",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Pratap Nagar Housing Board",
+    "Pratap Nagar Sector 11"
+   ]
+  },
+  {
+   "pincode": "411006",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Yerwada",
+    "Yerwada T.S."
+   ]
+  },
+  {
+   "pincode": "411021",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Armament",
+    "Bavdhan",
+    "Sus"
+   ]
+  },
+  {
+   "pincode": "600010",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Kilpauk",
+    "Kilpauk Medical College",
+    "Medavakkam Tank Road"
+   ]
+  },
+  {
+   "pincode": "560076",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bannerghatta Road",
+    "Hulimavu",
+    "Hulimavu",
+    "JP Nagar VIII phase",
+    "Mico Layout",
+    "Mount St Joseph"
+   ]
+  },
+  {
+   "pincode": "562135",
+   "district": "Bangalore Rural",
+   "state": "Karnataka",
+   "postOffices": [
+    "Channarayapatna",
+    "Harohalli",
+    "Mandibele",
+    "Narayanapura",
+    "Vijayapaura"
+   ]
+  },
+  {
+   "pincode": "682011",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Ernakulam"
+   ]
+  },
+  {
+   "pincode": "682031",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Ernakulam High Court",
+    "Shanmugham Road"
+   ]
+  },
+  {
+   "pincode": "683542",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Perumbavoor",
+    "Perumbavoor South"
+   ]
+  },
+  {
+   "pincode": "700071",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Little Russel Street",
+    "Middleton Row",
+    "Russel Street"
+   ]
+  },
+  {
+   "pincode": "700091",
+   "district": "North 24 Parganas",
+   "state": "West Bengal",
+   "postOffices": [
+    "Bidhan Nagar CK Market",
+    "Nabadiganta IT",
+    "Sech Bhawan"
+   ]
+  },
+  {
+   "pincode": "208002",
+   "district": "Kanpur Nagar",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Agriculture College",
+    "Arya Nagar (Kanpur Nagar)",
+    "Employeement Exchange",
+    "Gsvm Medical College",
+    "Hbti",
+    "Motijheel (Kanpur Nagar)"
+   ]
+  },
+  {
+   "pincode": "412210",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Golegaon",
+    "Inamgaon",
+    "Karda",
+    "Nimone",
+    "Nirvi",
+    "Shirasgaonkata"
+   ]
+  },
+  {
+   "pincode": "411057",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Infotech  Park (Hinjawadi)",
+    "Marunji",
+    "Wakad"
+   ]
+  },
+  {
+   "pincode": "400008",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Falkland Road",
+    "J.J.Hospital",
+    "Kamathipura",
+    "M A Marg",
+    "Mumbai Central"
+   ]
+  },
+  {
+   "pincode": "400705",
+   "district": "Thane",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Sanpada"
+   ]
+  },
+  {
+   "pincode": "400095",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Ins Hamla",
+    "Kharodi"
+   ]
+  },
+  {
+   "pincode": "834001",
+   "district": "Ranchi",
+   "state": "Jharkhand",
+   "postOffices": [
+    "Church Road",
+    "Chutia",
+    "Hindpiri",
+    "Indrapuri Colony",
+    "Kantatoli",
+    "Kokar"
+   ]
+  },
+  {
+   "pincode": "110011",
+   "district": "Central Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Nirman Bhawan",
+    "South Avenue",
+    "Udyog Bhawan"
+   ]
+  },
+  {
+   "pincode": "110041",
+   "district": "West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Bakkarwala",
+    "Hirankudna",
+    "Mundka",
+    "Nangloi",
+    "Nangloi - II",
+    "Nangloi - III"
+   ]
+  },
+  {
+   "pincode": "110037",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Gurgaon Road",
+    "IGI Airport",
+    "Mahipalpur",
+    "Nangal Dewat",
+    "Palam Airport"
+   ]
+  },
+  {
+   "pincode": "303604",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Asalpur",
+    "Bichoon",
+    "Habaspura",
+    "Kazipura",
+    "Khandel",
+    "Korsina"
+   ]
+  },
+  {
+   "pincode": "302012",
+   "district": "Jaipur",
+   "state": "Rajasthan",
+   "postOffices": [
+    "Bindayaka",
+    "Dhankya",
+    "Hathoj",
+    "Industrial Area Jhotwara",
+    "Jhotwara",
+    "Khatipura"
+   ]
+  },
+  {
+   "pincode": "560099",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Bommasandra Industrial Estate",
+    "Chandapura",
+    "Huskur",
+    "Muthanallur"
+   ]
+  },
+  {
+   "pincode": "627006",
+   "district": "Tirunelveli",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Kunnathur",
+    "Melathiru Vengadanathapuram",
+    "Pattapathu",
+    "Tirunelveli East",
+    "Tirunelveli Merku",
+    "Tirunelveli Terku"
+   ]
+  },
+  {
+   "pincode": "600006",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Greams Road",
+    "Old College Buildings",
+    "Shastri Bhavan",
+    "Teynampet West"
+   ]
+  },
+  {
+   "pincode": "600001",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Chennai ",
+    "Flower Bazaar",
+    "Govt Stanley Hospital",
+    "Mannady (Chennai)",
+    "Mint Building",
+    "MPT AO"
+   ]
+  },
+  {
+   "pincode": "500095",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Putlibowli",
+    "State Bank Of India"
+   ]
+  },
+  {
+   "pincode": "380013",
+   "district": "Ahmedabad",
+   "state": "Gujarat",
+   "postOffices": [
+    "Naranpura Vistar",
+    "Nava Vadaj",
+    "Shastrinagar (Ahmedabad)",
+    "Stadium Marg",
+    "Vadaj"
+   ]
+  },
+  {
+   "pincode": "122505",
+   "district": "Gurgaon",
+   "state": "Haryana",
+   "postOffices": [
+    "Bhangrola",
+    "Budhera",
+    "Dhankot",
+    "Garhi Harsaru",
+    "Mankdola",
+    "Wazipur"
+   ]
+  },
+  {
+   "pincode": "110042",
+   "district": "North West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Badli (North West Delhi)",
+    "Delhi Engg. College",
+    "Pehlad Pur",
+    "Samai Pur",
+    "Shahbad Daulatpur",
+    "Siraspur"
+   ]
+  },
+  {
+   "pincode": "560102",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "HSR Layout"
+   ]
+  },
+  {
+   "pincode": "582119",
+   "district": "Gadag",
+   "state": "Karnataka",
+   "postOffices": [
+    "Halkeri",
+    "Maranabasari",
+    "Naregal",
+    "Nidagundikoppa"
+   ]
+  },
+  {
+   "pincode": "682017",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Kaloor"
+   ]
+  },
+  {
+   "pincode": "682037",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Cochin Special Economic Zone"
+   ]
+  },
+  {
+   "pincode": "400078",
+   "district": "Mumbai",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Bhandup Ind. Estate",
+    "Bhandup West",
+    "J.M. Road",
+    "P.H. Colony",
+    "Usha Nagar"
+   ]
+  },
+  {
+   "pincode": "577101",
+   "district": "Chickmagalur",
+   "state": "Karnataka",
+   "postOffices": [
+    "Amble",
+    "Anur",
+    "Avathi",
+    "Chikmagalur",
+    "Chikmagalur District Office",
+    "Chikmagalur Fort"
+   ]
+  },
+  {
+   "pincode": "442101",
+   "district": "Wardha",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Agargaon",
+    "Andori",
+    "Bhidi",
+    "Chikni",
+    "Deoli (Wardha)",
+    "Gaul"
+   ]
+  },
+  {
+   "pincode": "700018",
+   "district": "Kolkata",
+   "state": "West Bengal",
+   "postOffices": [
+    "Bartala",
+    "Rabindra Nagar (Kolkata)"
+   ]
+  },
+  {
+   "pincode": "110040",
+   "district": "North West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Bankner",
+    "Bhorgarh",
+    "Kanya Gurukul",
+    "Lampur",
+    "Narela",
+    "Sanoth"
+   ]
+  },
+  {
+   "pincode": "682024",
+   "district": "Ernakulam",
+   "state": "Kerala",
+   "postOffices": [
+    "Edapally",
+    "Edapally North"
+   ]
+  },
+  {
+   "pincode": "600061",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Nanganallur",
+    "Nanganallur Bazaar",
+    "Pazhavanthangal"
+   ]
+  },
+  {
+   "pincode": "600044",
+   "district": "Kanchipuram",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Bharathipuram (Kanchipuram)",
+    "Chromepet",
+    "Darkash",
+    "Lakshmipuram",
+    "Nagalkeni",
+    "Nehrunagar"
+   ]
+  },
+  {
+   "pincode": "600035",
+   "district": "Chennai",
+   "state": "Tamil Nadu",
+   "postOffices": [
+    "Nandanam"
+   ]
+  },
+  {
+   "pincode": "410501",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Ambethan",
+    "Bahul",
+    "Bhose",
+    "Chakan",
+    "Gadad",
+    "Kalus"
+   ]
+  },
+  {
+   "pincode": "411039",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Bhosarigoan"
+   ]
+  },
+  {
+   "pincode": "412201",
+   "district": "Pune",
+   "state": "Maharashtra",
+   "postOffices": [
+    "Alandi Chorachi",
+    "Kadam Wak Wasti",
+    "Kunjirwadi",
+    "Loni Kalbhor"
+   ]
+  },
+  {
+   "pincode": "560046",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Benson Town",
+    "Jayamahal Road"
+   ]
+  },
+  {
+   "pincode": "560094",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "ISRO Anthariksha Bhavan",
+    "R.M.V. Extension II Stage"
+   ]
+  },
+  {
+   "pincode": "500070",
+   "district": "K.V.Rangareddy",
+   "state": "Telangana",
+   "postOffices": [
+    "Sarada Nagar",
+    "Vaidehinagar",
+    "Vanastalipuram"
+   ]
+  },
+  {
+   "pincode": "500047",
+   "district": "Hyderabad",
+   "state": "Telangana",
+   "postOffices": [
+    "Anandbagh",
+    "Hanumanpet",
+    "Malkajgiri"
+   ]
+  },
+  {
+   "pincode": "226005",
+   "district": "Lucknow",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Adarsh Nagar (Lucknow)",
+    "Ain",
+    "Alambagh",
+    "Anandnagar (Lucknow)",
+    "Barha",
+    "Benti"
+   ]
+  },
+  {
+   "pincode": "262701",
+   "district": "Kheri",
+   "state": "Uttar Pradesh",
+   "postOffices": [
+    "Baherwa",
+    "Barkherwa",
+    "Bijhauli",
+    "Deokali",
+    "Fardhan",
+    "Ganeshpur"
+   ]
+  },
+  {
+   "pincode": "110055",
+   "district": "Central Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "A.K.Market",
+    "Multani Dhanda",
+    "Pahar Ganj",
+    "Swami Ram Tirth Nagar"
+   ]
+  },
+  {
+   "pincode": "110077",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Bagdola",
+    "Barthal",
+    "Dhulsiras",
+    "Palam Extn (Harijan Basti)",
+    "Raj Nagar - II"
+   ]
+  },
+  {
+   "pincode": "110070",
+   "district": "South West Delhi",
+   "state": "Delhi",
+   "postOffices": [
+    "Masood Pur",
+    "Vasant Kunj",
+    "Vasant Kunj Pkt-A"
+   ]
+  },
+  {
+   "pincode": "560036",
+   "district": "Bangalore",
+   "state": "Karnataka",
+   "postOffices": [
+    "Devasandra",
+    "Krishnarajapuram"
+   ]
+  }
+ ]
+}
