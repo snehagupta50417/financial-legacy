@@ -111,3 +111,11 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 - **Sign-in:** Google Identity Platform — phone OTP as the main method, Google sign-in as an option. `next-auth` not needed.
 - **Google Cloud:** existing project for development; a separate production project before the Pilot; region `asia-south1`. Setup in `docs/CLOUD_SETUP.md`.
 - **Process:** every PR follows `CONTRIBUTING.md` (tests pass, FL IDs named, docs updated). The MVP build steps are issues #10–#20.
+
+## Non-code files aligned — 17 Oct 2026
+
+- `contracts/` deleted (superseded Python/FastAPI design; still in git history). References removed from PRD, LLD and README.
+- Old prototype screenshots (`frontend/scripts/verify-*.png`), `frontend/worklog.md` and `frontend/download/README.md` deleted as sandbox leftovers.
+- `BACKEND_PLAN.md` rewritten as v3 to match the one-pager, PRD and LLD: bereaved-family story first, upload + guided search before connectors, Verify and mock connectors labelled as demo-only Later capabilities, approve + receipt instead of "submit", MVP claim-pack templates (bank, mutual fund, LIC) with cited thresholds, bug and milestone status updated.
+- `frontend/AGENTS.md` gains project rules for coding agents (outside the auto-generated Next.js block).
+- `demo/README.md` rewritten: maps the demo's seven journeys to the PRD's three and lists what differs.

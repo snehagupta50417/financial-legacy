@@ -439,7 +439,7 @@ Each requirement has:
 | FL-29 | MVP | Calculate totals honestly. Count one reviewed, dated amount per holding; exclude potential matches, duplicates, conflicts, holdings on hold and undated values; keep currencies separate. | If no amount qualifies, the total says "unknown", not ₹0. A total is labelled "reviewed value from dated sources", never "your current wealth". |
 | FL-30 | Later | Before switching on any asset type beyond the MVP three, define its fields and amount meanings, sources, authority rules, claim procedure, sample cases and evaluation. | Each of the six Later asset types in §8.1 has passed this before it is enabled. |
 
-**Amounts mean different things for different assets.** An FD's principal is not its maturity value; fund units are not their valuation; an insurance sum assured is not a cash value. The product never adds unlike amounts together. Exact fields are defined in [contracts/](contracts/openapi.json).
+**Amounts mean different things for different assets.** An FD's principal is not its maturity value; fund units are not their valuation; an insurance sum assured is not a cash value. The product never adds unlike amounts together. Exact fields are defined in the Prisma schema ([LLD §5](LLD.md#5-data-model)).
 
 ### 9.5 Legacy planning and sharing
 
@@ -615,7 +615,7 @@ Inclusion also means: plain language throughout (§10.4), patient pacing for gri
 | **Snapshot** | A frozen, dated copy of a reviewed legacy record | Kamala's record, 17 Oct 2026 |
 | **Audit event** | A record of who did what, when and why | Rohit exported the case brief |
 
-Exact fields and formats are defined in the Prisma schema (`frontend/prisma/schema.prisma`) and the Zod types used by the API ([LLD §5](LLD.md#5-data-model)). The older files in `contracts/` are superseded.
+Exact fields and formats are defined in the Prisma schema (`frontend/prisma/schema.prisma`) and the Zod types used by the API ([LLD §5](LLD.md#5-data-model)).
 
 ### 12.2 How we treat data
 
@@ -823,7 +823,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - All 55 original requirement IDs (FL-01 to FL-55) and decisions D-01 to D-11 are preserved. v0.6.1 adds FL-56 (Verify console, Later) and records that the MVP uses Gemini on synthetic data, matching [LLD.md](LLD.md) v0.5.
 - **0.6.2:** goals renamed GO-1–GO-5 so they are not confused with trust gates G0–G4; trust gates added to the glossary; Professional role (Later) added; government common portal added to official sources; IEPF confirmed as Later; discovery-success and manual-intervention metrics added; exact data formats now point to the Prisma schema; reference build may run on the fixture AI provider without a cloud key; release-tag wording clarified.
 
-**Alignment:** README, BRD v0.3.1, LLD v0.5.1 and DESIGN v0.3.1 are aligned with this version; [contracts/](contracts/openapi.json) are superseded (LLD §23).
+**Alignment:** README, BRD v0.3.1, LLD v0.5.1 and DESIGN v0.3.1 are aligned with this version; the old `contracts/` folder from the superseded design was removed (LLD §23).
 
 ### 17.4 References
 
@@ -831,6 +831,6 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - [BRD.md](BRD.md) — business case, customers and economics
 - [DESIGN.md](DESIGN.md) — screens and interaction
 - [LLD.md](LLD.md) — architecture, implementation and tests
-- `frontend/prisma/schema.prisma` and Zod types — exact data formats ([contracts/](contracts/openapi.json) is superseded)
+- `frontend/prisma/schema.prisma` and Zod types — exact data formats
 - Official sources: see the research table in §8.2 and the source-by-source matrix in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md)
 - Pre-Pilot documents: [threat model](docs/THREAT_MODEL.md) · [privacy assessment](docs/PRIVACY_ASSESSMENT.md) · [AI evaluation plan](docs/AI_EVALUATION.md)

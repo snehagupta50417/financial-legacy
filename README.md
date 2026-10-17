@@ -62,9 +62,8 @@ Read in this order. Each document follows the one above it; if they disagree, th
 | [LLD.md](LLD.md) | How it is built: architecture, data model, trust gates, AI, voice, API, security, testing, gap analysis, build plan |
 | [DESIGN.md](DESIGN.md) | How it looks and behaves: navigation, visual style, screens, states, accessibility, voice |
 | [docs/](docs/README.md) | Pre-Pilot documents: threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix, Google Cloud setup |
-| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build. **Hackathon only** — superseded wherever it conflicts with the PRD, BRD or LLD (see its header note) |
+| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build (Phase A), aligned with the PRD and LLD |
 | [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
-| [contracts/](contracts/README.md) | Superseded engineering contracts from an earlier design; reference only (LLD §23) |
 
 ## Running it
 

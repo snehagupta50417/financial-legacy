@@ -149,7 +149,7 @@ frontend/
   test/                       (to add) unit, route and live-AI tests
 ```
 
-**Housekeeping to do:** delete the leftover `src/app/api/route.ts` ("Hello, world"); rename the package from `nextjs_tailwind_shadcn_ts`; bring `worklog.md` up to date or remove it in favour of `DECISIONS.md`.
+**Housekeeping to do:** delete the leftover `src/app/api/route.ts` ("Hello, world"); rename the package from `nextjs_tailwind_shadcn_ts`. (`worklog.md`, the old screenshots in `scripts/` and `download/README.md` were removed on 17 Oct 2026; `DECISIONS.md` is the decision log.)
 
 ---
 
@@ -698,8 +698,8 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
 - **One-pager → PRD → LLD.** Product behaviour changes in the PRD first; this LLD and the code follow in the same change.
 - **Prisma schema** is the source of truth for data; **this LLD** for architecture and rules; **`DECISIONS.md`** records implementation decisions as they are made (newest last).
-- **[BACKEND_PLAN.md](BACKEND_PLAN.md)** is the hackathon milestone plan (Phase A). Where it adds scope beyond the PRD (connectors as primary discovery, Verify console), this LLD treats that scope as **Later** or demo-only.
-- **[contracts/](contracts/openapi.json)** (`openapi.json`, `schema.sql`, `fixtures.json`) describe the superseded Python/FastAPI design. They are kept for reference only and are **not** the contract for the current code. Replace them with an OpenAPI spec generated from the Zod schemas once the MVP API stabilises.
+- **[BACKEND_PLAN.md](BACKEND_PLAN.md)** is the hackathon milestone plan (Phase A), rewritten as v3 on 17 Oct 2026 to match the PRD and this LLD. Its Verify console and mock connectors are demo-only versions of Later capabilities.
+- **`contracts/`** (`openapi.json`, `schema.sql`, `fixtures.json`) described the superseded Python/FastAPI design and was **removed** on 17 Oct 2026; it remains in git history. Once the MVP API stabilises, generate an OpenAPI spec from the Zod schemas.
 - **LLD v0.4** (Python/FastAPI, Keycloak, Docker Compose, PostgreSQL RLS) is superseded by this version. Its useful rules — exact approvals, unknown-outcome reconciliation, append-only evidence, honest totals, deletion markers — are carried forward above.
 
 ### Changes in versions 0.5 – 0.5.1
