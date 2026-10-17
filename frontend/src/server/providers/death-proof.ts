@@ -1,13 +1,16 @@
 import { completeJson, type AiImage } from "@/server/ai";
 import { matchNames } from "@/server/core/name-match";
 import { SYNTHETIC_DEATH_REGISTRY } from "@/server/data/death-registry";
+import { ocrImage } from "@/server/ocr/ocr";
+import { ruleCertificateFields } from "@/server/ocr/rule-extract";
 import type { ProofOutcome } from "./types";
 
 /**
  * DeathProofProvider (G2).
  *  - digilocker: mock fetch from the synthetic registry, then compare with
  *    what the user told us (name, DOB, date of death).
- *  - scan: Gemini reads a photographed certificate; code compares the fields.
+ *  - scan: Gemini reads a photographed certificate; without a key (or if it
+ *    fails) local OCR + text rules read it. Either way code compares the fields.
  * Mismatches → needs_review, never auto-reject.
  */
 export interface DeathInput {
@@ -71,6 +74,11 @@ async function verifyFromScan(input: DeathInput): Promise<ProofOutcome & { recor
     { images: [input.image] }
   );
   if (!res.ok) {
+    const ocr = await ocrImage(Buffer.from(input.image.data, "base64")).catch(() => null);
+    const rec = ocr ? ruleCertificateFields(ocr.text) : null;
+    if (rec && (rec.name || rec.dateOfDeath)) {
+      return compare(input, rec, "ocr_scan", "Read from the uploaded certificate by local OCR (no AI); fields compared by code.");
+    }
     return { status: "needs_review", provider: "gemini_scan", matchedFields: {}, note: `The certificate could not be read automatically (${res.error}). A reviewer will check it.`, record: null };
   }
   return compare(input, res.data, "gemini_scan", "Read from the uploaded certificate by Gemini; fields compared by code.");
