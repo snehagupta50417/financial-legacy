@@ -77,7 +77,7 @@
 | **Nominee** | Claim Form A (**Form 3783**); Form 3783(A) if the policy ran 3+ years; certified death-register extract; original policy; NEFT mandate + cancelled cheque. Extra forms for deaths within 3 years of start or revival; FIR, post-mortem and police report for unnatural deaths |
 | **No nominee** | All of the above plus **evidence of title** (legal proof of entitlement); the branch may relax this in some cases |
 
-- **Timelines (to verify):** industry rule reported as settlement within 15 days, or 45 days if investigated, with interest at Bank Rate + 2% for delay, under IRDAI's master circular of 5 September 2024 — **S**; one source says 30 days.
+- **Timelines (verified):** death claims must be settled **within 15 days from the date the claim is intimated**, or **45 days** if investigation is warranted; if late, interest at **Bank Rate + 2%** runs from intimation to payment and is paid without the claimant asking; no claim may be rejected or closed "for want of documents" — IRDAI Master Circular IRDAI/PP&GR/CIR/MISC/117/9/2024, 5 Sep 2024, Section I Part A, item V ([IRDAI](https://irdai.gov.in/document-detail?documentId=5625747)). **V**. Practical step: help the family send **written intimation to the servicing branch on day 1** — the clock starts then.
 - **Submission:** death intimation at the servicing branch; online claim path not found (U).
 
 ---
@@ -101,11 +101,14 @@
 | Mutual fund rules changed on 23 Jul 2026 | Claim-path rules for funds need **four** paths: nominee, QTP (≤ ₹10,000 per fund house, immediate relatives), simplified (≤ ₹10 lakh), above threshold | LLD §11.1 |
 | Institution pages lag regulators | Every procedure stores the regulator source and the institution source with dates; mismatch → review | FL-12, FL-44 |
 | Nominee receives mutual funds as trustee for heirs | Explain clearly: being the nominee doesn't make you the owner | DESIGN §7.2, PRD glossary |
-| Insurance timelines only secondary | Verify against IRDAI's master circular before showing any deadline | Open question 7 |
+| Insurance clock starts at **intimation** (15/45 days, Bank Rate + 2%) | Prompt written intimation on day 1; show the clock from that date | §3.3 (verified) |
+| MITRA shows only the **fund name**, not folio or value | Next step after MITRA is contacting each fund house; don't promise amounts from MITRA | §8 |
+| Bank simplified limits differ widely (ICICI ₹2 crore vs ₹15 lakh elsewhere) | Keep a bank-by-bank table; it decides whether a succession certificate is needed | §8 |
+| DigiLocker nominee access works only if set up before death | Make it a planning step in Journey B | §8 |
 
 ---
 
-## 6. Open questions — answer before relying on each source
+## 6. Open questions (original list — answered in §8)
 
 1. **UDGAM:** may a third-party service guide or search on a user's behalf under its terms? Current bank count?
 2. **Common portal:** links only, or has a search been added since May 2026?
@@ -117,6 +120,25 @@
 8. **LIC:** online death-intimation path? Current no-nominee checklist (the procedure PDF found dates from 2014)?
 9. **AA and DigiLocker:** any lawful basis for a deceased person's data? (Also [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.)
 10. **Partnerships:** is any route to partner with these portals for structured access?
+
+## 8. Answers to the open questions (research of 17 Oct 2026)
+
+| # | Question | Answer | Status |
+| --- | --- | --- | --- |
+| 1 | UDGAM: third-party search? Bank count? | Terms of use not reachable (script-only site). RBI's FAQ describes a **registered user** searching with the holder's name plus PAN/licence/voter ID/passport/date of birth; results carry a reference number (UDRN) so third parties can't identify the account or branch. **Treat as user-only.** 30 banks ≈ 90% of DEA value (4 Mar 2024, latest official); 18.86 lakh users (1 Mar 2026). DEA Fund deposits only | U terms / V FAQ |
+| 2 | Common portal: search or links? | A gateway giving "access to search facilities" — links to UDGAM, Bima Bharosa, MITRA and IEPF; no own database found | V launch / S scope |
+| 3 | MITRA: who can search; what shows? | Circular lets investors find investments "for which he/she may be rightful legal claimant". FAQ: log in with **your own** email/mobile + OTP; search "for self or anyone other than the self" with name + 2 fields; 5 searches per name per day; results show **fund name only** | V circular / S FAQ |
+| 4 | MFCentral transmission online? | Listed as a service; workflow not found. Circular: online lodging optional; originals may be demanded in person. AMFI and HDFC MF/CAMS have published Quick Transmission forms (Aug 2026) | U / V / S |
+| 5 | Mutual fund thresholds per what? | **Per fund house (AMC)** for units in statement form; per beneficial owner for demat. Quick ₹10,000 / ₹30,000 demat; simplified ₹10 lakh / ₹30 lakh demat; quick path only for parents, spouse, children, parents-in-law; 21-day settlement | V |
+| 6 | Banks: higher limits, online claims | **ICICI up to ₹2 crore** without legal representation; **SBI** ₹15 lakh (from 16 Dec 2025), online portal with case ID; **PNB** ₹15 lakh, online with OTP and tracking ID; **Bank of Baroda** ₹15 lakh, online portal; **HDFC** limit not published; **Kotak** branch only; **Axis** not verified | Mostly V |
+| 7 | Life-insurance timelines | 15 days from intimation / 45 if investigated; Bank Rate + 2% from intimation (§3.3) | **V** |
+| 8 | LIC online intimation; no-nominee threshold | Requirements verified (Claim Form A, death extract, original policy, evidence of title if no nominee); **no small-amount threshold published**; online intimation not confirmed — written intimation to the branch | V / U |
+| 9 | Deceased person's data via AA / DigiLocker | **AA: no route** (consent is the account holder's own). **DigiLocker:** since 1 Apr 2025 fund houses, RTAs and depositories issue statements into DigiLocker; KYC agencies report deaths; the holder's **DigiLocker nominee** is notified and can view documents the holder fetched while alive; transmission rules unchanged | U / V |
+| 10 | APIs or partnerships | None found for UDGAM, MITRA, Bima Bharosa or the common portal. MFCentral offers APIs to distributors and RIAs; AMFI reportedly asked it to stop OTP-consent sharing with fintechs (Sep 2025) | U / S |
+
+Sources: [RBI UDGAM FAQ](https://www.rbi.org.in/commonman/Upload/English/FAQs/PDFs/FAQonUDGAMPortal.pdf) · [PIB Mar 2026](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2244475) · [PIB common portal](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2266714) · [SEBI MITRA circular](https://www.sebi.gov.in/sebi_data/attachdocs/feb-2025/1739356741378.pdf) · [SEBI transmission circular](https://www.sebi.gov.in/legal/circulars/jul-2026/ease-of-doing-investment-and-ease-of-doing-business-simplification-and-standardisation-of-the-framework-for-transmission-of-securities_103030.html) · [AMFI Form QTP](https://www.amfiindia.com/uploads/FORM_QTP_c23da06d18.pdf) · [RBI Directions](https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12901) · [ICICI](https://icici.bank.in/deceased-claim-policy-and-forms) · [PNB](https://pnb.bank.in/Deceased-Claim-cases.html) · [Bank of Baroda](https://bankofbaroda.bank.in/personal-banking/other-services/settlement-of-claims) · [SBI](https://sbi.bank.in/web/personal-banking/information-services/deceased-settlement) · [IRDAI Master Circular](https://irdai.gov.in/document-detail?documentId=5625747) · [LIC](https://licindia.in/claims-settlement-requirements) · [SEBI DigiLocker circular](https://www.sebi.gov.in/sebi_data/attachdocs/mar-2025/1742386353397.pdf)
+
+Licensing, integration eligibility and the approvals roadmap are in [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md).
 
 ## 7. Keeping this current
 

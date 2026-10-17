@@ -210,7 +210,7 @@ Each journey starts with the person describing their situation, and ends with so
 | 1. Describe | Kamala says what she wants. She can start fresh or reuse an inventory from Journey A. | Her goal, confirmed. |
 | 2. Build the record | She adds accounts, FDs, funds and policies by upload or by telling the assistant. | Her inventory, with evidence status for each item. |
 | 3. Find the gaps | The assistant flags missing nominees, outdated nominee details, missing documents and stale records. | A checklist: "LIC policy — nominee not recorded", "SBI FD — statement older than 2 years". |
-| 4. Fix what she can | For each gap the assistant explains the institution's process to update it. (Kamala makes the change with the institution herself.) | Plain-language steps for each gap. |
+| 4. Fix what she can | For each gap the assistant explains the institution's process to update it. (Kamala makes the change with the institution herself.) It also suggests setting a **DigiLocker nominee** and fetching her fund and demat statements into DigiLocker each year — under SEBI's 2025 framework, her nominee is told of her death and can view them. | Plain-language steps for each gap. |
 | 5. Name trusted contacts | She records who should be told in future, and what they may eventually see. | A clear note that **naming someone sends nothing and grants no access**. |
 | 6. Save and share (optional) | She approves a dated snapshot. She may export it, or — in a later release — share it with a verified person. | The snapshot, its date and its known gaps. |
 | 7. Keep it fresh | Reminders prompt her to review the record periodically. | Reminder tasks she controls. |
@@ -633,7 +633,7 @@ Exact fields and formats are defined in the Prisma schema (`frontend/prisma/sche
 | --- | --- | --- |
 | Document upload and reading | Extracting facts from user documents | Built (Gemini extraction on synthetic documents; fixture provider for tests and for running without a cloud key) |
 | AI provider (Google Gemini) | Conversation, extraction, drafting | Used on synthetic data only in the MVP; approved terms (data residency, retention, no training) required before real data in the Pilot |
-| Speech provider (Google Cloud Speech-to-Text and Text-to-Speech) | Voice input and output | Required for MVP; decided under D-09 — English (India), Hindi, Hinglish and Tamil at launch |
+| Speech: Google Cloud Text-to-Speech; speech recognition via Gemini audio on Vertex AI (preferred) or Google Speech-to-Text | Voice input and output | Required for MVP (D-09, revised 17 Oct 2026): recognition via Gemini audio in Mumbai because Google Speech-to-Text isn't offered in India — [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7 |
 | RBI UDGAM, SEBI MITRA / MFCentral, insurer unclaimed searches, government common portal | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
 | DigiLocker | Fetching official documents | Later — requires partner approval |
 | Account Aggregator | Fetching financial data with consent | Later — requires an eligible regulated role |
@@ -698,6 +698,8 @@ Exact fields and formats are defined in the Prisma schema (`frontend/prisma/sche
 | Direct institutional claim submission | Depends on authorisation and institution-specific channels |
 | Discovering every unknown financial asset | Not established as universally feasible |
 | Fully automatic asset settlement | Not generally available as a startup-controlled process |
+
+Detailed, cited answers on what is legally and technically feasible — licences, identity checks, DigiLocker, Account Aggregator, official portals, Google Cloud in India, SMS rules — are in [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md).
 
 ### 14.2 The biggest technical challenge
 
@@ -781,9 +783,11 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | D-06 | Evidence freshness, and how amounts and totals work for each asset type | Product + operations |
 | D-07 | Workload, cost, capacity, recovery, support hours, case limits and service targets | Engineering + operations |
 | D-08 | Distribution, pricing and professional-services model (billing needs a PRD change) | Founder |
-| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026):** Google Cloud Speech-to-Text and Text-to-Speech; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
+| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026, revised after research):** speech recognition by Gemini audio on Vertex AI in Mumbai (Google Speech-to-Text isn't offered in India; Chirp only as a disclosed fallback), replies by Google Cloud Text-to-Speech; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
 | D-10 | Institution procedures: who keeps them current, how often they are reviewed, and how legal, fraud and complaint escalations work | Operations |
 | D-11 | Whether native mobile apps are needed, and device, session, storage and accessibility rules for them | Product + engineering |
+| D-12 | **Fee model — decided (17 Oct 2026):** flat or capped fees only; no percentage of recovered money; the family signs and submits; no representation before institutions ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2). Still open: price points and payer (D-08) | Founder |
+| D-13 | **Approvals roadmap** — DLT registration, DigiLocker requester, UIDAI OVSE, KYC vendor, advocate panel, legal opinion — owners and dates ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §8) | Founder + integrations |
 
 ---
 
