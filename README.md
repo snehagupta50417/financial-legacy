@@ -48,7 +48,6 @@ Later: more asset types (shares, IEPF, EPF, NPS, PPF, lockers), approved live co
 | Part | State |
 | --- | --- |
 | `frontend/` — the product | Next.js app with intake chat, case workspace, trust gates G0–G4 (simulated providers), document extraction with Gemini, masking. Voice, claims, real sign-in and tests are not built yet — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
-| `demo/` — hackathon demo | Standalone front-end demo with hardcoded data and an 80-second scripted Demo Mode. Not connected to `frontend/`. |
 
 ## Documents
 
@@ -62,7 +61,6 @@ Read in this order. Each document follows the one above it; if they disagree, th
 | [LLD.md](LLD.md) | How it is built: architecture, data model, trust gates, AI, voice, API, security, testing, gap analysis, build plan |
 | [DESIGN.md](DESIGN.md) | How it looks and behaves: navigation, visual style, screens, states, accessibility, voice |
 | [docs/](docs/README.md) | Pre-Pilot documents: threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix, Google Cloud setup |
-| [BACKEND_PLAN.md](BACKEND_PLAN.md) | Milestone plan for the AI Builder Cup hackathon build (Phase A), aligned with the PRD and LLD |
 | [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
 
 ## Running it
@@ -86,11 +84,3 @@ npm run dev
 ```
 
 Opens on http://localhost:3000 (health check: `/api/health`). Use `.env` rather than `.env.local` so both Next.js and Prisma read it. `npm run db:push` creates the local SQLite database in `frontend/prisma/db/`. Set `GEMINI_API_KEY` (or Vertex AI settings) in `.env` for AI features; without a key, AI features say they are unavailable. The target deployment is Google Cloud Run from source, with no Docker (LLD §17); it is not deployed yet.
-
-**Hackathon demo** (`demo/`):
-
-```bash
-cd demo && npm install && npm run dev
-```
-
-Opens on http://localhost:5173. See [demo/README.md](demo/README.md) for presenter controls.

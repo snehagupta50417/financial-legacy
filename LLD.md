@@ -8,8 +8,8 @@
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
 | **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, targeting Google Cloud Run (deployment is milestone M7, not yet done). |
-| **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. [BACKEND_PLAN.md](BACKEND_PLAN.md) remains the milestone plan for the hackathon build and is referenced from §21. |
-| **Status** | Milestones M0–M3 of BACKEND_PLAN are built. Large parts of the PRD MVP are not built yet — see the gap analysis in §20. |
+| **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. The separate hackathon plan (`BACKEND_PLAN.md`) was folded into §21 and removed; it remains in git history. |
+| **Status** | Hackathon milestones M0–M3 are built (§21). Large parts of the PRD MVP are not built yet — see the gap analysis in §20. |
 
 ---
 
@@ -339,7 +339,7 @@ Migration from today's fields: `discoveryStatus=possible` → `POTENTIAL_MATCH`;
 
 ### 10.2 Duplicates (to build)
 
-Today documents merge into an existing asset by a loose institution-name match (BACKEND_PLAN bug 6, not yet fixed). Target: same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
+Today documents merge into an existing asset by a loose institution-name match (a known bug, not yet fixed). Target: same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
 
 ### 10.3 Totals (to build, `rules/totals.ts`)
 
@@ -648,7 +648,18 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 
 ### Phase A — Hackathon (AI Builder Cup, due 18 Oct 2026)
 
-Follow [BACKEND_PLAN.md §11](BACKEND_PLAN.md): M0–M3 done; M4 connectors + discovery (mock), M5 Verify console, M6 claim path + packs, M7 Cloud Run deploy. These may use mock connectors and the Verify console **for the demo only**, labelled "Simulated". Phase A does not change PRD scope.
+| # | Milestone | Status |
+| --- | --- | --- |
+| M0 | Security cleanup (DB removed and purged from history, Docker/Caddy removed, `/api/health`, `.env.example`) | Done |
+| M1 | Gemini provider, fixture provider, fallbacks, rate limits | Done |
+| M2 | Schema, trust gates, masking, name matching, one case per deceased, audit events | Done |
+| M3 | Gate UI: proof screens; locked, masked and frozen states | Done |
+| M4 | Discovery: guided searches with outcome logging, document pipeline, synthetic demo case | Next |
+| M5 | Verify console — demo of the Later capability FL-56, labelled "Simulated" | Optional |
+| M6 | Claim paths (§11.1) and packs for bank, mutual fund and LIC; approve + receipt | Next |
+| M7 | Deploy to Cloud Run ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) | Next |
+
+Phase A does not change PRD scope. Mock connectors and the Verify console may appear in the hackathon demo only, labelled "Simulated". The original plan (`BACKEND_PLAN.md` v3) is in git history.
 
 ### Phase B — PRD MVP (after the hackathon)
 
@@ -698,7 +709,7 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
 - **One-pager → PRD → LLD.** Product behaviour changes in the PRD first; this LLD and the code follow in the same change.
 - **Prisma schema** is the source of truth for data; **this LLD** for architecture and rules; **`DECISIONS.md`** records implementation decisions as they are made (newest last).
-- **[BACKEND_PLAN.md](BACKEND_PLAN.md)** is the hackathon milestone plan (Phase A), rewritten as v3 on 17 Oct 2026 to match the PRD and this LLD. Its Verify console and mock connectors are demo-only versions of Later capabilities.
+- **`BACKEND_PLAN.md`** (hackathon plan) and **`demo/`** (standalone hackathon demo) were removed on 17 Oct 2026 to keep the repo to what the product needs; both remain in git history. Phase A is summarised in §21.
 - **`contracts/`** (`openapi.json`, `schema.sql`, `fixtures.json`) described the superseded Python/FastAPI design and was **removed** on 17 Oct 2026; it remains in git history. Once the MVP API stabilises, generate an OpenAPI spec from the Zod schemas.
 - **LLD v0.4** (Python/FastAPI, Keycloak, Docker Compose, PostgreSQL RLS) is superseded by this version. Its useful rules — exact approvals, unknown-outcome reconciliation, append-only evidence, honest totals, deletion markers — are carried forward above.
 

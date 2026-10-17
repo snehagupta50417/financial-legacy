@@ -119,3 +119,8 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 - `BACKEND_PLAN.md` rewritten as v3 to match the one-pager, PRD and LLD: bereaved-family story first, upload + guided search before connectors, Verify and mock connectors labelled as demo-only Later capabilities, approve + receipt instead of "submit", MVP claim-pack templates (bank, mutual fund, LIC) with cited thresholds, bug and milestone status updated.
 - `frontend/AGENTS.md` gains project rules for coding agents (outside the auto-generated Next.js block).
 - `demo/README.md` rewritten: maps the demo's seven journeys to the PRD's three and lists what differs.
+
+## Repo trimmed to what the product needs — 17 Oct 2026
+
+- Removed `demo/` (standalone hackathon demo, not the product) and `BACKEND_PLAN.md` (hackathon plan; its milestones are summarised in LLD §21). Both remain in git history; to restore the demo locally: `git checkout 7672340 -- demo`.
+- Everything else was reviewed and is needed: the documents, `docs/`, `frontend/` app and configuration, the banner and the PR template.

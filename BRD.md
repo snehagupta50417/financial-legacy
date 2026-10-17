@@ -369,7 +369,7 @@ Not legal advice; each item needs review by qualified counsel before the pilot.
 | **3. Commercial launch** | Chosen revenue stream(s), wider channels, more institutions | Positive contribution margin per useful result; trust measures clean |
 | **4. Scale** | More asset types, languages, live integrations, sharing and release features | Each "Later" capability passes its own gate (PRD §15.3) |
 
-Dates are not committed. The AI Builder Cup prototype deadline in [BACKEND_PLAN.md](BACKEND_PLAN.md) is an engineering milestone and does not change these business gates.
+Dates are not committed. The AI Builder Cup prototype deadline (18 Oct 2026, [LLD §21](LLD.md#21-build-plan)) is an engineering milestone and does not change these business gates.
 
 ---
 
