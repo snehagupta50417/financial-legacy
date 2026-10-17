@@ -265,7 +265,7 @@ Each business requirement maps to the product requirements that deliver it in [P
 | **Procedure owner** | Keeps each institution's claim procedure current, with source dates and review schedule | Enable an unsupported procedure |
 | **Integration owner** | Manages source access, agreements and suspensions | Use a source without approval |
 | **Product / business owner** | Accepts scope, segments, promises, targets and commercial choices | — |
-| **Privacy, security and qualified legal reviewers** | Approve data use, authority rules, retention, processors and escalation | — |
+| **Privacy and security lead** (legal reviewer when one is engaged) | Approve data use, authority rules, retention, processors and escalation, following the cautious legal positions | — |
 | **Institutions and external professionals** | Make their own verification and settlement decisions | — |
 
 ### 10.2 Service design for the pilot
@@ -344,7 +344,7 @@ We must also interview individuals, bereaved families, banks, insurers and estat
 
 ## 13. Regulatory and legal considerations
 
-Not legal advice; each item needs review by qualified counsel before the pilot.
+Not legal advice. Where the law is unclear, the product follows the cautious positions in [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §9; a paid legal review is recommended before charging money or partnering with institutions.
 
 | Area | Why it matters | What we need |
 | --- | --- | --- |

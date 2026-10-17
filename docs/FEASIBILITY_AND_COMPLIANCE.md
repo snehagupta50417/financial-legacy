@@ -6,7 +6,7 @@
 | **Research date** | 17 October 2026 |
 | **Owner** | Founder + privacy/security lead + integrations (PRD D-02, D-03, D-05, D-08) |
 | **Purpose** | One place that answers: **what can we legally and technically do, what needs approval, how to get it, and in what order.** |
-| **Status** | Desk research with citations. **Not legal advice.** Each item is marked with how sure we are. A lawyer must confirm the items in §9 before the Pilot. |
+| **Status** | Desk research with citations. **Not legal advice.** Each item is marked with how sure we are. Where the law is unclear, §9 sets the cautious position the product follows, so no lawyer is needed to build or run a free Pilot. |
 
 **Confidence key:** **V** verified on an official source · **S** secondary sources only · **U** unverified.
 
@@ -23,7 +23,8 @@
 | DigiLocker requester (with audit) · Aadhaar offline verification (OVSE registration) · death-certificate QR check on CRS · DLT-registered SMS | PAN verification · CKYC · Account Aggregator data (own assets only) | Aadhaar authentication (AUA/KUA) for now · Account Aggregator for a deceased person's data · any automated search of the official portals |
 
 4. **Data protection:** the DPDP Rules were notified on **13 Nov 2025**; most duties (notice, security, breach reporting, rights, retention) start around **13 May 2027**. Until then the **IT Act s.43A and SPDI Rules 2011** still apply. We build to the 2027 standard now (§5).
-5. **Two platform decisions need adjusting** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT).
+5. **Two platform decisions were adjusted** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT).
+6. **Where the law is unclear, we take the cautious reading** (§9), so no lawyer is needed to build the product or run a free Pilot.
 
 ---
 
@@ -120,8 +121,9 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 
 | When | Step | Owner |
 | --- | --- | --- |
-| Weeks 0–2 | Legal opinion on: fee model, Advocates Act line, DPDP/SPDI consent and terms, deceased-data basis, s.17 reliance (§9) | Founder + counsel |
-| Weeks 0–2 | Set up an **advocate referral panel** | Founder |
+| Weeks 0–2 | Adopt the cautious legal positions in §9 as product rules (done in PRD §11.2) | Founder |
+| Weeks 0–2 | Referral list for families: free legal aid (15100 / District Legal Services Authority) and a few local lawyers who handle succession | Founder |
+| Before charging money or partnering | Paid legal review of the §9 positions | Founder |
 | Weeks 0–4 | **DLT registration** (entity, header, OTP template) and URL whitelisting | Engineering |
 | Weeks 0–4 | Google: confirm Gemini in-region processing per model; request abuse-monitoring exception; confirm TTS Mumbai residency; test Gemini speech recognition | Engineering |
 | Month 1 | **ISO 27001-style security baseline** (SPDI Rule 8); CERT-In 6-hour incident process | Security lead |
@@ -132,17 +134,23 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 | Before ~May 2027 | Full DPDP compliance: notices, consent records, rights handling, 72-hour breach process, retention, processor contracts | Privacy lead |
 | Later, if needed | Insurance licence (only to sell/refer); Aadhaar AUA via a sponsoring ministry; regulated AA partner for living users' own data | Founder |
 
-## 9. What a lawyer must still confirm
+## 9. Positions we take without a lawyer
 
-These cannot be settled by research alone:
+We have no lawyer on hand, so for each point the law leaves unclear we adopt the **most cautious reading**: the product stays compliant whichever way a court or regulator later decides. A lawyer's review is **recommended before charging money or scaling**, not a blocker for building or for a free Pilot.
 
-1. Whether a deceased person counts as a Data Principal, and whose authority governs their data when there is no DPDP nominee.
-2. Whether we can rely on s.17(1)(a) or s.17(1)(c) for fraud checks and co-heir data.
-3. Whether co-heirs and nominees must be notified before we contact them.
-4. The exact commencement dates (13 vs 14 Nov 2025 publication) and whether any shortened timeline, SDF, localisation or s.17(3) startup exemption has been notified.
-5. Whether claim preparation for life insurance triggers any IRDAI registration or restriction.
-6. Where our template-based document preparation crosses into "practice of law".
-7. That our flat-fee model and disclosures are safe under consumer-protection law.
+| # | Unclear point | Our position (built into the product) | Why this is safe under any reading |
+| --- | --- | --- | --- |
+| 1 | Is a deceased person's data protected, and who controls it? | Treat it as **fully protected personal data**. Process it only for a claimant who has given their own consent **and** shown documented authority (nomination, legal heir or succession certificate, will). If people with authority disagree, **put the affected assets on hold** (FL-47) and ask for documents — we never pick a side | If the law protects the data, we already do; if it doesn't, we've lost nothing |
+| 2 | Can fraud checks run without separate consent? | **Disclose and ask.** The claim flow's consent explicitly covers document-consistency checks and duplicate-claimant checks, explained in plain words. These checks are part of the service the user asks for | Consent is valid on every reading; no reliance on uncertain exemptions |
+| 3 | Must co-heirs be told before we contact them? | **We never contact co-heirs or nominees.** The claimant collects their no-objection letters. We store only their names and relationship (plus what an institution form strictly needs), never use it for anything else, and delete it when the case closes | The question doesn't arise if we don't contact them |
+| 4 | When exactly do the new data rules start? | Assume the **earlier** date and comply fully by **January 2027** — four months before the ~13 May 2027 deadline. Meanwhile meet today's SPDI rules and the CERT-In 6-hour incident rule | Early compliance can't be late |
+| 5 | Does insurance-claim help need an IRDAI licence? | Stay clearly outside "claims consultancy": the family signs and submits; we never contact or represent anyone before the insurer; no insurance-specific or claim-linked fee; never sell, refer or advise on insurance. **The Pilot is free** | Nothing we do resembles a broker's paid representation |
+| 6 | When does form-filling become "practising law"? | Use only **institution-published forms** (bank, fund house, LIC) and **standard formats** the institution or regulator provides; the family fills and signs. We explain processes in general terms, never advise on who inherits, whether a will is valid, or how to resolve a dispute. Those questions get a referral: a private lawyer, or the **free legal-aid helpline 15100** / District Legal Services Authority for families who qualify | General process information and institution forms are not legal practice |
+| 7 | Is our fee model safe under consumer law? | **Free during the Pilot.** Later: a flat, published price shown before any work; a clear note that families can claim free themselves; easy cancellation and refund rules; no pressure tactics or hidden charges (consumer "dark pattern" guidelines) | Transparent flat pricing is the lowest-risk model available |
+
+**Free legal aid for families** (not for the company): NALSA's toll-free helpline **15100** gives free legal aid and advice to people who qualify — for example women, children, people with disabilities, and people with low annual income — and applications can also be made on plain paper to the District Legal Services Authority ([DoT allocation of 15100](https://dot.gov.in/node/5359), [NALSA](https://nalsa.gov.in/promoting-inclusive-legal-system/)).
+
+**When a lawyer becomes worth paying for:** before charging money; before partnering with a bank, fund house or insurer; if a regulator, institution or family raises a legal objection; or if we are notified as a Significant Data Fiduciary. Until then the positions above apply.
 
 ## 10. Sources
 
