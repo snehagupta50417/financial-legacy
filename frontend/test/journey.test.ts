@@ -23,8 +23,9 @@ function ws(over: Partial<{ unlocked: boolean; frozen: string | null; living: bo
   };
 }
 
-const asset = (discoveryStatus: string, verificationStatus = "unverified") =>
-  ({ id: Math.random().toString(), discoveryStatus, verificationStatus }) as CaseWorkspace["assets"][number];
+// Evidence status follows the server rule: unconfirmed holdings are potential matches.
+const asset = (discoveryStatus: string, evidenceStatus = discoveryStatus === "possible" ? "potential_match" : "self_declared") =>
+  ({ id: Math.random().toString(), discoveryStatus, evidenceStatus }) as CaseWorkspace["assets"][number];
 const doc = (over: Partial<CaseWorkspace["documents"][number]>) =>
   ({ id: "d1", fileName: "PNB.pdf", extractionStatus: "extracted", userVerified: false, extractedFields: [{ label: "A", value: "B", confidence: 1, sourceExcerpt: "" }], extractionNote: null, ...over }) as CaseWorkspace["documents"][number];
 const task = (status: string, isNextBest = false) => ({ id: status + isNextBest, title: `Task ${status}`, status, isNextBest, rationale: "why", instructions: "do" }) as CaseWorkspace["tasks"][number];

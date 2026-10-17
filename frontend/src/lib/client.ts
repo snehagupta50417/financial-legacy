@@ -49,5 +49,11 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body ?? {}),
     }),
+  put: <T>(url: string, body?: unknown) =>
+    request<T>(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    }),
   upload: <T>(url: string, form: FormData) => request<T>(url, { method: "POST", body: form }),
 };

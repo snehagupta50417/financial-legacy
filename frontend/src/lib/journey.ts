@@ -26,7 +26,7 @@ export function activeHoldings(ws: Pick<Ws, "assets">) {
 }
 
 export function potentialMatches(ws: Pick<Ws, "assets">) {
-  return activeHoldings(ws).filter((a) => a.discoveryStatus === "possible" && a.verificationStatus !== "institution_verified");
+  return activeHoldings(ws).filter((a) => a.evidenceStatus === "potential_match");
 }
 
 /** Extracted documents whose fields nobody has reviewed yet (FL-06). */
@@ -193,7 +193,7 @@ export function legacyGaps(ws: Ws): Gap[] {
     gaps.push({ kind: "review_document", text: `Check the values read from ${d.fileName}`, to: `records/documents/${d.id}` });
   }
   for (const a of activeHoldings(ws)) {
-    if (a.discoveryStatus === "confirmed" && !a.sourceDocumentId && a.verificationStatus !== "institution_verified") {
+    if (a.discoveryStatus === "confirmed" && a.evidenceStatus === "self_declared") {
       gaps.push({ kind: "add_document", text: `Add a statement or policy for ${a.institution}`, to: "records/documents" });
     }
   }

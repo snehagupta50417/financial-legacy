@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     `Progress: ${full.progress}% | stage: ${full.stage}`,
     `Confirmed facts: ${full.confirmedFacts ?? "[]"}`,
     `Assumptions: ${full.assumptions ?? "[]"}`,
-    `Holdings:\n${visibleAssets.map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""} — ${a.verificationStatus}`).join("\n") || (unlocked ? "(none yet)" : "(locked until verification is complete)")}`,
+    `Holdings:\n${visibleAssets.map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""} — ${a.evidenceStatus.replace(/_/g, " ")}`).join("\n") || (unlocked ? "(none yet)" : "(locked until verification is complete)")}`,
     `Documents:\n${unlocked ? full.documents.map((d) => `- ${d.fileName} (${d.category}, ${d.extractionStatus})`).join("\n") || "(none)" : "(locked until verification is complete)"}`,
     `Steps:\n${full.tasks.map((t) => `- [${t.status}] ${t.title}`).join("\n") || "(none)"}`,
   ].join("\n");

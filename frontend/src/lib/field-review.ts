@@ -1,9 +1,9 @@
 /**
  * Per-field review of extracted document values (PRD FL-06, FL-26; DESIGN §5.4).
  *
- * The API stores one list of fields per document plus a document-level
- * `userVerified` flag, so per-field states live in the UI until the server has
- * review records (LLD §8, DECISIONS.md). Pure functions only — no React.
+ * The server stores each field's decision with its history (DocumentField,
+ * FieldReviewEvent). The page keeps unsaved decisions here and sends only the
+ * ones that changed. Pure functions only — no React.
  */
 
 export interface ExtractedField {
@@ -21,6 +21,16 @@ export interface FieldReview {
   original: string;
   /** Set only when decision is "corrected". */
   corrected?: string;
+  /** Why the person corrected or rejected it (optional, kept in the history). */
+  reason?: string;
+}
+
+/** A field as the server returns it (CaseWorkspace documents[].fields). */
+export interface ServerField extends ExtractedField {
+  id: string;
+  proposedValue: string;
+  state: string; // proposed | accepted | corrected | rejected
+  reason: string | null;
 }
 
 /** Critical fields must be reviewed by a person before they count (FL-06). */
@@ -45,17 +55,19 @@ export function decide(
   reviews: FieldReview[],
   index: number,
   decision: FieldDecision,
-  correctedValue?: string
+  correctedValue?: string,
+  reason?: string
 ): FieldReview[] {
   return reviews.map((r, i) => {
     if (i !== index) return r;
+    const why = reason?.trim() ? { reason: reason.trim() } : {};
     if (decision === "corrected") {
       const v = (correctedValue ?? "").trim();
       // An empty or unchanged correction is not a correction.
       if (!v || v === r.original) return { decision: "accepted", original: r.original };
-      return { decision, original: r.original, corrected: v };
+      return { decision, original: r.original, corrected: v, ...why };
     }
-    return { decision, original: r.original };
+    return { decision, original: r.original, ...(decision === "rejected" ? why : {}) };
   });
 }
 
@@ -88,19 +100,40 @@ export function summarise(fields: ExtractedField[], reviews: FieldReview[]): Rev
   };
 }
 
-/**
- * Body for PATCH /api/documents/:id. Rejected fields are dropped (they are not
- * facts); corrected fields carry the new value and keep the original citation.
- * `userVerified` is true only when every field has been reviewed.
- */
-export function toPatchBody(fields: ExtractedField[], reviews: FieldReview[]) {
-  const extractedFields = fields.flatMap((f, i) => {
+/** The saved decisions, as the page starts with them. */
+export function reviewsFromServer(fields: ServerField[]): FieldReview[] {
+  return fields.map((f) => ({
+    decision: f.state === "proposed" ? "not_reviewed" : (f.state as FieldDecision),
+    original: f.proposedValue,
+    ...(f.state === "corrected" ? { corrected: f.value } : {}),
+    ...(f.reason ? { reason: f.reason } : {}),
+  }));
+}
+
+export interface Decision {
+  fieldId: string;
+  decision: Exclude<FieldDecision, "not_reviewed">;
+  value?: string;
+  reason?: string;
+}
+
+/** Body for PUT /api/documents/:id/review: only decisions that differ from what is saved. */
+export function toDecisions(fields: ServerField[], reviews: FieldReview[]): Decision[] {
+  const saved = reviewsFromServer(fields);
+  return fields.flatMap((f, i) => {
     const r = reviews[i];
-    if (!r || r.decision === "rejected") return [];
-    if (r.decision === "corrected" && r.corrected) return [{ ...f, value: r.corrected }];
-    return [f];
+    const s = saved[i];
+    if (!r || r.decision === "not_reviewed") return [];
+    if (r.decision === s.decision && r.corrected === s.corrected && (r.reason ?? "") === (s.reason ?? "")) return [];
+    return [
+      {
+        fieldId: f.id,
+        decision: r.decision,
+        ...(r.decision === "corrected" ? { value: r.corrected } : {}),
+        ...(r.reason?.trim() ? { reason: r.reason.trim() } : {}),
+      },
+    ];
   });
-  return { extractedFields, userVerified: summarise(fields, reviews).complete };
 }
 
 /**

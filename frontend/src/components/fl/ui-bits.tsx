@@ -91,20 +91,15 @@ export function TaskStatusBadge({ status }: { status: string }) {
 }
 
 /**
- * The four evidence statuses from PRD FL-07 / DESIGN §6, derived from today's two
- * status fields as LLD §10.1 specifies. Always written in words, never a bare icon.
+ * The four evidence statuses from PRD FL-07 / DESIGN §6. The server sets them
+ * (src/server/rules/evidence.ts); the UI only reads them. Always written in words.
  */
 export type EvidenceStatus = "self_declared" | "potential_match" | "document_backed" | "institution_verified" | "dismissed";
 
-export function evidenceStatusOf(asset: {
-  discoveryStatus: string;
-  verificationStatus: string;
-  sourceDocumentId?: string | null;
-}): EvidenceStatus {
+export function evidenceStatusOf(asset: { discoveryStatus: string; evidenceStatus: string }): EvidenceStatus {
   if (asset.discoveryStatus === "dismissed") return "dismissed";
-  if (asset.verificationStatus === "institution_verified") return "institution_verified";
-  if (asset.discoveryStatus === "possible") return "potential_match";
-  return asset.sourceDocumentId ? "document_backed" : "self_declared";
+  const s = asset.evidenceStatus as EvidenceStatus;
+  return s in EVIDENCE_LABEL ? s : "self_declared";
 }
 
 const EVIDENCE_LABEL: Record<EvidenceStatus, { label: string; hint: string; className: string }> = {
@@ -134,7 +129,7 @@ const EVIDENCE_LABEL: Record<EvidenceStatus, { label: string; hint: string; clas
 export function VerificationBadge({
   asset,
 }: {
-  asset: { discoveryStatus: string; verificationStatus: string; sourceDocumentId?: string | null };
+  asset: { discoveryStatus: string; evidenceStatus: string };
 }) {
   const s = EVIDENCE_LABEL[evidenceStatusOf(asset)];
   return (

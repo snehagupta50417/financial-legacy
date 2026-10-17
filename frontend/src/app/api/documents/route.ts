@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { caseAccess, isDenied } from "@/server/core/access";
 import { IMAGE_MIME, readUpload, type SniffedKind } from "@/server/core/upload";
-import { last4Of, redactIdentifiers } from "@/server/core/masking";
+import { redactIdentifiers } from "@/server/core/masking";
+import { addClue, createDocumentFields } from "@/server/domain/evidence-service";
 import { completeJson, getProvider } from "@/server/ai";
 import { hasTextLayer, ocrImage, ocrPdf } from "@/server/ocr/ocr";
 import { fixOcrDigits, ruleExtract } from "@/server/ocr/rule-extract";
@@ -224,46 +225,21 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Every value becomes a reviewable field; clues become potential matches,
+  // flagged as possible duplicates instead of being merged into existing holdings.
+  await createDocumentFields(doc.id, ex.fields);
   let cluesAdded = 0;
+  let duplicates = 0;
   for (const clue of ex.assetClues) {
-    const dup = await db.assetRecord.findFirst({
-      where: {
-        caseId: legacyCase.id,
-        institution: { contains: clue.institution.slice(0, 12) },
-        discoveryStatus: "possible",
-      },
-    });
-    if (dup) {
-      await db.assetRecord.update({
-        where: { id: dup.id },
-        data: {
-          evidence: clue.evidence,
-          confidence: Math.max(dup.confidence, clue.confidence),
-          sourceDocumentId: doc.id,
-        },
-      });
-      continue;
-    }
-    await db.assetRecord.create({
-      data: {
-        caseId: legacyCase.id,
-        category: clue.category,
-        institution: clue.institution,
-        maskedRef: clue.reference ? redactIdentifiers(clue.reference) : null,
-        last4: last4Of(clue.reference),
-        holderName: clue.holderName,
-        evidence: clue.evidence,
-        sourceDocumentId: doc.id,
-        confidence: clue.confidence,
-      },
-    });
+    const { duplicateOf } = await addClue(legacyCase.id, doc.id, clue);
     cluesAdded++;
+    if (duplicateOf) duplicates++;
   }
 
   await logEvent(
     legacyCase.id,
     "ai",
-    `Extracted "${file.name}" (${method}): ${ex.fields.length} fields, ${ex.institutions.length} institutions${cluesAdded ? `, ${cluesAdded} new asset clue(s)` : ""} — quality: ${ex.extractionQuality}`,
+    `Extracted "${file.name}" (${method}): ${ex.fields.length} fields, ${ex.institutions.length} institutions${cluesAdded ? `, ${cluesAdded} possible holding(s)${duplicates ? ` (${duplicates} may duplicate one you have)` : ""}` : ""} — quality: ${ex.extractionQuality}`,
     "ai",
     doc.id
   );

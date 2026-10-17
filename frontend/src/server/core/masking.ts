@@ -1,3 +1,4 @@
+import { AMOUNT_TYPE_LABEL, formatInr, type AmountType } from "@/server/rules/observations";
 import { canSeeFullAsset, type GateCase } from "./gate-engine";
 
 /**
@@ -43,13 +44,40 @@ export interface AssetRow {
   holderName: string | null;
   evidence: string | null;
   discoveryStatus: string;
-  verificationStatus: string;
+  evidenceStatus: string;
+  duplicateOfId: string | null;
+  duplicateState: string | null;
   confidence: number;
   notes: string | null;
   sourceDocumentId: string | null;
   entitled: boolean;
   valueBand: string | null;
   last4: string | null;
+}
+
+export interface ObservationRow {
+  id: string;
+  amount: string;
+  currency: string;
+  amountType: string;
+  asOfDate: string | null;
+  label: string;
+  sourceDocumentId: string | null;
+  reviewedAt: Date | null;
+  supersededAt: Date | null;
+  createdAt: Date;
+}
+
+/** The one dated amount shown on a holding card, with what it means (FL-09). */
+export interface AmountView {
+  amount: string;
+  display: string;
+  currency: string;
+  amountType: string;
+  meaning: string;
+  label: string;
+  asOfDate: string | null;
+  sourceDocumentId: string | null;
 }
 
 export interface AssetView {
@@ -60,20 +88,47 @@ export interface AssetView {
   holderName: string | null;
   evidence: string | null;
   discoveryStatus: string;
-  verificationStatus: string;
+  evidenceStatus: string;
+  duplicateOfId: string | null;
+  duplicateState: string | null;
   confidence: number;
   notes: string | null;
   sourceDocumentId: string | null;
   entitled: boolean;
   valueBand: string | null;
   last4: string | null;
+  /** Latest reviewed amount; null when none is known or it is hidden. */
+  amount: AmountView | null;
+  /** true when an amount exists but this person may not see it yet (below G4). */
+  amountHidden: boolean;
   masked: boolean;
 }
 
-export function maskAsset(c: GateCase, a: AssetRow): AssetView {
+/** Prefer the latest dated balance or value; otherwise the latest reviewed amount of any kind. */
+export function headlineAmount(obs: ObservationRow[]): AmountView | null {
+  const live = obs.filter((o) => !o.supersededAt && o.reviewedAt);
+  if (!live.length) return null;
+  const rank = (o: ObservationRow) => (["cash_balance", "current_value"].includes(o.amountType) && o.asOfDate ? 1 : 0);
+  const best = [...live].sort(
+    (x, y) => rank(y) - rank(x) || (y.asOfDate ?? "").localeCompare(x.asOfDate ?? "") || y.createdAt.getTime() - x.createdAt.getTime()
+  )[0];
+  return {
+    amount: best.amount,
+    display: best.currency === "INR" && best.amountType !== "units" ? formatInr(best.amount) : `${best.amount} ${best.amountType === "units" ? "units" : best.currency}`,
+    currency: best.currency,
+    amountType: best.amountType,
+    meaning: AMOUNT_TYPE_LABEL[best.amountType as AmountType] ?? "Amount",
+    label: best.label,
+    asOfDate: best.asOfDate,
+    sourceDocumentId: best.sourceDocumentId,
+  };
+}
+
+export function maskAsset(c: GateCase, a: AssetRow, observations: ObservationRow[] = []): AssetView {
   const last4 = a.last4 ?? last4Of(a.maskedRef);
+  const amount = headlineAmount(observations);
   if (canSeeFullAsset(c, a)) {
-    return { ...pick(a), last4, masked: false };
+    return { ...pick(a), last4, amount, amountHidden: false, masked: false };
   }
   return {
     ...pick(a),
@@ -81,11 +136,13 @@ export function maskAsset(c: GateCase, a: AssetRow): AssetView {
     holderName: null,
     evidence: a.evidence ? redactAmounts(redactIdentifiers(a.evidence)) : null,
     last4,
+    amount: null,
+    amountHidden: !!amount,
     masked: true,
   };
 }
 
-function pick(a: AssetRow): Omit<AssetView, "masked"> {
+function pick(a: AssetRow): Omit<AssetView, "masked" | "amount" | "amountHidden"> {
   return {
     id: a.id,
     category: a.category,
@@ -94,7 +151,9 @@ function pick(a: AssetRow): Omit<AssetView, "masked"> {
     holderName: a.holderName,
     evidence: a.evidence,
     discoveryStatus: a.discoveryStatus,
-    verificationStatus: a.verificationStatus,
+    evidenceStatus: a.evidenceStatus,
+    duplicateOfId: a.duplicateOfId,
+    duplicateState: a.duplicateState,
     confidence: a.confidence,
     notes: a.notes,
     sourceDocumentId: a.sourceDocumentId,

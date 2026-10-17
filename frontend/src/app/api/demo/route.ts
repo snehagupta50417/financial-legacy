@@ -6,6 +6,7 @@ import { buildJourney, recalcProgress } from "@/server/domain/journey-engine";
 import { journeyKind, requiredPath } from "@/server/core/gate-engine";
 import { last4Of } from "@/server/core/masking";
 import { logEvent, officialLinkFor } from "@/server/domain/case-service";
+import { createDocumentFields } from "@/server/domain/evidence-service";
 import type { ClassifiedSituation, CaseType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
         isSynthetic: true,
       },
     });
+    await createDocumentFields(doc.id, d.extracted.fields);
     for (const clue of d.extracted.assetClues) sourceFor.set(`${clue.institution}|${clue.reference ?? ""}`, doc.id);
     await logEvent(legacyCase.id, "document", `DEMO document "${d.fileName}" analysed — ${d.extracted.fields.length} fields extracted`, "ai", doc.id);
   }
@@ -133,8 +135,10 @@ export async function POST(req: NextRequest) {
         holderName: a.holderName,
         evidence: a.evidence,
         confidence: a.confidence,
+        // Demo holdings start as potential matches: the family confirms them and reviews
+        // the source document, which is what makes them document-backed (FL-07).
         discoveryStatus: "possible",
-        verificationStatus: a.verificationStatus,
+        evidenceStatus: "potential_match",
         sourceDocumentId:
           sourceFor.get(`${a.institution}|${a.maskedRef ?? ""}`) ??
           [...sourceFor.entries()].find(([k]) => k.startsWith(`${a.institution}|`))?.[1] ??

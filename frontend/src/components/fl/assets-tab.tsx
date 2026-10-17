@@ -14,7 +14,7 @@ import { EVIDENCE_GROUPS } from "@/lib/journey";
 import { CATEGORY_ICON, CATEGORY_LABEL, VerificationBadge, evidenceStatusOf } from "./ui-bits";
 import { caseHref } from "./case-nav";
 import { SimulatedNote } from "./gate-panel";
-import { BookCheck, CircleCheckBig, CircleX, FileText, KeyRound, Loader2, Lock, Plus, RotateCcw } from "lucide-react";
+import { BookCheck, CircleCheckBig, CircleX, Copy, FileText, KeyRound, Loader2, Lock, Plus, RotateCcw, Sigma } from "lucide-react";
 
 const ENTITLEMENT_METHODS = [
   { value: "nominee", label: "I am the registered nominee" },
@@ -31,6 +31,60 @@ const GROUP_META: Record<(typeof EVIDENCE_GROUPS)[number], { title: string; sub:
 };
 
 type Asset = CaseWorkspace["assets"][number];
+type Action = "confirm" | "dismiss" | "reopen" | "same_holding" | "different_holding" | "undo_merge";
+
+const ACTION_TOAST: Record<Action, [string, string]> = {
+  confirm: ["Confirmed", "Saved as confirmed by you."],
+  dismiss: ["Set aside", "You can bring it back from the list at the bottom."],
+  reopen: ["Back in the list", "It's a possible match again."],
+  same_holding: ["Merged", "Treated as one holding. All evidence is kept, and you can undo this."],
+  different_holding: ["Kept separate", "Both holdings stay in the list."],
+  undo_merge: ["Merge undone", "Back to review: same holding or different?"],
+};
+
+function formatDay(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** The honest total (FL-29): what is counted, and why everything else isn't. */
+function TotalsCard({ ws }: { ws: CaseWorkspace }) {
+  const t = ws.totals;
+  const name = (id: string) => ws.assets.find((a) => a.id === id)?.institution ?? "A holding";
+  return (
+    <section aria-labelledby="totals-heading" className="rounded-2xl border bg-card p-5">
+      <h2 id="totals-heading" className="flex items-center gap-2 text-[15px] font-semibold text-ink/80">
+        <Sigma className="h-4 w-4 text-teal-brand" aria-hidden /> {t.label}
+      </h2>
+      {t.totals.length ? (
+        <p className="mt-1 font-display text-[28px] font-semibold text-navy">{t.totals.map((x) => x.display).join(" + ")}</p>
+      ) : (
+        <p className="mt-1 font-display text-[24px] font-semibold text-navy">Unknown</p>
+      )}
+      <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
+        {t.counted.length
+          ? `From ${t.counted.length} ${t.counted.length === 1 ? "holding" : "holdings"}, using amounts you checked dated ${
+              t.oldestDate === t.newestDate ? formatDay(t.oldestDate!) : `${formatDay(t.oldestDate!)} to ${formatDay(t.newestDate!)}`
+            }. Old amounts may have changed since — this is not today's value.`
+          : "No holding has a checked, dated balance or value yet, so we can't add anything up."}
+      </p>
+      {t.excluded.length > 0 && (
+        <details className="mt-3">
+          <summary className="cursor-pointer text-[14px] font-medium text-teal-brand">
+            Not counted ({t.excluded.length}) — why
+          </summary>
+          <ul className="mt-2 space-y-1 text-[14px] text-ink/80">
+            {t.excluded.map((x) => (
+              <li key={x.assetId}>
+                <span className="font-medium text-ink">{name(x.assetId)}:</span> {x.reason}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
 
 /** Records → Assets: holdings grouped by evidence status, potential matches kept apart (DESIGN §6, FL-07, FL-09). */
 export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: () => Promise<void> }) {
@@ -43,18 +97,23 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
   const [entitleMethod, setEntitleMethod] = useState("nominee");
   const [entitling, setEntitling] = useState(false);
 
-  const active = ws.assets.filter((a) => a.discoveryStatus !== "dismissed");
+  const active = ws.assets.filter((a) => a.discoveryStatus !== "dismissed" && a.duplicateState !== "merged");
+  const merged = ws.assets.filter((a) => a.discoveryStatus !== "dismissed" && a.duplicateState === "merged");
   const dismissed = ws.assets.filter((a) => a.discoveryStatus === "dismissed");
   const deceased = ws.case.holderLiving === false;
 
-  async function act(id: string, action: "confirm" | "dismiss" | "reopen") {
+  async function act(id: string, action: Action) {
     setBusyId(id);
     try {
-      await api.patch(`/api/assets/${id}`, { action });
+      const res = await api.patch<{ asset: Asset }>(`/api/assets/${id}`, { action });
+      const [title, description] = ACTION_TOAST[action];
+      const doc = ws.documents.find((d) => d.id === res.asset.sourceDocumentId);
       toast({
-        title: action === "confirm" ? "Confirmed" : action === "dismiss" ? "Set aside" : "Back in the list",
+        title,
         description:
-          action === "confirm" ? "Saved as confirmed by you." : action === "dismiss" ? "You can bring it back from the list at the bottom." : "It's a possible match again.",
+          action === "confirm" && res.asset.evidenceStatus === "self_declared" && doc && !doc.userVerified
+            ? `Saved. Check the values in ${doc.fileName} to make it document-backed.`
+            : description,
       });
       await reload();
     } catch (e) {
@@ -97,6 +156,7 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
     const Icon = CATEGORY_ICON[a.category] ?? CATEGORY_ICON.unknown;
     const srcDoc = ws.documents.find((d) => d.id === a.sourceDocumentId);
     const potential = evidenceStatusOf(a) === "potential_match";
+    const dupOf = a.duplicateOfId ? ws.assets.find((x) => x.id === a.duplicateOfId) : undefined;
     return (
       <li className={cn("min-w-0 rounded-2xl border bg-card p-5 shadow-sm", potential && "border-gold/40")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -119,7 +179,20 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
           </div>
           <div className="min-w-0">
             <dt className="text-[13px] text-muted-foreground">Amount</dt>
-            <dd className="text-ink">{a.valueBand ?? "No reviewed value"}</dd>
+            <dd className="text-ink">
+              {a.amount ? (
+                <>
+                  <span className="font-semibold">{a.amount.display}</span>
+                  <span className="block text-[14px] text-ink/75">
+                    {a.amount.meaning} · {a.amount.asOfDate ? `as of ${formatDay(a.amount.asOfDate)}` : "date unknown"}
+                  </span>
+                </>
+              ) : a.amountHidden ? (
+                <span className="inline-flex items-center gap-1 text-ink/75"><Lock className="h-3.5 w-3.5" /> Hidden until you show you may claim it</span>
+              ) : (
+                <>Unknown{a.valueBand ? <span className="block text-[14px] text-ink/75">Roughly {a.valueBand}</span> : <span className="block text-[14px] text-ink/75">No checked amount yet</span>}</>
+              )}
+            </dd>
           </div>
           {a.holderName && (
             <div className="min-w-0">
@@ -139,6 +212,25 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
           )}
         </dl>
 
+        {a.duplicateState === "candidate" && dupOf && (
+          <div className="mt-3 rounded-xl border border-gold/40 bg-gold-soft/60 px-3.5 py-3 text-[15px] leading-relaxed text-[#6b4f18]">
+            <p className="flex items-start gap-2">
+              <Copy className="mt-1 h-4 w-4 shrink-0" aria-hidden />
+              <span>
+                This may be the same as <strong>{dupOf.institution}</strong>
+                {dupOf.maskedRef ? <> ({dupOf.maskedRef})</> : null} — same institution, type and last 4 digits. Is it the same holding?
+              </span>
+            </p>
+            <div className="mt-2 flex flex-wrap justify-end gap-2">
+              <Button size="sm" variant="outline" disabled={busyId === a.id} onClick={() => act(a.id, "different_holding")} className="h-10 bg-card text-[14px]">
+                Different holdings
+              </Button>
+              <Button size="sm" disabled={busyId === a.id} onClick={() => act(a.id, "same_holding")} className="h-10 bg-navy text-[14px] text-white hover:bg-navy-deep">
+                Same holding — merge
+              </Button>
+            </div>
+          </div>
+        )}
         {a.evidence && (
           <p className="mt-3 rounded-xl bg-background px-3.5 py-2.5 text-[15px] leading-relaxed text-ink/85">
             <span className="font-medium text-ink">Why we think this exists: </span>
@@ -184,6 +276,8 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
           <Plus className="mr-1.5 h-4 w-4" /> Add one you know about
         </Button>
       </div>
+
+      {active.length > 0 && <TotalsCard ws={ws} />}
 
       {adding && (
         <form
@@ -246,6 +340,23 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
             <Link href={`${caseHref(ws.case.id, "records")}/documents`}>Upload a document</Link>
           </Button>
         </div>
+      )}
+
+      {merged.length > 0 && (
+        <section aria-labelledby="merged" className="rounded-2xl border bg-card p-5">
+          <h2 id="merged" className="text-[16px] font-semibold text-ink/80">Merged duplicates ({merged.length})</h2>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Their evidence counts for the holding they were merged into.</p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {merged.map((d) => (
+              <li key={d.id} className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-[14px] text-ink/75">
+                {d.institution} {d.maskedRef && <span className="font-mono text-[13px]">{d.maskedRef}</span>}
+                <button disabled={busyId === d.id} onClick={() => act(d.id, "undo_merge")} className="inline-flex min-h-8 items-center gap-1 font-medium text-teal-brand hover:underline">
+                  <RotateCcw className="h-3.5 w-3.5" /> Undo merge
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {dismissed.length > 0 && (
