@@ -7,6 +7,7 @@ These documents are required before the Pilot uses real people and real data ([P
 | [THREAT_MODEL.md](THREAT_MODEL.md) | What we protect, who might attack, 29 threats with mitigation status, top risks before the Pilot | Privacy / security lead |
 | [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) | DPDP Act assessment: data inventory, purposes, consent, processors and location, retention, rights, breach response, questions for counsel | Privacy / security lead |
 | [AI_EVALUATION.md](AI_EVALUATION.md) | Evaluation set, metrics, release thresholds, zero-tolerance failures, how and when it runs | Product + AI |
+| [CLOUD_SETUP.md](CLOUD_SETUP.md) | Google Cloud project, environments (dev + prod), services, secrets, first deploy, guardrails | Engineering |
 | [SOURCE_VALIDATION.md](SOURCE_VALIDATION.md) | Each official source and claim route: what it covers, who may use it, what it needs, APIs, digital submission, documents, open questions | Integrations + operations |
 
 All four are first drafts. None is legal advice; legal questions are marked ⚖️ for counsel.

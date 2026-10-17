@@ -448,7 +448,9 @@ Today the "case manager" is the deterministic **journey engine** (next-best task
 ### 14.1 Design
 
 - **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `src/server/voice/`, same pattern as the AI provider.
-- **Candidate provider:** Google Cloud Speech-to-Text and Text-to-Speech, or Gemini's native audio — chosen under decision D-09 (languages, latency, cost, privacy).
+- **Provider (decided 17 Oct 2026, D-09):** **Google Cloud Speech-to-Text (Chirp models) and Text-to-Speech**, in the same Google Cloud project as hosting and Gemini, under one data agreement.
+- **Launch languages:** **English (India), Hindi, Hinglish (mixed Hindi-English) and Tamil.** Each must pass its own evaluation ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) §3.4) before it is offered.
+- **Region:** use an India region where the chosen models are available; Chirp availability in `asia-south1` must be checked — if a model is only available outside India, that is a data-residency question for counsel ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
 - **Flow:** user taps the mic (explicit action + browser permission) → audio streamed to the server → transcript shown for correction → corrected text sent through the normal conversation route → reply shown and optionally spoken.
 - Raw audio is **not stored** by default; transcripts follow the conversation's retention.
 - Names, account numbers and amounts from speech are always shown for correction before use.
@@ -512,7 +514,7 @@ Remove the leftover `/api` "Hello, world" route.
 ### 16.1 Authentication
 
 - **v0 (built):** anonymous session UUID in `localStorage`, sent as `x-session-id`. Acceptable only for synthetic demo data.
-- **MVP (to build):** real sign-in — email OTP or Google sign-in (candidate: `next-auth`, already installed). Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
+- **MVP (to build):** real sign-in with **Google Identity Platform** (Firebase Authentication) — **phone-number OTP** as the main method (suits older and Indian users), **Google sign-in** as an option. Decided 17 Oct 2026. The server verifies Identity Platform ID tokens and issues its own session; `next-auth` is not needed and can be removed. SMS costs and abuse limits (reCAPTCHA, per-number rate limits) to be configured. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
 
 ### 16.2 Data protection (built unless noted)
 
@@ -554,7 +556,7 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 
 - **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository). **No Dockerfile, docker-compose or Caddy.**
 - Scripts: `build` = `prisma generate && next build`; `start` = `prisma db push --skip-generate && next start` (v0 SQLite); `postinstall` = `prisma generate`.
-- **MVP:** Cloud SQL PostgreSQL with versioned Prisma migrations (`prisma migrate deploy`), replacing `db push`. Environments: development, staging, production — each with its own database and secrets.
+- **MVP:** Cloud SQL PostgreSQL with versioned Prisma migrations (`prisma migrate deploy`), replacing `db push`. Environments: **two for now — development and production** (decided 17 Oct 2026), each with its own database and secrets; add staging before the Pilot uses real data. Setup steps: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md).
 
 ### 17.2 Operating
 

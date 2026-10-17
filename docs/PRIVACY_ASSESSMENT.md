@@ -94,7 +94,8 @@ The Act requires a **notice** before or at the time of asking for consent, and c
 | Cloud SQL (MVP) | Database | All case data | India region | DPA; encryption at rest |
 | Cloud Storage (to build) | Encrypted originals | Documents | India region | DPA; retention rules |
 | Gemini via Vertex AI | AI extraction and conversation | Case content sent per request | India region where the model is available ⚖️ | **No training on our data**, defined retention, data residency |
-| Speech provider (D-09) | Voice | Audio, transcripts | India region where available | Same as above; no audio retention by default |
+| Google Cloud Speech-to-Text and Text-to-Speech (D-09) | Voice | Audio, transcripts | India region where the models are available ⚖️ | Same as above; no audio retention by default |
+| Google Identity Platform (Firebase Authentication) | Sign-in | Phone number, email, Google account ID | Global service ⚖️ — check data location options | DPA; minimal profile data; SMS via Google's providers |
 
 The Gemini API key route (AI Studio) is for synthetic data only. Real data goes through Vertex AI with an approved configuration ([PRD FL-46](../PRD.md#111-security)).
 
