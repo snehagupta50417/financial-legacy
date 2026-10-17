@@ -80,3 +80,17 @@ export async function documentAccess(req: NextRequest, documentId: string, need:
   }
   return { session, doc, legacyCase: doc.case };
 }
+
+/** A claim the session owns, through its case. Claims are only reachable once discovery is unlocked. */
+export async function claimAccess(req: NextRequest, claimId: string) {
+  const session = await requireSession(req);
+  if (!session) return unauthorized();
+  const claim = await db.claim.findFirst({
+    where: { id: claimId, case: { sessionId: session.id } },
+    include: { case: true },
+  });
+  if (!claim) return Response.json({ error: "Claim not found" }, { status: 404 });
+  const denied = gateDenial(claim.case);
+  if (denied) return denied;
+  return { session, claim, legacyCase: claim.case };
+}

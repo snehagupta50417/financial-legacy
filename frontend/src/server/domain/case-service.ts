@@ -126,6 +126,7 @@ export async function getWorkspacePayload(
           maskAsset(c, a, [...a.observations, ...c.assets.filter((m) => survivorOf.get(m.id) === a.id).flatMap((m) => m.observations)])
         )
       : [],
+    claims: unlocked ? await (await import("./claim-service")).claimSummaries(c.id) : [],
     totals: { ...totals, totals: totals.totals.map((t) => ({ ...t, display: t.currency === "INR" ? formatInr(t.amount) : `${t.amount} ${t.currency}` })) },
     documents: (unlocked ? c.documents : []).map((d) => ({
       id: d.id,
