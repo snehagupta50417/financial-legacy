@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from "next/link";
 import { EvidenceBox, CATEGORY_ICON, CATEGORY_LABEL, VerificationBadge } from "./ui-bits";
+import { caseHref } from "./case-nav";
 import { toast } from "@/hooks/use-toast";
 import { CircleCheckBig, CircleX, RotateCcw, Plus, BookCheck, KeyRound, Lock, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -148,7 +150,7 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
         </Card>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {shown.map((a) => {
           const Icon = CATEGORY_ICON[a.category] ?? CATEGORY_ICON.unknown;
           const srcDoc = ws.documents.find((d) => d.id === a.sourceDocumentId);
@@ -156,11 +158,11 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
             <Card key={a.id} className="transition-shadow hover:shadow-md">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-navy text-white">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[14.5px] font-semibold leading-snug text-navy">{a.institution}</div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
                         <span>{CATEGORY_LABEL[a.category] ?? a.category}</span>
@@ -181,7 +183,8 @@ export default function AssetsTab({ ws, reload }: { ws: CaseWorkspace; reload: (
                 {a.evidence && <EvidenceBox label="Why we think this exists">{a.evidence}</EvidenceBox>}
                 {srcDoc && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                    <BookCheck className="h-3 w-3" /> Source: {srcDoc.fileName}
+                    <BookCheck className="h-3 w-3 shrink-0" /> Source:{" "}
+                    <Link href={`${caseHref(ws.case.id, "records")}/documents/${srcDoc.id}`} className="truncate text-teal-brand underline underline-offset-2">{srcDoc.fileName}</Link>
                     {srcDoc.isSynthetic && <Badge className="rounded bg-gold-soft px-1 text-[9px] text-gold">DEMO</Badge>}
                   </div>
                 )}

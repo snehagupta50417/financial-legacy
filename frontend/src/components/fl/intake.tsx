@@ -107,9 +107,9 @@ export default function Intake({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_360px]">
+    <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       {/* Conversation column */}
-      <div className="flex min-h-[70vh] flex-col rounded-2xl border bg-card shadow-sm">
+      <div className="flex min-h-[70vh] min-w-0 flex-col rounded-2xl border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b px-5 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-[#7cc5c4]">

@@ -93,7 +93,7 @@ These turn the PRD's product principles into engineering rules.
 
 | Layer (one-pager §7) | Where it lives | Status |
 | --- | --- | --- |
-| User experience | `src/app/page.tsx`, `src/components/fl/*` | Built (single-page views); voice to build |
+| User experience | `src/app/page.tsx`, `src/app/(app)/*`, `src/components/fl/*` | Built (one route per area, DESIGN §2.1); voice to build |
 | Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
 | AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
 | Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
@@ -130,7 +130,9 @@ frontend/
   prisma/schema.prisma        data model (§5)
   src/
     app/
-      page.tsx                single page; client view state: landing | intake | workspace | resources
+      page.tsx                landing
+      (app)/                  start · cases · cases/[id]/{records[/documents[/[docId]]], plan, claims, steps, help} · resources
+                              (cases/[id]/layout.tsx loads the case once for every area — components/fl/case-shell.tsx)
       api/                    route handlers (§15)
     server/                   all server-only logic (no React imports)
       ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
@@ -144,9 +146,9 @@ frontend/
       rules/                  (to build) claim-path.ts · evidence.ts · totals.ts
       pdf/                    (to build) claim-pack templates
       connectors/             (Later) base.ts · mock/* · real/*
-    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts
+    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts
     components/
-      fl/                     product components: landing, intake, workspace tabs, gate-panel, ask-panel …
+      fl/                     product components: landing, intake, case-shell, area pages, field-review, gate-panel, ask-panel …
       ui/                     stock shadcn components
   test/                       (to add) unit, route and live-AI tests
 ```
@@ -274,7 +276,7 @@ Real identity evidence rules are decision D-02.
 
 ## 8. Documents and extraction
 
-**PRD:** FL-05, FL-06, FL-25, FL-26. **Built:** upload, validation, extraction. **To build:** per-field review states and invalidation of dependants.
+**PRD:** FL-05, FL-06, FL-25, FL-26. **Built:** upload, validation, extraction, side-by-side field review screen (per-field decisions held in the browser, saved as one `PATCH`; `src/lib/field-review.ts`). **To build:** per-field review records on the server (decision, previous value, who, why) and invalidation of dependants.
 
 ### 8.1 Pipeline
 
@@ -498,6 +500,7 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | POST | `/api/assets`, PATCH `/api/assets/:id` | Add / update holdings | G3 | Built |
 | POST | `/api/assets/:id/entitlement` | Per-asset entitlement proof | → G4 | Built (mock) |
 | POST | `/api/documents`, PATCH `/api/documents/:id` | Upload + extract; review fields | G3 for deceased | Built |
+| GET | `/api/documents/:id` | Stored, redacted text of one document, for field review | G3 for deceased | Built |
 | PATCH | `/api/tasks/:id` | Update a journey task | Owner | Built |
 | POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | Q&A, drafts, checklists | Owner | Built |
 | GET/POST | `/api/consent` | Consent per case and source | Owner | Built |

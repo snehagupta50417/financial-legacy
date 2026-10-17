@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.3.1 (draft for review) |
+| **Version** | 0.3.2 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) (behaviour and scope) → [LLD.md](LLD.md) (data, permissions, workflow) → this document (presentation and interaction). Design never adds features or bypasses a permission. |
-| **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a single-page Next.js app). Where the app differs today, this document says so. |
-| **Status** | Built today: landing, intake chat, case workspace with six tabs, trust-gate panel, masked and locked states, document upload and extraction. Not built: voice, claims screens, legacy record and export, discovery plan, activity and privacy screens. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a Next.js app with one route per area, §2.1). Where the app differs today, this document says so. |
+| **Status** | Built today: landing, intake chat, one route per case area with mobile bottom navigation, trust-gate panel, masked and locked states, document upload and extraction, side-by-side field review (per-field states kept in the browser until the API stores them). Not built: voice, claims screens, legacy record and export, discovery plan, activity and privacy screens. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 
 ---
 
@@ -32,27 +32,44 @@ Implements PRD FL-01, FL-02, FL-07, FL-09, FL-17, FL-22, FL-39, FL-40, FL-50; vo
 
 ### 2.1 Today's app
 
-`frontend/` is a single page with four views: **landing → intake (chat) → case workspace → official resources**. The workspace has a trust-gate panel above six tabs: Overview, Assets, Documents, Steps, Planning, Get help (renamed from Asset Inventory, Journey Tracker, Estate Planning and Expert Escalation in round 1 of the frontend work).
+Since round 2 of the frontend work (issue #35) each area has its own URL, so pages can be bookmarked, shared with support and tested:
+
+| Route | Area |
+| --- | --- |
+| `/` | Landing |
+| `/start` | New case — intake conversation |
+| `/cases` | My cases |
+| `/cases/{id}` | **Conversation** (default entry): summary, next task, case assistant |
+| `/cases/{id}/records` | **Records → Assets** |
+| `/cases/{id}/records/documents` | **Records → Documents** (upload and list) |
+| `/cases/{id}/records/documents/{docId}` | **Field review** for one document (§5.4) |
+| `/cases/{id}/plan` *or* `/cases/{id}/claims` | **Plan** (living person) or **Claims** (deceased holder); the other one redirects. Claims is an interim list of one card per holding until the claims screens (§7.2) are built |
+| `/cases/{id}/steps` | **Steps** (tasks) |
+| `/cases/{id}/help` | Get help |
+| `/resources` | Official portals |
+
+Every case page shares one frame: case header, the trust-gate panel until discovery is unlocked, area tabs on desktop and the bottom navigation on mobile (§2.3). Records, Claims and field review stay locked until the discovery gate. The session model (`x-session-id`) is unchanged. Not built yet: saved conversation history (needs `GET /api/cases/:id/messages`), discovery plan, activity and privacy screens.
 
 ### 2.2 Target structure for the MVP
 
 | Area | Purpose | Today's equivalent |
 | --- | --- | --- |
-| **My cases** | List of the person's cases: subject, goal, state and next task. **New case** and **Continue**. No balances or document previews in another case's card. | Landing / "my cases" dialog |
-| **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | Intake view; Ask panel |
-| **Records** | Documents, discovery plan and assets as labelled sub-views | Documents, Asset Inventory tabs |
-| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | Estate Planning; Journey Tracker (partly) |
-| **Tasks** | Owner, due date, waiting-on, blocked state, next action | Journey Tracker |
+| **My cases** | List of the person's cases: subject, goal, state and next task. **New case** and **Continue**. No balances or document previews in another case's card. | `/cases` |
+| **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | `/cases/{id}` (summary and assistant; no saved history yet) |
+| **Records** | Documents, discovery plan and assets as labelled sub-views | `/cases/{id}/records` (assets, documents; no discovery plan yet) |
+| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | `/plan` (still the old Planning tab) or `/claims` (interim cards) |
+| **Tasks** | Owner, due date, waiting-on, blocked state, next action | `/cases/{id}/steps` |
 | Case menu | Verification (trust gates), activity history, privacy and consent | Gate panel; no activity/privacy screens yet |
-| Help | Talk to a person; official resources | Expert Escalation; Resources view |
+| Help | Talk to a person; official resources | `/cases/{id}/help`, `/resources` |
 
-Only the destination that fits the case's goal is shown (Plan **or** Claims). A blocked action links straight to the step that unblocks it. Moving to separate URLs per area (e.g. `/cases/{id}/records`) is recommended so pages can be bookmarked, shared with support and tested; until then the single-page views are acceptable.
+Only the destination that fits the case's goal is shown (Plan **or** Claims). A blocked action links straight to the step that unblocks it. Each area has its own URL (§2.1).
 
 ### 2.3 Layout
 
 - **Desktop:** sidebar about 224 px; main content up to 1280 px; 24–32 px padding. Conversation column up to 760 px, with evidence or tasks beside it when there's room.
 - **Mobile:** single column, 16 px padding, the four main areas in a bottom navigation; secondary actions in the case menu. Bottom controls must never cover content or the focused element.
 - Switching case or signing out clears the old case from the screen before showing the next one.
+- **Built (round 2):** the mobile bottom navigation (below 768 px) and the cleared-on-switch behaviour. On desktop the areas are tabs under the case header for now, not a sidebar; the floating "Ask about this case" button is desktop-only, and on mobile the assistant sits in Conversation so it never covers content.
 
 ---
 
@@ -178,6 +195,8 @@ Proposed: ₹5,00,000                Nominee: Sunita Sharma
 
 A correction shows the original and the new value and asks for a reason when it matters. "Saved" appears only after the server confirms. Financial drafts are never kept in browser storage.
 
+**Built (round 2):** `/cases/{id}/records/documents/{docId}`. The document's stored, redacted text is on the left; "Show in document" highlights the field's source excerpt (and on mobile scrolls up to it, with "Back to field"). Each field shows **Important** for critical fields (FL-06), its confidence, source, review status and Accept / Correct / Reject. **Save review** is enabled once every field has a decision; rejected values are removed and corrections replace the value, through `PATCH /api/documents/:id`. Not built yet: asking for a reason, keeping the previous value on the server, and invalidating dependants (FL-26) — see DECISIONS.md.
+
 ---
 
 ## 6. Inventory and discovery
@@ -279,6 +298,8 @@ References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://ww
 - Makes the bereaved-family pilot journey the first journey, adds insurance claims, and replaces AI will drafting with "Notes for your lawyer".
 - Adds design notes for Later capabilities and fixes section numbering.
 - Removes references to the superseded LLD v0.4 sample data.
+
+- **0.3.2:** §2.1 now lists the real routes (frontend round 2); built notes added to §2.3 and §5.4.
 
 - **0.3.1:** status row added; G3 accepts any evidenced claimant role; "known assets" skips discovery, never the gates; screen flows added for Journeys A and B.
 

@@ -96,7 +96,7 @@ export function DemoDialog({
   );
 }
 
-function CasesList({ onOpen }: { onOpen: (caseId: string) => void }) {
+export function CasesList({ onOpen, tall = false }: { onOpen: (caseId: string) => void; tall?: boolean }) {
   const [cases, setCases] = useState<
     { id: string; scenarioLabel: string | null; assetHolderName: string | null; progress: number; isDemo: boolean; updatedAt: string }[]
   >([]);
@@ -137,7 +137,7 @@ function CasesList({ onOpen }: { onOpen: (caseId: string) => void }) {
       </p>
     );
   return (
-    <div className="nice-scroll max-h-[320px] space-y-2 overflow-y-auto">
+    <div className={tall ? "space-y-2" : "nice-scroll max-h-[320px] space-y-2 overflow-y-auto"}>
       {cases.map((c) => (
         <button
           key={c.id}
