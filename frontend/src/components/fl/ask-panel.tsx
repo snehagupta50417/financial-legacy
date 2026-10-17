@@ -13,7 +13,8 @@ interface QA {
   error?: boolean;
 }
 
-export default function AskPanel({ caseId, onClose }: { caseId: string; onClose: () => void }) {
+/** Floating (with onClose) or inline in the Conversation area (without). */
+export default function AskPanel({ caseId, onClose }: { caseId: string; onClose?: () => void }) {
   const [items, setItems] = useState<QA[]>([]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,18 +44,20 @@ export default function AskPanel({ caseId, onClose }: { caseId: string; onClose:
   }
 
   return (
-    <Card className="mb-3 w-[min(92vw,380px)] border-navy/20 shadow-xl">
+    <Card className={onClose ? "mb-3 w-[min(92vw,380px)] border-navy/20 shadow-xl" : "w-full min-w-0"}>
       <CardContent className="p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4 text-teal-brand" />
             <span className="text-[13px] font-semibold text-navy">Case assistant</span>
           </div>
-          <button onClick={onClose} aria-label="Close assistant" className="text-muted-foreground hover:text-navy">
-            <X className="h-4 w-4" />
-          </button>
+          {onClose && (
+            <button onClick={onClose} aria-label="Close assistant" className="text-muted-foreground hover:text-navy">
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <div className="nice-scroll max-h-[320px] overflow-y-auto px-4 py-3">
+        <div className={`nice-scroll overflow-y-auto px-4 py-3 ${onClose ? "max-h-[320px]" : "max-h-[420px]"}`}>
           {!items.length && (
             <p className="text-[12.5px] leading-relaxed text-muted-foreground">
               Ask anything about this case — &ldquo;what&apos;s blocking the LIC claim?&rdquo;, &ldquo;what do I need
@@ -87,6 +90,7 @@ export default function AskPanel({ caseId, onClose }: { caseId: string; onClose:
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && ask()}
             placeholder="Ask about this case…"
+            aria-label="Ask about this case"
             className="h-9 text-[12.5px]"
             disabled={busy}
           />

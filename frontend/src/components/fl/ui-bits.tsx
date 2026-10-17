@@ -53,6 +53,17 @@ export const CATEGORY_LABEL: Record<string, string> = {
   unknown: "Unclassified",
 };
 
+/** Document types (DocumentRecord.category), written for people. */
+export const DOC_CATEGORY_LABEL: Record<string, string> = {
+  bank_statement: "Bank statement",
+  policy_document: "Insurance policy or receipt",
+  death_certificate: "Death certificate",
+  will: "Will",
+  claim_letter: "Letter from an institution",
+  receipt: "Receipt",
+  other: "Other document",
+};
+
 const STATUS_STYLES: Record<string, string> = {
   not_started: "bg-secondary text-secondary-foreground",
   ready: "bg-teal-soft text-teal-brand border border-teal-brand/20",

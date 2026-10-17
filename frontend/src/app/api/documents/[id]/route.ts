@@ -6,6 +6,25 @@ import { logEvent, parseFields } from "@/server/domain/case-service";
 
 export const dynamic = "force-dynamic";
 
+/** Stored (already redacted) text of one document, for side-by-side field review. Same gate as PATCH. */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const access = await documentAccess(req, id, "discovery");
+  if (isDenied(access)) return access;
+  const { doc } = access;
+  return Response.json({
+    document: {
+      id: doc.id,
+      fileName: doc.fileName,
+      // Redact again on the way out in case older rows were stored before redaction existed.
+      text: doc.rawText ? redactIdentifiers(doc.rawText) : null,
+    },
+  });
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -78,10 +78,12 @@ export default function Landing({
   onStart,
   onDemo,
   onResources,
+  onCases,
 }: {
   onStart: () => void;
   onDemo: () => void;
   onResources: () => void;
+  onCases: () => void;
 }) {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
@@ -93,14 +95,24 @@ export default function Landing({
               <LeafLogo className="h-7 w-7 shrink-0 text-[#7cc5c4]" />
               <div className="font-display truncate text-lg font-semibold leading-none">Financial Legacy</div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onResources}
-              className="shrink-0 border-white/25 bg-white/5 text-white hover:bg-white/15 hover:text-white"
-            >
-              Official portals
-            </Button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCases}
+                className="text-white/85 hover:bg-white/10 hover:text-white"
+              >
+                My cases
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onResources}
+                className="hidden border-white/25 bg-white/5 text-white hover:bg-white/15 hover:text-white sm:inline-flex"
+              >
+                Official portals
+              </Button>
+            </div>
           </div>
 
           <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">

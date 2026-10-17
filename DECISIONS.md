@@ -158,3 +158,13 @@ No lawyer is available, so for each point the law leaves unclear the product fol
 - Contrast fixes from DESIGN §3.1 applied (`--accent-foreground` #0b6b6a, `--input` #8a9aab).
 - Demo assets now link to their source document, so confirming one shows "Document-backed".
 - Mobile: compact case header, sticky tab bar, plainer tab names (Assets, Steps, Planning, Get help), space for the floating Ask button.
+
+## Frontend round 2 — 17 Oct 2026 (issue #35)
+
+- **One route per area** (DESIGN §2.1) replaces the single page's view state. Case pages share `app/(app)/cases/[id]/layout.tsx`, which loads the case once (`GET /api/cases/:id`) and hands it to each area through React context; switching case clears the old one before the new one shows. The `x-session-id` session model is unchanged.
+- **Plan or Claims, never both:** chosen from `holderLiving` (deceased holder → Claims). The wrong one redirects to the right one. Claims is an interim list of one card per holding (evidence status, entitlement, next saved step) until the claims screens are built; it never says we submit anything.
+- **Per-field review states live in the browser for now.** The API stores one field list and a document-level `userVerified` flag, so the screen keeps Accept / Correct / Reject per field in memory and saves once with the existing `PATCH /api/documents/:id`: rejected values are dropped, corrections replace the value and keep the original source excerpt, and `userVerified` is set only when every field has a decision (Save is disabled until then, so a half-finished review is never saved as reviewed). Consequences until the server has review records (LLD §8): the previous value of a correction and the reason are not kept, a rejected value cannot be restored after saving, and nothing downstream is invalidated (FL-26 not complete).
+- **New read-only `GET /api/documents/:id`** returns the stored text for the left-hand panel, re-redacted on the way out, behind the same gate as `PATCH`. Existing routes are unchanged; the workspace payload still carries no document text.
+- **"Important" fields** (names, identifiers, ownership, amounts, dates, institution — FL-06) are recognised from the field label by a simple rule in `src/lib/field-review.ts`; the extractor should tag critical fields itself once its schema allows.
+- **Mobile:** bottom navigation for Conversation, Records, Plan/Claims and Steps below 768 px; Get help stays one tap away under the case header; the floating assistant is desktop-only and sits inline in Conversation on mobile. Desktop uses tabs under the case header instead of DESIGN's sidebar for now.
+- Fixed horizontal overflow at 375 px on the intake, official-portals and assets screens (grid/flex children without `min-w-0`).
