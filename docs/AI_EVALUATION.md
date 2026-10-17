@@ -115,7 +115,7 @@ These are starting points to confirm under D-09 / D-07. Thresholds apply per doc
 
 ## 7. Building the set — practical steps
 
-1. Write a generator for synthetic documents: real-looking layouts per institution, fake but valid-format numbers, Indian names, and controlled scan noise. (A Python PDF script already exists in `frontend/scripts/make_test_pdf.py` — extend it.)
+1. Extend the synthetic data generator in `frontend/src/server/data/synthetic/` (built 17 Oct 2026). It already combines **real public reference data** — real banks, branches and IFSCs, real fund schemes with real NAVs on real dates, LIC plans, RBI rates — with synthetic people and **always-masked** identifiers, and labels every document "SYNTHETIC SAMPLE". Add more families, document types and controlled scan noise (`frontend/scripts/make_test_pdf.py` can render PDFs). Reference data sources: `frontend/src/server/data/reference/SOURCES.md`.
 2. A second person writes or checks every golden answer.
 3. Version the set; never edit a golden answer without a recorded reason.
 4. Keep adversarial items in their own folder so they can't be "fixed" by tuning prompts to specific strings.

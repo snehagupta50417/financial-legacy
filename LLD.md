@@ -139,6 +139,8 @@ frontend/
       domain/                 case-service.ts · gates.ts · journey-engine.ts
       providers/              identity.ts · death-proof.ts · relationship.ts · entitlement.ts · types.ts
       data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
+        reference/            real public reference snapshot: fund schemes + NAVs, bank branches, pincodes, RBI rates (SOURCES.md)
+        synthetic/            demo-case generator: real reference data + synthetic, masked people and identifiers
       rules/                  (to build) claim-path.ts · evidence.ts · totals.ts
       pdf/                    (to build) claim-pack templates
       connectors/             (Later) base.ts · mock/* · real/*
