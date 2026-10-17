@@ -633,7 +633,7 @@ Exact fields and formats are defined in the Prisma schema (`frontend/prisma/sche
 | --- | --- | --- |
 | Document upload and reading | Extracting facts from user documents | Built (Gemini extraction on synthetic documents; fixture provider for tests and for running without a cloud key) |
 | AI provider (Google Gemini) | Conversation, extraction, drafting | Used on synthetic data only in the MVP; approved terms (data residency, retention, no training) required before real data in the Pilot |
-| Speech provider | Voice input and output | Required for MVP; provider decision D-09 |
+| Speech provider (Google Cloud Speech-to-Text and Text-to-Speech) | Voice input and output | Required for MVP; decided under D-09 — English (India), Hindi, Hinglish and Tamil at launch |
 | RBI UDGAM, SEBI MITRA / MFCentral, insurer unclaimed searches, government common portal | Discovery | **Guided**: the product tells the user how to search and records the result; no automation |
 | DigiLocker | Fetching official documents | Later — requires partner approval |
 | Account Aggregator | Fetching financial data with consent | Later — requires an eligible regulated role |
@@ -781,7 +781,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | D-06 | Evidence freshness, and how amounts and totals work for each asset type | Product + operations |
 | D-07 | Workload, cost, capacity, recovery, support hours, case limits and service targets | Engineering + operations |
 | D-08 | Distribution, pricing and professional-services model (billing needs a PRD change) | Founder |
-| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. Voice stays in the MVP; this decides how | Product + AI |
+| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026):** Google Cloud Speech-to-Text and Text-to-Speech; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
 | D-10 | Institution procedures: who keeps them current, how often they are reviewed, and how legal, fraud and complaint escalations work | Operations |
 | D-11 | Whether native mobile apps are needed, and device, session, storage and accessibility rules for them | Product + engineering |
 

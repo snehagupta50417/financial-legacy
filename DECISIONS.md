@@ -103,3 +103,11 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 - **Theme:** the app's current navy/teal theme is the standard (DESIGN §3.1); three contrast fixes are required (teal text on accent, gold as text, input borders).
 - **Pre-Pilot documents** added in `docs/`: threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix.
 - **Claim rules verified (17 Oct 2026):** bank claims follow RBI Directions 2025 (₹15 lakh / ₹5 lakh simplified thresholds, 15 days, Bank Rate + 4%); mutual fund transmission follows SEBI's 23 Jul 2026 circular (quick ≤ ₹10,000, simplified ≤ ₹10 lakh, 21 days). Mutual funds gain a `quick` claim path (LLD §11.1).
+
+## Platform decisions — 17 Oct 2026
+
+- **Git history:** `frontend/db/custom.db` purged from all history with `git filter-branch`; `main` force-pushed (118 commits kept, current files identical); merged branches deleted. Copies may remain in the fork, in `tash149/financial-legacy`, and in GitHub's stored pull-request refs (GitHub Support must clear those).
+- **Voice (D-09):** Google Cloud Speech-to-Text (Chirp) and Text-to-Speech. Launch languages: English (India), Hindi, Hinglish, Tamil. No raw audio retained.
+- **Sign-in:** Google Identity Platform — phone OTP as the main method, Google sign-in as an option. `next-auth` not needed.
+- **Google Cloud:** existing project for development; a separate production project before the Pilot; region `asia-south1`. Setup in `docs/CLOUD_SETUP.md`.
+- **Process:** every PR follows `CONTRIBUTING.md` (tests pass, FL IDs named, docs updated). The MVP build steps are issues #10–#20.
