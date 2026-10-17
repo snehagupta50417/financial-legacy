@@ -96,7 +96,7 @@ These turn the PRD's product principles into engineering rules.
 
 | Layer (one-pager §7) | Where it lives | Status |
 | --- | --- | --- |
-| User experience | `src/app/page.tsx`, `src/app/(app)/*`, `src/components/fl/*` | Built (one route per area, DESIGN §2.1); voice to build |
+| User experience | `src/app/page.tsx` (public site), `src/app/signin`, `src/app/app/*`, `src/components/keeper/*`, `src/keeper/*` | **Keeper web app built on a client-side demo engine** (synthetic data, deterministic assistant, browser voice); not yet wired to the backend |
 | Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
 | AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
 | Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
@@ -136,8 +136,8 @@ frontend/
   src/
     app/
       page.tsx                landing
-      (app)/                  start · cases · cases/[id]/{records[/documents[/[docId]]], plan, claims, steps, help} · resources
-                              (cases/[id]/layout.tsx loads the case once for every area — components/fl/case-shell.tsx)
+      signin/ · app/          Keeper: conversation (`/app`) · assets · documents · claims · family · activity · settings
+                              (app/app/layout.tsx wraps every area in components/keeper/shell.tsx)
       api/                    route handlers (§15)
     server/                   all server-only logic (no React imports)
       ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
@@ -159,7 +159,8 @@ frontend/
       connectors/             (Later) base.ts · mock/* · real/*
     lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts · starters.ts
     components/
-      fl/                     product components: landing, intake, case-shell, area pages, field-review, gate-panel, ask-panel …
+      keeper/                 landing, signin, shell, conversation (+ voice mode), panel (what Keeper knows, asset, document review, claim, family, discovery plan), views, ui
+    keeper/                   client-side demo engine: types · engine (assistant + reducer) · claims · sample · store (localStorage) · voice · catalog · util
       ui/                     stock shadcn components
   test/                       Vitest unit and route tests (test/.tmp holds the test database)
   scripts/                    fetch-reference-data.mjs (public reference snapshot) · make_test_pdf.py

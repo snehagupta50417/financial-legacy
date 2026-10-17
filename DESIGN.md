@@ -12,6 +12,28 @@
 
 ---
 
+## Keeper — the current app (17 Oct 2026)
+
+**The product is now called Keeper (wordmark: `keeper`), and its web app has been rebuilt.** This section describes what is built today; the sections below it describe the earlier Financial Legacy screens and are kept as reference for the backend-connected version, which will be rewired to the new app.
+
+**What exists (`frontend/`, prototype on synthetic data):**
+
+| Part | Detail |
+| --- | --- |
+| Public site `/` | Editorial landing page: hero with a labelled demo conversation, problem, three interactive stories (Find / Prepare / After a death), how it works, what you get, coverage table (Available / Guided assistance / Planned), control, FAQ, final call to action |
+| Sign-in `/signin` | Clearly mocked: no password, phone number or OTP is asked for or stored. "Explore a sample" opens made-up records. A journey chosen on the landing page carries into the conversation |
+| App `/app` | **Conversation first.** Left: case selector ("Whose information"), new conversation, recent conversations, Assets, Family record, Claims, Documents, Activity, Settings. Centre: the conversation with a persistent composer and a large *Talk to Keeper* control. Right (wide screens) or a bottom sheet (narrow): the details panel — What Keeper knows, Discovery plan, Family record, or the open asset / document / claim |
+| Views `/app/assets`, `documents`, `claims`, `family`, `activity`, `settings` | The same case record as structured, editable views |
+| Voice | Explicit start only; disclosure before first use (Chrome and Edge send audio to their speech service; Keeper stores none); editable transcript; permission-denied and unsupported states; spoken replies only when turned on and supported |
+| Assistant | A **deterministic demo assistant** (`src/keeper/engine.ts`), labelled "Demo assistant" — not a live AI, not connected to any institution. It reads what people say with simple rules, asks one question at a time, supports "I don't know / Skip for now / Why do you need this?", remembers answers as facts with source and state, and turns unknowns into tasks |
+| Claims | Path, requirements and sources come from the same pure rules and cited procedures as the backend (`server/rules/claim-path`, `server/procedures`). Prepared → you approved → submitted (simulated) → institution acknowledged → outcome are separate states; any change after approval cancels it |
+
+**Brand and tokens:** ivory `#F5F1E9` background, ink `#242824` text, apricot `#E8A477` for primary actions (always with ink text), moss `#526653` accents. Contrast checked: ink on ivory 13.3, ink on apricot 7.1, moss on ivory 5.5, muted text 5.8, apricot-deep `#9A4F1E` (for any apricot-coloured text) 5.3. Fraunces for marketing headlines, Instrument Sans for the app. Status is always text as well as colour. Motion is restrained and switched off by `prefers-reduced-motion`.
+
+**Honest limits:** state lives in this browser (`localStorage`, synthetic data and a display name only). The new UI is **not yet connected** to the backend (gates, evidence, claims, RAG, OCR) — that wiring is the next step. Illustrations are drawn, not photographs; real photography is a drop-in replacement. Only sample documents are accepted.
+
+---
+
 ## 1. Design direction
 
 Calm, readable and practical. At every moment the person should understand **whose records they are looking at, what is known, what still needs checking, and what to do next**.
