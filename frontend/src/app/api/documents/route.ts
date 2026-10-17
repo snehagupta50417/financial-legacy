@@ -3,7 +3,9 @@ import { db } from "@/server/db";
 import { caseAccess, isDenied } from "@/server/core/access";
 import { IMAGE_MIME, readUpload, type SniffedKind } from "@/server/core/upload";
 import { last4Of, redactIdentifiers } from "@/server/core/masking";
-import { completeJson } from "@/server/ai";
+import { completeJson, getProvider } from "@/server/ai";
+import { hasTextLayer, ocrImage, ocrPdf } from "@/server/ocr/ocr";
+import { fixOcrDigits, ruleExtract } from "@/server/ocr/rule-extract";
 import { aiRateLimit } from "@/server/core/rate-limit";
 import { logEvent } from "@/server/domain/case-service";
 import type { ExtractedDocumentData } from "@/lib/types";
@@ -83,22 +85,37 @@ function validateExtraction(raw: unknown): ExtractedDocumentData | null {
   };
 }
 
-async function extractText(bytes: Uint8Array, kind: SniffedKind): Promise<{ text: string; note: string | null }> {
+interface ReadText {
+  text: string;
+  note: string | null;
+  /** Set when the text came from OCR (0..1 mean word confidence). */
+  ocrConfidence?: number;
+}
+
+/** Text files are decoded; PDFs use their text layer, or OCR when they are scans; images are OCR'd. */
+async function readText(bytes: Uint8Array, kind: SniffedKind): Promise<ReadText> {
   if (kind === "text") return { text: new TextDecoder().decode(bytes), note: null };
-  if (kind === "pdf") {
-    const { extractText: pdfText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(bytes);
-    const { text } = await pdfText(pdf, { mergePages: true });
-    const merged = Array.isArray(text) ? text.join("\n") : text;
-    if (!merged || merged.replace(/\s/g, "").length < 30) {
+  try {
+    if (kind === "pdf") {
+      const { extractText: pdfText, getDocumentProxy } = await import("unpdf");
+      const pdf = await getDocumentProxy(new Uint8Array(bytes));
+      const { text } = await pdfText(pdf, { mergePages: true });
+      const merged = Array.isArray(text) ? text.join("\n") : text;
+      if (hasTextLayer(merged)) return { text: merged, note: null };
+      const ocr = await ocrPdf(bytes);
+      if (hasTextLayer(ocr.text)) return { text: fixOcrDigits(ocr.text), note: null, ocrConfidence: ocr.confidence };
       return {
         text: "",
-        note: "This PDF appears to be a scanned image without an embedded text layer, so no text could be extracted. Photograph the page and upload it as an image instead.",
+        note: "This PDF is a scan and the text could not be read clearly. Try a sharper scan, or photograph each page in good light.",
       };
     }
-    return { text: merged, note: null };
+    const ocr = await ocrImage(bytes);
+    if (hasTextLayer(ocr.text)) return { text: fixOcrDigits(ocr.text), note: null, ocrConfidence: ocr.confidence };
+    return { text: "", note: "No readable text was found in this photo. Try again in good light, with the whole page flat and in focus." };
+  } catch (e) {
+    console.error("[documents] text reading failed", e);
+    return { text: "", note: "This file could not be read. Try another copy or enter the details manually." };
   }
-  return { text: "", note: "Unsupported file type." };
 }
 
 function parseFieldsSafe(s: string | null | undefined) {
@@ -136,12 +153,30 @@ export async function POST(req: NextRequest) {
       extractionStatus: "processing",
     },
   });
-  await logEvent(legacyCase.id, "document", `Uploaded "${file.name}" — AI extraction started`, "user", doc.id);
+  await logEvent(legacyCase.id, "document", `Uploaded "${file.name}" — reading started`, "user", doc.id);
 
-  // Images (camera-scan fallback) go straight to Gemini vision; text and PDFs are read locally first.
-  const { text, note } = imageMime ? { text: "", note: null } : await extractText(up.bytes, up.kind);
+  // 1. With an AI key, photos go straight to Gemini vision (best quality).
+  // 2. Otherwise — or if that fails — text comes from the PDF text layer or local OCR,
+  //    then Gemini structures it, or basic text rules do when AI is unavailable.
+  const aiOn = !!getProvider();
+  let ex: ExtractedDocumentData | null = null;
+  let aiError: string | null = null;
+  if (imageMime && aiOn) {
+    const vision = await completeJson<ExtractedDocumentData>(
+      EXTRACT_SYSTEM,
+      `Document file name: ${file.name}\n\nThe document is the attached image (photo or scan). Read only what is visible.`,
+      validateExtraction,
+      { images: [{ mimeType: imageMime, data: Buffer.from(up.bytes).toString("base64") }] }
+    );
+    if (vision.ok) ex = vision.data;
+    else aiError = vision.error;
+  }
 
-  if (!imageMime && !text) {
+  let read: ReadText = { text: "", note: null };
+  if (!ex) read = await readText(up.bytes, up.kind);
+  const { text, note } = read;
+
+  if (!ex && !text) {
     await db.documentRecord.update({
       where: { id: doc.id },
       data: {
@@ -157,33 +192,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const res = await completeJson<ExtractedDocumentData>(
-    EXTRACT_SYSTEM,
-    imageMime
-      ? `Document file name: ${file.name}\n\nThe document is the attached image (photo or scan). Read only what is visible.`
-      : `Document file name: ${file.name}\n\nDocument text:\n"""\n${text.slice(0, 12000)}\n"""`,
-    validateExtraction,
-    imageMime ? { images: [{ mimeType: imageMime, data: Buffer.from(up.bytes).toString("base64") }] } : undefined
-  );
-
-  if (!res.ok) {
-    await db.documentRecord.update({
-      where: { id: doc.id },
-      data: {
-        extractionStatus: "failed",
-        extractionNote: `AI extraction could not complete: ${res.error}. ${imageMime ? "Try again shortly" : "The document text was preserved — you can retry"} or enter details manually.`,
-        rawText: text ? redactIdentifiers(text.slice(0, 20000)) : null,
-      },
-    });
-    await logEvent(legacyCase.id, "document", `AI extraction failed for "${file.name}"`, "ai", doc.id);
-    const payload = await db.documentRecord.findUnique({ where: { id: doc.id } });
-    return Response.json(
-      { document: payload && { ...payload, extractedFields: parseFieldsSafe(payload.extractedFields) }, extraction: null },
-      { status: 200 }
+  let method = ex ? "AI (image)" : read.ocrConfidence !== undefined ? "OCR" : "text";
+  if (!ex && aiOn) {
+    const res = await completeJson<ExtractedDocumentData>(
+      EXTRACT_SYSTEM,
+      `Document file name: ${file.name}${read.ocrConfidence !== undefined ? " (text read by OCR; expect some misread characters)" : ""}\n\nDocument text:\n"""\n${text.slice(0, 12000)}\n"""`,
+      validateExtraction
     );
+    if (res.ok) {
+      ex = res.data;
+      method += " + AI";
+    } else aiError = res.error;
+  }
+  if (!ex) {
+    ex = ruleExtract(text, { ocrConfidence: read.ocrConfidence });
+    if (aiError) ex.warnings.unshift(`AI extraction could not complete (${aiError}), so basic rules were used.`);
+    method += " + basic rules";
   }
 
-  const ex = res.data;
   await db.documentRecord.update({
     where: { id: doc.id },
     data: {
@@ -237,7 +263,7 @@ export async function POST(req: NextRequest) {
   await logEvent(
     legacyCase.id,
     "ai",
-    `Extracted "${file.name}": ${ex.fields.length} fields, ${ex.institutions.length} institutions${cluesAdded ? `, ${cluesAdded} new asset clue(s)` : ""} — quality: ${ex.extractionQuality}`,
+    `Extracted "${file.name}" (${method}): ${ex.fields.length} fields, ${ex.institutions.length} institutions${cluesAdded ? `, ${cluesAdded} new asset clue(s)` : ""} — quality: ${ex.extractionQuality}`,
     "ai",
     doc.id
   );

@@ -88,7 +88,7 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
           ref={inputRef}
           type="file"
           className="sr-only"
-          accept=".pdf,.txt,.csv,.md,.jpg,.jpeg,.png"
+          accept=".pdf,.txt,.csv,.md,.jpg,.jpeg,.png,.webp"
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) upload(f);
@@ -106,7 +106,7 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
             <CloudUpload className="mb-2 h-9 w-7 text-teal-brand" />
             <div className="text-[16px] font-medium text-navy">Drop a statement, policy, letter or will — or click to browse</div>
             <div className="mt-1 text-[14px] text-muted-foreground">
-              Text files &amp; text-based PDFs get real AI extraction · max 8MB · you verify every field before it becomes a fact
+              PDFs (including scans), photos and text files · max 8MB · you check every field before it becomes a fact
             </div>
           </>
         )}

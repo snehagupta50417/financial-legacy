@@ -61,7 +61,7 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
   - Unfreezing needs a reviewer action. That's not built yet and is planned with the M5 console. *(Updated 17 Oct 2026: unfreezing is an MVP operator action — LLD build step B9 — not part of the Later Verify console.)*
 - **Mock providers:**
   - Identity: DigiLocker and passport + selfie, both simulated.
-  - Death: the mock DigiLocker looks up a synthetic civil registry in `server/data/death-registry.ts`. Names not in that registry get a clearly-labelled simulated record built from the user's input. Scanned certificates are read by Gemini vision and compared by code.
+  - Death: the mock DigiLocker looks up a synthetic civil registry in `server/data/death-registry.ts`. Names not in that registry get a clearly-labelled simulated record built from the user's input. Scanned certificates are read by Gemini vision (or local OCR without a key) and compared by code.
   - Relationship: the heir's own document naming the deceased, checked with the name matcher. A legal-heir certificate or relative consent is simulated.
   - Entitlement: a simulated nominee or joint-holder record.
   - Every proof row stores its `provider` and a note saying it was simulated.
@@ -190,3 +190,11 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - The person's own future death ("when I'm gone", "after my death") is planning, not a death in the family. "Will" counts only as a document ("my will", "write a will"), never the verb; a reported death now outranks will words. "Executor" moved from the will rule to the nominee rule.
 - The holder is assumed to be the user only when no relative or "belonging to" is mentioned; otherwise it stays unknown and the reply still asks whether the holder is living. Follow-up questions match the journey (no death-certificate question for planning).
 - The starter prompts live in `src/lib/starters.ts`, used by the landing page, the intake starters and the FL-01 test, so the test runs the exact words people send.
+
+## OCR for photos and scanned PDFs — 17 Oct 2026 (issue #41)
+
+- Photos and scanned PDFs are read on our own server with Tesseract (`tesseract.js`, WASM — no extra cloud service, no new data processor). Scanned PDF pages are rendered with unpdf + `@napi-rs/canvas` (first 5 pages, `OCR_MAX_PDF_PAGES`). Languages: English + Hindi by default; Tamil is `OCR_LANGS=eng+hin+tam`. Language data is downloaded once from the tesseract.js CDN and cached in the temp folder.
+- With a Gemini key, photos still go to Gemini vision first (it reads Indian documents better); OCR is the fallback when there is no key or the model fails. Text from OCR is then structured by Gemini when available.
+- Without AI, basic text rules pull out only clearly labelled facts: institution (known banks, fund houses, insurers, RTAs, depositories), account / policy / folio numbers (last 4 only), IFSC, names after labels like "Account Holder Name" or "Life Assured", balances, dates and nominee. Quality is never "good", every value carries a warning to check it, and an asset clue needs an institution plus a reference or balance — the same evidence rule the AI follows.
+- OCR misreads digits (0→D, 1→I, 2→Z). Number-like tokens are cleaned before anything else so `redactIdentifiers` still masks them; stored text keeps only the last 4 digits as before.
+- Known limits: handwriting, stamps and low-light photos read poorly; Hindi rules only cover Devanagari headings like मृत्यु प्रमाण. The family checks every field either way (FL-06).

@@ -114,7 +114,8 @@ These turn the PRD's product principles into engineering rules.
 | Validation | Zod 4 at every API boundary | Enums enforced by Zod (SQLite has no native enums) |
 | Database | Prisma 6; **SQLite in v0**, **Cloud SQL PostgreSQL for the MVP** | Provider switch only; no raw SQL |
 | AI | Google Gemini via `@google/genai` (API key or Vertex AI) | Provider interface + fixture provider for tests (§13) |
-| PDF text | `unpdf` | Images go to Gemini vision |
+| PDF text | `unpdf` | Text layer first; scanned pages are rendered to images (`@napi-rs/canvas`) for OCR |
+| OCR | `tesseract.js` (WASM, runs on the server) | English + Hindi by default (`OCR_LANGS`); used when there is no AI key or Gemini fails (§8.1) |
 | Tests | Vitest (unit and route), Playwright (end-to-end, to add) | No tests are committed yet (§19) |
 | Deploy | Google Cloud Run, **from source via buildpacks — no Docker** | `npm run build`, `npm start`, listens on `$PORT` |
 | Secrets | Google Secret Manager | Never in the repo |
@@ -233,7 +234,7 @@ The code has seven case types (plus `general`), each driven by the deterministic
 | --- | --- | --- | --- |
 | **G0 Account** | Control of a session | Anonymous `x-session-id` | Intake chat, guides, official resources, demos |
 | **G1 Identity** | The user is a specific real person | Mock DigiLocker; passport + selfie for NRIs | Personal cases; opening a case about someone else |
-| **G2 Death** | The named person has died | Mock DigiLocker civil-registry lookup, or certificate scan read by Gemini vision and matched by code | Case active — **still no discovery** |
+| **G2 Death** | The named person has died | Mock DigiLocker civil-registry lookup, or certificate scan read by Gemini vision (local OCR + rules without a key) and matched by code | Case active — **still no discovery** |
 | **G3 Relationship or role** | The user has an evidenced claimant role for this person — close relative, nominee, legal heir, executor or surviving joint holder — or, for a living person, that person's consent | Heir's own document naming the deceased; legal-heir certificate; nominee or joint-holder record; executor named in a will; or relative consent (mock). **Today only the relative and consent routes are built; nominee, executor and joint-holder routes are to build** | Discovery; assets visible **masked** |
 | **G4 Entitlement** (per asset) | The user may claim *this* asset | Nominee / joint-holder record, legal-heir or succession certificate (mock) | Full details and claim pack for that asset |
 
@@ -282,8 +283,11 @@ Real identity evidence rules are decision D-02.
 
 ```
 upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, PNG, JPEG, WebP)
-       ─► extract text (unpdf for PDFs) or Gemini vision (images)
-       ─► Gemini structured extraction → proposed fields
+       ─► images: Gemini vision when a key is set
+       ─► otherwise (or if that fails) text: PDF text layer → OCR of scanned pages (≤ OCR_MAX_PDF_PAGES) → OCR of photos
+       ─► OCR clean-up of number-like tokens (O/D→0, I→1, Z→2) so redaction catches them
+       ─► Gemini structured extraction → proposed fields; without AI, basic text rules
+          (src/server/ocr/rule-extract.ts) → quality "partial" at best, warning shown
        ─► redact identifiers BEFORE storage (6+ digit runs, 8+ digit groups, Aadhaar, PAN; dates kept)
        ─► store redacted text (≤20k chars) + proposed fields; original file NOT stored in v0
        ─► user reviews each critical field (accept / correct / reject)        ◄── to build
