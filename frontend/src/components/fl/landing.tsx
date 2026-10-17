@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LeafLogo, TrustFooter } from "./ui-bits";
+import { STARTER_PROMPTS } from "@/lib/starters";
 import {
   ArrowRight,
   BadgeCheck,
@@ -34,19 +35,19 @@ const JOURNEYS = [
     icon: HeartHandshake,
     title: "Someone in the family has passed away",
     desc: "Find what they owned — bank accounts, deposits, mutual funds, insurance — and claim each one, step by step.",
-    prompt: "My father passed away. Help me find and claim what he left behind.",
+    prompt: STARTER_PROMPTS.claim,
   },
   {
     icon: Search,
     title: "I want to know what I have",
     desc: "An old account in a previous city, a policy from years ago, a fund you never tracked — we help you look.",
-    prompt: "I want to know what financial assets I have. I invested in mutual funds years ago but don't remember where.",
+    prompt: STARTER_PROMPTS.discover,
   },
   {
     icon: NotebookPen,
     title: "I want my family to find everything later",
     desc: "One dated record of what you own, which nominees are missing, and what your family would need.",
-    prompt: "I want to make sure my family can find everything when I'm gone.",
+    prompt: STARTER_PROMPTS.legacy,
   },
 ];
 

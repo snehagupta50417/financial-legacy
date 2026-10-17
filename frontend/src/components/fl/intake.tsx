@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/client";
 import { takeStartMessage } from "@/lib/start-message";
+import { STARTER_PROMPTS } from "@/lib/starters";
 import { LeafLogo } from "./ui-bits";
 import type { ClassifiedSituation, GateSummary } from "@/lib/types";
 import { ArrowRight, CircleAlert, CircleCheckBig, CircleHelp, HeartHandshake, NotebookPen, Search, Send, ShieldCheck } from "lucide-react";
@@ -18,9 +19,9 @@ interface Msg {
 }
 
 const STARTERS = [
-  { icon: HeartHandshake, label: "Someone in my family has passed away", text: "My father passed away. Help me find and claim what he left behind." },
-  { icon: Search, label: "I want to know what I have", text: "I want to know what financial assets I have. I invested in mutual funds years ago but don't remember where." },
-  { icon: NotebookPen, label: "I want my family to find everything later", text: "I want to make sure my family can find everything when I'm gone." },
+  { icon: HeartHandshake, label: "Someone in my family has passed away", text: STARTER_PROMPTS.claim },
+  { icon: Search, label: "I want to know what I have", text: STARTER_PROMPTS.discover },
+  { icon: NotebookPen, label: "I want my family to find everything later", text: STARTER_PROMPTS.legacy },
 ];
 
 const MORE = [
