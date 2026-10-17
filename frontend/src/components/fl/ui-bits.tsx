@@ -67,7 +67,7 @@ export const DOC_CATEGORY_LABEL: Record<string, string> = {
 const STATUS_STYLES: Record<string, string> = {
   not_started: "bg-secondary text-secondary-foreground",
   ready: "bg-teal-soft text-teal-brand border border-teal-brand/20",
-  in_progress: "bg-gold-soft text-gold border border-gold/25",
+  in_progress: "bg-gold-soft text-[#7a5a1c] border border-gold/25",
   waiting_institution: "bg-[#f2e8e8] text-[#8a4a45] border border-[#8a4a45]/20",
   needs_expert: "bg-navy/5 text-navy border border-navy/15",
   completed: "bg-teal-brand text-white",
@@ -84,7 +84,7 @@ export const STATUS_LABEL: Record<string, string> = {
 
 export function TaskStatusBadge({ status }: { status: string }) {
   return (
-    <Badge className={cn("rounded-full px-2.5 text-[11px] font-medium", STATUS_STYLES[status] ?? "bg-secondary")}>
+    <Badge className={cn("rounded-full px-2.5 text-[13px] font-medium", STATUS_STYLES[status] ?? "bg-secondary")}>
       {STATUS_LABEL[status] ?? status}
     </Badge>
   );
@@ -138,7 +138,7 @@ export function VerificationBadge({
 }) {
   const s = EVIDENCE_LABEL[evidenceStatusOf(asset)];
   return (
-    <Badge title={s.hint} className={cn("rounded-full text-[11.5px] font-medium", s.className)}>
+    <Badge title={s.hint} className={cn("rounded-full text-[13px] font-medium", s.className)}>
       {evidenceStatusOf(asset) === "institution_verified" && <ShieldCheck className="mr-1 h-3 w-3" />}
       {s.label}
     </Badge>
@@ -155,7 +155,7 @@ export function ConfidenceMeter({ value, className }: { value: number; className
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[11px] tabular-nums text-muted-foreground">{pct}%</span>
+      <span className="text-[13px] tabular-nums text-muted-foreground">{pct}%</span>
     </div>
   );
 }
@@ -163,10 +163,10 @@ export function ConfidenceMeter({ value, className }: { value: number; className
 export function EvidenceBox({ children, label = "Evidence" }: { children: React.ReactNode; label?: string }) {
   return (
     <div className="rounded-md border border-teal-brand/15 bg-teal-soft/60 px-3 py-2">
-      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-teal-brand">
+      <div className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider text-teal-brand">
         <FileText className="h-3 w-3" /> {label}
       </div>
-      <div className="text-[12.5px] leading-relaxed text-ink/80">{children}</div>
+      <div className="text-[14px] leading-relaxed text-ink/80">{children}</div>
     </div>
   );
 }
@@ -175,7 +175,7 @@ export function TrustFooter({ dark = false }: { dark?: boolean }) {
   return (
     <div
       className={cn(
-        "mt-auto border-t px-6 py-4 text-[11.5px] leading-relaxed",
+        "mt-auto border-t px-6 py-4 text-[13px] leading-relaxed",
         dark ? "border-white/10 bg-navy-deep text-white/50" : "border-border bg-card text-muted-foreground"
       )}
     >
@@ -212,7 +212,7 @@ export function SectionHeading({
 
 export function DemoBadge({ className }: { className?: string }) {
   return (
-    <Badge className="rounded-full border border-gold/40 bg-gold-soft px-2.5 text-[10.5px] font-bold tracking-wider text-gold">
+    <Badge className="rounded-full border border-gold/40 bg-gold-soft px-2.5 text-[12px] font-bold tracking-wider text-[#7a5a1c]">
       DEMO DATA
     </Badge>
   );

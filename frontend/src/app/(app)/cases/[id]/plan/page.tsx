@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import EstateTab from "@/components/fl/estate-tab";
+import LegacyPlan from "@/components/fl/legacy-plan";
 import { useCase } from "@/components/fl/case-context";
 import { caseHref, goalArea } from "@/components/fl/case-nav";
 
@@ -17,5 +17,5 @@ export default function PlanPage() {
   }, [area, router, ws.case.id]);
 
   if (area !== "plan") return null;
-  return <EstateTab ws={ws} />;
+  return <LegacyPlan ws={ws} />;
 }

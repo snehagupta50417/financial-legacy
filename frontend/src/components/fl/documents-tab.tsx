@@ -58,6 +58,14 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
 
   return (
     <div className="space-y-4">
+      <div className="max-w-2xl">
+        <h1 className="font-display text-[26px] font-semibold text-navy">Documents</h1>
+        <p className="mt-1 text-[15px] leading-relaxed text-muted-foreground">
+          Statements, policy papers, letters and certificates. We read each one and show you what we found — nothing counts until
+          you&apos;ve checked it.
+        </p>
+      </div>
+
       {/* Upload zone */}
       <label
         onDragOver={(e) => {
@@ -89,15 +97,15 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
         />
         {uploading ? (
           <>
-            <Loader2 className="mb-2 h-7 w-7 animate-spin text-teal-brand" />
-            <div className="text-[14px] font-medium text-navy">Running real text extraction…</div>
-            <div className="mt-1 text-[12px] text-muted-foreground">PDF text layer → structured fields → evidence-linked clues</div>
+            <Loader2 className="mb-2 h-9 w-7 animate-spin text-teal-brand" />
+            <div className="text-[16px] font-medium text-navy">Running real text extraction…</div>
+            <div className="mt-1 text-[14px] text-muted-foreground">PDF text layer → structured fields → evidence-linked clues</div>
           </>
         ) : (
           <>
-            <CloudUpload className="mb-2 h-7 w-7 text-teal-brand" />
-            <div className="text-[14px] font-medium text-navy">Drop a statement, policy, letter or will — or click to browse</div>
-            <div className="mt-1 text-[12px] text-muted-foreground">
+            <CloudUpload className="mb-2 h-9 w-7 text-teal-brand" />
+            <div className="text-[16px] font-medium text-navy">Drop a statement, policy, letter or will — or click to browse</div>
+            <div className="mt-1 text-[14px] text-muted-foreground">
               Text files &amp; text-based PDFs get real AI extraction · max 8MB · you verify every field before it becomes a fact
             </div>
           </>
@@ -111,7 +119,7 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
           const failed = d.extractionStatus === "failed";
           return (
             <li key={d.id}>
-              <Card>
+              <Card className="gap-0 rounded-2xl py-0">
                 <CardContent className="space-y-3 p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -120,23 +128,23 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
                       </div>
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="truncate text-[13.5px] font-semibold text-navy">{d.fileName}</span>
-                          {d.isSynthetic && <Badge className="rounded bg-gold-soft px-1.5 text-[9.5px] font-bold text-gold">DEMO</Badge>}
+                          <span className="truncate text-[15px] font-semibold text-navy">{d.fileName}</span>
+                          {d.isSynthetic && <Badge className="rounded bg-gold-soft px-1.5 text-[12px] font-bold text-[#7a5a1c]">DEMO</Badge>}
                         </div>
-                        <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                        <div className="mt-0.5 text-[13px] text-muted-foreground">
                           {DOC_CATEGORY_LABEL[d.category] ?? CATEGORY_LABEL[d.category] ?? d.category} · {d.sizeLabel ?? ""} · {new Date(d.createdAt).toLocaleDateString("en-IN")}
                         </div>
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {failed ? (
-                        <Badge variant="outline" className="rounded-full border-destructive/30 text-[10.5px] text-destructive">Could not read</Badge>
+                        <Badge variant="outline" className="rounded-full border-destructive/30 text-[12px] text-destructive">Could not read</Badge>
                       ) : d.userVerified ? (
-                        <Badge variant="outline" className="rounded-full border-teal-brand/40 text-[10.5px] text-[#0b6b6a]">
+                        <Badge variant="outline" className="rounded-full border-teal-brand/40 text-[12px] text-[#0b6b6a]">
                           <ShieldCheck className="mr-1 h-3 w-3" /> Fields reviewed
                         </Badge>
                       ) : d.extractedFields.length > 0 ? (
-                        <Badge variant="outline" className="rounded-full border-gold/40 bg-gold-soft text-[10.5px] text-[#7a5a1c]">
+                        <Badge variant="outline" className="rounded-full border-gold/40 bg-gold-soft text-[12px] text-[#7a5a1c]">
                           {d.extractedFields.length} fields to review
                         </Badge>
                       ) : null}
@@ -144,7 +152,7 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
                   </div>
 
                   {d.extractionNote && (
-                    <p className={cn("rounded-lg px-3.5 py-3 text-[12.5px] leading-relaxed", failed ? "flex items-start gap-2 border border-destructive/20 bg-destructive/5 text-destructive" : "bg-background text-ink/80")}>
+                    <p className={cn("rounded-lg px-3.5 py-3 text-[14px] leading-relaxed", failed ? "flex items-start gap-2 border border-destructive/20 bg-destructive/5 text-destructive" : "bg-background text-ink/80")}>
                       {failed && <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />}
                       {d.extractionNote}
                     </p>
@@ -152,7 +160,7 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
 
                   {d.extractedFields.length > 0 && (
                     <div className="flex justify-end">
-                      <Button asChild size="sm" className={cn("h-9 text-[12.5px]", d.userVerified ? "border bg-card text-navy hover:bg-teal-soft" : "bg-teal-brand text-white hover:bg-[#0c6a69]")}>
+                      <Button asChild size="sm" className={cn("h-9 text-[14px]", d.userVerified ? "border bg-card text-navy hover:bg-teal-soft" : "bg-teal-brand text-white hover:bg-[#0c6a69]")}>
                         <Link href={reviewHref}>
                           {d.userVerified ? "View reviewed fields" : "Review fields"} <ArrowRight className="ml-1 h-3.5 w-3.5" />
                         </Link>
@@ -169,9 +177,9 @@ export default function DocumentsTab({ ws, reload }: { ws: CaseWorkspace; reload
       {!ws.documents.length && (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-            <FileScan className="h-7 w-7 text-muted-foreground/40" />
-            <div className="text-[14px] font-medium text-navy">No documents yet</div>
-            <p className="max-w-md text-[12.5px] leading-relaxed text-muted-foreground">
+            <FileScan className="h-9 w-7 text-muted-foreground/40" />
+            <div className="text-[16px] font-medium text-navy">No documents yet</div>
+            <p className="max-w-md text-[14px] leading-relaxed text-muted-foreground">
               Upload a bank statement, policy receipt, claim letter or will draft. Extraction runs on the actual file
               text — if nothing can be read, you&apos;ll see a clear error instead of fake results.
             </p>

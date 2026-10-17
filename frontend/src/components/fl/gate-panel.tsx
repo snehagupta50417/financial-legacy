@@ -60,7 +60,7 @@ const PROOF_FOR_GATE: Record<string, ProofView["kind"]> = { G1: "identity", G2: 
 
 export function SimulatedNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-1.5 rounded-md bg-gold-soft/70 px-2.5 py-1.5 text-[11px] leading-relaxed text-gold">
+    <div className="flex items-start gap-1.5 rounded-md bg-gold-soft/70 px-2.5 py-1.5 text-[13px] leading-relaxed text-[#7a5a1c]">
       <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" />
       <span>{children}</span>
     </div>
@@ -72,7 +72,7 @@ function ProofResult({ proof }: { proof: ProofView }) {
   return (
     <div
       className={cn(
-        "mt-3 rounded-lg border px-3 py-2.5 text-[12px] leading-relaxed",
+        "mt-3 rounded-lg border px-3 py-2.5 text-[14px] leading-relaxed",
         proof.status === "verified" ? "border-teal-brand/25 bg-teal-soft/50" : "border-gold/30 bg-gold-soft/50"
       )}
     >
@@ -80,13 +80,13 @@ function ProofResult({ proof }: { proof: ProofView }) {
         {proof.status === "verified" ? (
           <CircleCheckBig className="h-3.5 w-3.5 text-teal-brand" />
         ) : (
-          <CircleAlert className="h-3.5 w-3.5 text-gold" />
+          <CircleAlert className="h-3.5 w-3.5 text-[#7a5a1c]" />
         )}
         {proof.status === "verified" ? "Verified" : proof.status === "needs_review" ? "Sent to manual review" : "Not completed"}
       </div>
       {proof.note && <div className="mt-0.5 text-ink/75">{proof.note}</div>}
       {mismatches.length > 0 && (
-        <table className="mt-2 w-full text-[11.5px]">
+        <table className="mt-2 w-full text-[13px]">
           <thead>
             <tr className="text-left text-muted-foreground">
               <th className="font-medium">Field</th>
@@ -99,7 +99,7 @@ function ProofResult({ proof }: { proof: ProofView }) {
               <tr key={k}>
                 <td className="py-0.5 pr-2 capitalize">{k.replace(/([A-Z])/g, " $1").toLowerCase()}</td>
                 <td className="pr-2">{v.expected ?? "—"}</td>
-                <td className="font-medium text-gold">{v.found ?? "not found"}</td>
+                <td className="font-medium text-[#7a5a1c]">{v.found ?? "not found"}</td>
               </tr>
             ))}
           </tbody>
@@ -112,9 +112,9 @@ function ProofResult({ proof }: { proof: ProofView }) {
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-[13px] font-medium text-muted-foreground">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-[10.5px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="mt-1 block text-[12px] text-muted-foreground">{hint}</span>}
     </label>
   );
 }
@@ -165,8 +165,8 @@ function IdentityForm({ ws, reload }: { ws: CaseWorkspace; reload: () => Promise
               method === k ? "border-navy bg-navy text-white" : "bg-card hover:border-teal-brand/40"
             )}
           >
-            <div className="text-[13px] font-semibold">{title}</div>
-            <div className={cn("text-[11px]", method === k ? "text-white/70" : "text-muted-foreground")}>{sub}</div>
+            <div className="text-[15px] font-semibold">{title}</div>
+            <div className={cn("text-[13px]", method === k ? "text-white/70" : "text-muted-foreground")}>{sub}</div>
           </button>
         ))}
       </div>
@@ -226,7 +226,7 @@ function DeathForm({ ws, reload }: { ws: CaseWorkspace; reload: () => Promise<vo
             type="button"
             onClick={() => setMode(k)}
             className={cn(
-              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium",
+              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[14px] font-medium",
               mode === k ? "border-navy bg-navy text-white" : "bg-card text-ink/70 hover:bg-teal-soft"
             )}
           >
@@ -364,8 +364,8 @@ export default function GatePanel({ ws, reload }: { ws: CaseWorkspace; reload: (
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div>
             <div className="font-display text-[16px] font-semibold text-navy">Case paused for review</div>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink/80">{g.frozenReason}</p>
-            <p className="mt-2 text-[12px] text-muted-foreground">
+            <p className="mt-1 text-[15px] leading-relaxed text-ink/80">{g.frozenReason}</p>
+            <p className="mt-2 text-[14px] text-muted-foreground">
               Nothing about the assets is shown while this is reviewed. Your verification steps so far are kept.
             </p>
           </div>
@@ -382,17 +382,17 @@ export default function GatePanel({ ws, reload }: { ws: CaseWorkspace; reload: (
       <CardContent className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-teal-brand">
+            <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-teal-brand">
               <Lock className="h-3.5 w-3.5" /> Prove before you see
             </div>
             <div className="font-display mt-1 text-[17px] font-semibold text-navy">
               {g.journeyKind === "personal" ? "One quick check before we look for your assets" : "A few checks before any asset is shown"}
             </div>
-            <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
               Name, date of birth and PAN alone unlock nothing. Each step is checked by code and recorded in your case timeline.
             </p>
           </div>
-          <Badge variant="outline" className="rounded-full text-[11px] text-navy">
+          <Badge variant="outline" className="rounded-full text-[13px] text-navy">
             Step {Math.min(path.findIndex((s) => !reachedAtLeast(g.reached, s)) + 1 || path.length, path.length)} of {path.length}
           </Badge>
         </div>
@@ -415,7 +415,7 @@ export default function GatePanel({ ws, reload }: { ws: CaseWorkspace; reload: (
                 <div className="flex items-start gap-3">
                   <div
                     className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      "flex h-10 w-8 shrink-0 items-center justify-center rounded-full",
                       done ? "bg-teal-brand text-white" : current ? "bg-navy text-white" : "bg-secondary text-muted-foreground"
                     )}
                   >
@@ -423,11 +423,11 @@ export default function GatePanel({ ws, reload }: { ws: CaseWorkspace; reload: (
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[14px] font-semibold text-navy">{meta.title}</span>
-                      {done && <Badge className="rounded-full bg-teal-brand text-[10px] text-white">Done</Badge>}
-                      {!done && !current && <Badge variant="outline" className="rounded-full text-[10px]">Locked</Badge>}
+                      <span className="text-[16px] font-semibold text-navy">{meta.title}</span>
+                      {done && <Badge className="rounded-full bg-teal-brand text-[12px] text-white">Done</Badge>}
+                      {!done && !current && <Badge variant="outline" className="rounded-full text-[12px]">Locked</Badge>}
                     </div>
-                    <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{meta.why}</p>
+                    <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">{meta.why}</p>
                     {proof && (done || proof.status !== "verified") && <ProofResult proof={proof} />}
                     {current && (
                       <div className="mt-3">
@@ -452,9 +452,9 @@ export function LockedNotice({ ws, what }: { ws: CaseWorkspace; what: string }) 
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-        <Lock className="h-7 w-7 text-muted-foreground/50" />
-        <div className="text-[14px] font-medium text-navy">{what} are locked</div>
-        <p className="max-w-md text-[12.5px] leading-relaxed text-muted-foreground">
+        <Lock className="h-9 w-7 text-muted-foreground/50" />
+        <div className="text-[16px] font-medium text-navy">{what} are locked</div>
+        <p className="max-w-md text-[14px] leading-relaxed text-muted-foreground">
           {ws.gate.frozenReason
             ? "This case is paused for review."
             : `Complete “${ws.gate.nextLabel ?? "verification"}” above. Nothing about the assets is fetched or shown before then.`}

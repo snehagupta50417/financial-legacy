@@ -70,7 +70,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
   function TaskCard({ t, dimmed = false }: { t: CaseWorkspace["tasks"][number]; dimmed?: boolean }) {
     const isDone = t.status === "completed";
     return (
-      <Card className={cn("overflow-hidden", t.isNextBest && !isDone && "border-teal-brand/40 shadow-[0_0_0_1px_rgba(14,124,123,0.25)]", dimmed && "opacity-80")}>
+      <Card className={cn("gap-0 overflow-hidden rounded-2xl py-0", t.isNextBest && !isDone && "border-teal-brand/40 shadow-[0_0_0_1px_rgba(14,124,123,0.25)]", dimmed && "opacity-80")}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
@@ -79,66 +79,73 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={cn("text-[14.5px] font-semibold leading-snug", isDone ? "text-muted-foreground line-through decoration-teal-brand/40" : "text-navy")}>
+                  <span className={cn("text-[17px] font-semibold leading-snug", isDone ? "text-muted-foreground line-through decoration-teal-brand/40" : "text-navy")}>
                     {t.title}
                   </span>
                   {t.isNextBest && !isDone && (
-                    <Badge className="rounded-full bg-teal-soft px-2 text-[10px] font-semibold text-teal-brand">NEXT BEST ACTION</Badge>
+                    <Badge className="rounded-full bg-teal-soft px-2.5 text-[13px] font-semibold text-[#0b6b6a]">Do this next</Badge>
                   )}
                 </div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-ink/75">{t.instructions}</p>
+                <p className="mt-1.5 text-[16px] leading-relaxed text-ink/85">{t.instructions}</p>
 
-                <div className="mt-2.5 rounded-lg bg-gold-soft/60 px-3 py-2 text-[12px] leading-relaxed text-ink/75">
-                  <span className="font-semibold text-gold">Why this step: </span>
-                  {t.rationale}
-                </div>
-
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                  {t.institution && <Badge variant="outline" className="rounded-full text-[11px] text-navy">{t.institution}</Badge>}
-                  {t.assetCategory && t.assetCategory !== "multi" && (
-                    <Badge variant="outline" className="rounded-full text-[11px] text-navy">{CATEGORY_LABEL[t.assetCategory] ?? t.assetCategory}</Badge>
-                  )}
-                  <Badge variant="outline" className={cn("rounded-full text-[11px]", t.integrationType === "public_api" ? "border-teal-brand/40 text-teal-brand" : "text-muted-foreground")}>
-                    {t.integrationType === "official_website" ? "Official website — you act, we prepare" : t.integrationType === "public_api" ? "Live API" : "Guided workflow"}
-                  </Badge>
-                  {t.dependencies.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <ArrowDown className="h-3 w-3" /> after: {t.dependencies.map((d) => depTitles.get(d)).filter(Boolean).join(", ")}
-                    </span>
-                  )}
-                </div>
-
-                {(t.requiredDocs.length > 0 || t.missingInfo.length > 0) && (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {t.requiredDocs.length > 0 && (
-                      <div className="rounded-lg border bg-background px-3 py-2">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-teal-brand">
-                          <ListChecks className="h-3 w-3" /> Required documents
-                        </div>
-                        <ul className="space-y-0.5">
-                          {t.requiredDocs.map((r, i) => (
-                            <li key={i} className="text-[12px] leading-relaxed text-ink/75">· {r}</li>
-                          ))}
-                        </ul>
-                      </div>
+                <details className="group mt-3">
+                  <summary className="inline-flex min-h-10 cursor-pointer items-center text-[15px] font-medium text-teal-brand">
+                    More detail
+                  </summary>
+                  <div className="mt-2 space-y-3">
+                    {t.rationale && (
+                      <p className="rounded-xl bg-background px-3.5 py-2.5 text-[15px] leading-relaxed text-ink/85">
+                        <span className="font-semibold text-ink">Why this step: </span>
+                        {t.rationale}
+                      </p>
                     )}
-                    {t.missingInfo.length > 0 && (
-                      <div className="rounded-lg border border-gold/30 bg-gold-soft/50 px-3 py-2">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-gold">
-                          <Info className="h-3 w-3" /> Missing information
-                        </div>
-                        <ul className="space-y-0.5">
-                          {t.missingInfo.map((r, i) => (
-                            <li key={i} className="text-[12px] leading-relaxed text-ink/75">· {r}</li>
-                          ))}
-                        </ul>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[14px] text-muted-foreground">
+                      {t.institution && <Badge variant="outline" className="rounded-full text-[13px] text-navy">{t.institution}</Badge>}
+                      {t.assetCategory && t.assetCategory !== "multi" && (
+                        <Badge variant="outline" className="rounded-full text-[13px] text-navy">{CATEGORY_LABEL[t.assetCategory] ?? t.assetCategory}</Badge>
+                      )}
+                      <Badge variant="outline" className="rounded-full text-[13px] text-ink/75">
+                        {t.integrationType === "official_website" ? "Official website — you act, we prepare" : t.integrationType === "public_api" ? "Live public data" : "Guided step"}
+                      </Badge>
+                      {t.dependencies.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <ArrowDown className="h-3.5 w-3.5" /> After: {t.dependencies.map((d) => depTitles.get(d)).filter(Boolean).join(", ")}
+                        </span>
+                      )}
+                    </div>
+                    {(t.requiredDocs.length > 0 || t.missingInfo.length > 0) && (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {t.requiredDocs.length > 0 && (
+                          <div className="rounded-xl border bg-background px-3.5 py-2.5">
+                            <div className="mb-1 flex items-center gap-1.5 text-[14px] font-semibold text-[#0b6b6a]">
+                              <ListChecks className="h-4 w-4" /> Documents you&apos;ll need
+                            </div>
+                            <ul className="space-y-1">
+                              {t.requiredDocs.map((r, i) => (
+                                <li key={i} className="text-[15px] leading-relaxed text-ink/85">· {r}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {t.missingInfo.length > 0 && (
+                          <div className="rounded-xl border border-gold/40 bg-gold-soft/50 px-3.5 py-2.5">
+                            <div className="mb-1 flex items-center gap-1.5 text-[14px] font-semibold text-[#7a5a1c]">
+                              <Info className="h-4 w-4" /> Still missing
+                            </div>
+                            <ul className="space-y-1">
+                              {t.missingInfo.map((r, i) => (
+                                <li key={i} className="text-[15px] leading-relaxed text-ink/85">· {r}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                </details>
 
                 {isDone && t.completionEvidence && (
-                  <div className="mt-2.5 rounded-md border border-teal-brand/20 bg-teal-soft/50 px-3 py-2 text-[12px] text-ink/75">
+                  <div className="mt-2.5 rounded-md border border-teal-brand/20 bg-teal-soft/50 px-3 py-2 text-[14px] text-ink/75">
                     <UserCheck className="mr-1.5 inline h-3.5 w-3.5 text-teal-brand" />
                     Evidence: {t.completionEvidence}
                   </div>
@@ -151,7 +158,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
           {/* Actions */}
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3">
             {!isDone && t.status !== "in_progress" && (
-              <Button size="sm" variant="outline" disabled={busyId === t.id} onClick={() => setStatus(t.id, "in_progress")} className="h-8 text-[12px]">
+              <Button size="sm" variant="outline" disabled={busyId === t.id} onClick={() => setStatus(t.id, "in_progress")} className="h-10 text-[14px]">
                 Start
               </Button>
             )}
@@ -163,25 +170,25 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
                   setEvidenceFor(t.id);
                   setEvidenceText("");
                 }}
-                className="h-8 bg-teal-brand text-[12px] text-white hover:bg-[#0c6a69]"
+                className="h-10 bg-teal-brand text-[14px] text-white hover:bg-[#0c6a69]"
               >
                 {busyId === t.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1 h-3.5 w-3.5" />}
                 Mark completed
               </Button>
             )}
             {!isDone && (
-              <Button size="sm" variant="outline" disabled={busyId === t.id} onClick={() => setStatus(t.id, "waiting_institution")} className="h-8 text-[12px]">
+              <Button size="sm" variant="outline" disabled={busyId === t.id} onClick={() => setStatus(t.id, "waiting_institution")} className="h-10 text-[14px]">
                 <Clock3 className="mr-1 h-3.5 w-3.5" /> Waiting for institution
               </Button>
             )}
             {t.officialUrl && (
               <>
                 <a href={t.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex">
-                  <Button size="sm" variant="outline" className="h-8 border-navy/25 text-[12px] text-navy hover:bg-teal-soft">
+                  <Button size="sm" variant="outline" className="h-10 border-navy/25 text-[14px] text-navy hover:bg-teal-soft">
                     <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open official portal ↗
                   </Button>
                 </a>
-                <span className="text-[11px] text-muted-foreground">{t.officialName}</span>
+                <span className="text-[13px] text-muted-foreground">{t.officialName}</span>
               </>
             )}
           </div>
@@ -204,7 +211,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
 
       {done.length > 0 && (
         <div>
-          <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
             <CheckCircle2 className="h-3.5 w-3.5 text-teal-brand" /> Completed ({done.length})
           </div>
           <div className="space-y-3 opacity-90">
@@ -217,7 +224,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
 
       {!ws.tasks.length && (
         <Card>
-          <CardContent className="py-12 text-center text-[13px] text-muted-foreground">
+          <CardContent className="py-12 text-center text-[15px] text-muted-foreground">
             No journey tasks yet — describe your situation in the AI intake and the engine will build your plan.
           </CardContent>
         </Card>
@@ -229,7 +236,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
           <DialogHeader>
             <DialogTitle className="font-display text-navy">Log completion evidence</DialogTitle>
           </DialogHeader>
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
             What happened when you completed this step outside Financial Legacy? Reference numbers, acknowledgement IDs or a
             short note — this becomes part of the auditable case timeline. Nothing is sent to any institution.
           </p>
@@ -237,7 +244,7 @@ export default function JourneyTab({ ws, reload }: { ws: CaseWorkspace; reload: 
             value={evidenceText}
             onChange={(e) => setEvidenceText(e.target.value)}
             placeholder="e.g., Submitted claim form at PNB Connaught Place branch; acknowledgement no. PNB/CL/2026/1142"
-            className="min-h-[90px] text-[13px]"
+            className="min-h-[90px] text-[15px]"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEvidenceFor(null)}>Cancel</Button>

@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.3.2 (draft for review) |
+| **Version** | 0.4.0 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) (behaviour and scope) → [LLD.md](LLD.md) (data, permissions, workflow) → this document (presentation and interaction). Design never adds features or bypasses a permission. |
 | **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a Next.js app with one route per area, §2.1). Where the app differs today, this document says so. |
-| **Status** | Built today: landing, intake chat, one route per case area with mobile bottom navigation, trust-gate panel, masked and locked states, document upload and extraction, side-by-side field review (per-field states kept in the browser until the API stores them). Not built: voice, claims screens, legacy record and export, discovery plan, activity and privacy screens. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| **Status** | Built today: conversation-first landing and start, one route per case area with a desktop sidebar (case, areas, six-step journey) and mobile bottom navigation, Conversation home with action cards, holdings grouped by evidence status, legacy record with gaps checklist and "Notes for your lawyer", trust-gate panel, masked and locked states, document upload and extraction, side-by-side field review (per-field states kept in the browser until the API stores them). Not built: voice, claims screens, legacy snapshot export and trusted contacts, discovery plan, activity and privacy screens, saved assistant history. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 
 ---
 
@@ -48,16 +48,16 @@ Since round 2 of the frontend work (issue #35) each area has its own URL, so pag
 | `/cases/{id}/help` | Get help |
 | `/resources` | Official portals |
 
-Every case page shares one frame: case header, the trust-gate panel until discovery is unlocked, area tabs on desktop and the bottom navigation on mobile (§2.3). Records, Claims and field review stay locked until the discovery gate. The session model (`x-session-id`) is unchanged. Not built yet: saved conversation history (needs `GET /api/cases/:id/messages`), discovery plan, activity and privacy screens.
+Every case page shares one frame (frontend revamp, issue #37): on desktop a sidebar with the case, its areas and the **six-step journey** from the one-pager (§4 there) worked out from saved data; on mobile a compact case header and the bottom navigation (§2.3). The trust-gate panel sits at the top of the page until discovery is unlocked. **Conversation** opens with the case manager's summary of where things stand, then "What needs you now" action cards built only from case data (verification, documents to check, possible matches, unreadable files, the next step), "What we know so far" (confirmed facts vs still to check), the assistant, and recent activity. Records, Claims and field review stay locked until the discovery gate. The session model (`x-session-id`) is unchanged. Not built yet: saved conversation history (needs `GET /api/cases/:id/messages`), discovery plan, activity and privacy screens.
 
 ### 2.2 Target structure for the MVP
 
 | Area | Purpose | Today's equivalent |
 | --- | --- | --- |
 | **My cases** | List of the person's cases: subject, goal, state and next task. **New case** and **Continue**. No balances or document previews in another case's card. | `/cases` |
-| **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | `/cases/{id}` (summary and assistant; no saved history yet) |
+| **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | `/cases/{id}` (summary, action cards, facts, assistant; no saved history yet) |
 | **Records** | Documents, discovery plan and assets as labelled sub-views | `/cases/{id}/records` (assets, documents; no discovery plan yet) |
-| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | `/plan` (still the old Planning tab) or `/claims` (interim cards) |
+| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | `/plan` (legacy record, gaps, notes for your lawyer) or `/claims` (interim cards) |
 | **Tasks** | Owner, due date, waiting-on, blocked state, next action | `/cases/{id}/steps` |
 | Case menu | Verification (trust gates), activity history, privacy and consent | Gate panel; no activity/privacy screens yet |
 | Help | Talk to a person; official resources | `/cases/{id}/help`, `/resources` |
@@ -69,7 +69,7 @@ Only the destination that fits the case's goal is shown (Plan **or** Claims). A 
 - **Desktop:** sidebar about 224 px; main content up to 1280 px; 24–32 px padding. Conversation column up to 760 px, with evidence or tasks beside it when there's room.
 - **Mobile:** single column, 16 px padding, the four main areas in a bottom navigation; secondary actions in the case menu. Bottom controls must never cover content or the focused element.
 - Switching case or signing out clears the old case from the screen before showing the next one.
-- **Built (round 2):** the mobile bottom navigation (below 768 px) and the cleared-on-switch behaviour. On desktop the areas are tabs under the case header for now, not a sidebar; the floating "Ask about this case" button is desktop-only, and on mobile the assistant sits in Conversation so it never covers content.
+- **Built:** the desktop sidebar (272 px: case, areas, journey), the mobile bottom navigation (below 768 px) and the cleared-on-switch behaviour; the floating "Ask about this case" button is desktop-only, and on mobile the assistant sits in Conversation so it never covers content.
 
 ---
 
@@ -114,6 +114,7 @@ The three fixes are small CSS changes in `globals.css`; they are part of design 
 ### 3.2 Type and spacing
 
 - System font stack. Body 17 px / 1.55; labels 16 px; helper text at least 14 px; page title 28–36 px; section title 20–24 px. Sentence case.
+- **Built (revamp):** body 16 px on phones and 17 px from 768 px; screen text 15–17 px with helper text at 13–14 px; controls 44 px; visible 3 px focus ring; reduced-motion respected; gold is never used for text (the darker `#7a5a1c` is).
 - Spacing scale 4 / 8 / 12 / 16 / 24 / 32 / 48 px. Cards: 12 px radius, 24 px padding (16 px on mobile). Avoid dense grids and nested cards.
 - Primary buttons filled; secondary outlined; links underlined in text. Buttons and inputs at least 44 px tall.
 
@@ -217,7 +218,7 @@ A correction shows the original and the new value and asks for a reason when it 
 - Show the record date, missing documents, unknown or outdated nominees, stale records and the next review date.
 - Trusted contacts are labelled **"Contact intent — no access granted"**. Adding one sends nothing.
 - Snapshot and export preview list the exact contents, date and gaps; export needs approval; the download link is short-lived. Explain that downloaded copies can't be recalled.
-- **Change from today:** the current Estate Planning tab drafts a will with AI. The PRD rules out drafting legally binding wills, so this becomes **"Notes for your lawyer"**: a structured summary of assets and wishes, clearly marked as not a will.
+- **Built (revamp):** the Plan area is "Your legacy record": holdings by evidence status (no amounts), a gaps checklist built from saved data, a placeholder for trusted contacts, and **"Notes for your lawyer"** (`/api/ai/draft` kind `lawyer_notes`), clearly marked as not a will. AI will drafting is removed from the UI and the API.
 - No family invites or after-death release in the MVP.
 
 ### 7.2 Claims (deceased person)
@@ -298,6 +299,8 @@ References: [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/), [contrast](https://ww
 - Makes the bereaved-family pilot journey the first journey, adds insurance claims, and replaces AI will drafting with "Notes for your lawyer".
 - Adds design notes for Later capabilities and fixes section numbering.
 - Removes references to the superseded LLD v0.4 sample data.
+
+- **0.4.0:** frontend revamp (issue #37) — §2.1 frame and Conversation, §2.3 sidebar built, §3.2 type built, §7.1 legacy record and Notes for your lawyer built.
 
 - **0.3.2:** §2.1 now lists the real routes (frontend round 2); built notes added to §2.3 and §5.4.
 
