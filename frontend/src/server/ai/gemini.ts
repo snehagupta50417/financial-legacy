@@ -1,5 +1,5 @@
 import { GoogleGenAI, type Content } from "@google/genai";
-import type { AiProvider, GenerateRequest } from "./provider";
+import type { AiProvider, EmbedKind, GenerateRequest } from "./provider";
 
 /**
  * Gemini adapter. Auth, in order:
@@ -17,8 +17,20 @@ export class GeminiProvider implements AiProvider {
   private client: GoogleGenAI;
   private models: string[];
 
-  constructor(opts: { apiKey?: string; project?: string; location?: string; models: string[] }) {
+  readonly embeddingModel: string;
+  private embedDims: number;
+
+  constructor(opts: {
+    apiKey?: string;
+    project?: string;
+    location?: string;
+    models: string[];
+    embeddingModel?: string;
+    embeddingDims?: number;
+  }) {
     this.models = opts.models.length ? opts.models : ["gemini-flash-latest"];
+    this.embedDims = opts.embeddingDims ?? 768;
+    this.embeddingModel = `${opts.embeddingModel ?? "gemini-embedding-001"}@${this.embedDims}`;
     this.client = opts.apiKey
       ? new GoogleGenAI({ apiKey: opts.apiKey })
       : new GoogleGenAI({ vertexai: true, project: opts.project, location: opts.location ?? "us-central1" });
@@ -65,6 +77,42 @@ export class GeminiProvider implements AiProvider {
     }
     throw lastError;
   }
+
+  /** Batches of 100; vectors are normalised (needed below the model's full 3072 dimensions). */
+  async embed(texts: string[], kind: EmbedKind, signal: AbortSignal): Promise<number[][]> {
+    const model = this.embeddingModel.split("@")[0];
+    const out: number[][] = [];
+    for (let i = 0; i < texts.length; i += 100) {
+      const batch = texts.slice(i, i + 100);
+      let res;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          res = await this.client.models.embedContent({
+            model,
+            contents: batch,
+            config: {
+              taskType: kind === "query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT",
+              outputDimensionality: this.embedDims,
+              abortSignal: signal,
+            },
+          });
+          break;
+        } catch (e) {
+          if (attempt > 0 || classify(e) !== "retry" || signal.aborted) throw e;
+          await sleep(800, signal);
+        }
+      }
+      const vecs = res.embeddings ?? [];
+      if (vecs.length !== batch.length) throw new Error("Embedding count mismatch");
+      for (const v of vecs) out.push(normalise(v.values ?? []));
+    }
+    return out;
+  }
+}
+
+function normalise(v: number[]): number[] {
+  const n = Math.hypot(...v);
+  return n > 0 ? v.map((x) => x / n) : v;
 }
 
 /** Decide what to do with a Gemini error: retry, try the next model, or give up. */

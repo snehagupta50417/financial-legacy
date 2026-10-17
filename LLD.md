@@ -137,6 +137,8 @@ frontend/
       api/                    route handlers (§15)
     server/                   all server-only logic (no React imports)
       ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
+      knowledge/              library.ts (official procedure passages) · search.ts (BM25, vectors, fusion) · retrieve.ts · citations.ts (§13.5)
+      ocr/                    ocr.ts (Tesseract, scanned-PDF pages) · rule-extract.ts (no-AI extraction) (§8.1)
       core/                   access.ts · crypto.ts · gate-engine.ts · http.ts · masking.ts ·
                               name-match.ts · rate-limit.ts · session.ts · upload.ts
       domain/                 case-service.ts · gates.ts · journey-engine.ts
@@ -151,7 +153,7 @@ frontend/
     components/
       fl/                     product components: landing, intake, case-shell, area pages, field-review, gate-panel, ask-panel …
       ui/                     stock shadcn components
-  test/                       (to add) unit, route and live-AI tests
+  test/                       Vitest unit and route tests (test/.tmp holds the test database)
 ```
 
 **Housekeeping to do:** delete the leftover `src/app/api/route.ts` ("Hello, world"); rename the package from `nextjs_tailwind_shadcn_ts`. (`worklog.md`, the old screenshots in `scripts/` and `download/README.md` were removed on 17 Oct 2026; `DECISIONS.md` is the decision log.)
@@ -427,7 +429,8 @@ To build:
 
 ### 13.1 Provider design
 
-- `provider.ts` defines the interface; `gemini.ts` implements it; `fixture.ts` returns canned responses for tests; `index.ts` exposes `complete`, `completeJson` and `completeWithHistory`.
+- `provider.ts` defines the interface; `gemini.ts` implements it; `fixture.ts` returns canned responses (and optional fake embeddings) for tests; `index.ts` exposes `complete`, `completeJson`, `completeWithHistory` and `embedTexts`.
+- **Embeddings** (for §13.5): `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`) at `GEMINI_EMBEDDING_DIMS` (768), normalised to unit length, task type `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`, batches of 100.
 - **Auth order:** `GEMINI_API_KEY`, else Vertex AI (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, Application Default Credentials on Cloud Run), else "not configured" — callers degrade gracefully, never fake output.
 - **Models:** `GEMINI_MODEL` (default `gemini-flash-latest`), fallbacks `GEMINI_FALLBACK_MODELS` (default `gemini-3.5-flash,gemini-flash-lite-latest`). Model aliases change; pin explicit versions before the Pilot and record them per response.
 - **Retries:** transient errors (429/5xx/UNAVAILABLE) get one retry after 800 ms, then the next model; 404 skips to the next model; others fail fast. Overall timeout `AI_TIMEOUT_MS` (45 s).
@@ -441,13 +444,13 @@ To build:
 | Intake classification | `/api/intake` | Classify situation, ask follow-ups | Create holdings before G3 (mentioned institutions become "assumptions") |
 | Document extraction | `/api/documents` | Propose fields with page references | Accept fields; store unredacted identifiers |
 | Death-certificate scan | `providers/death-proof.ts` | Read the certificate | Decide the match — code compares fields |
-| Ask about this case | `/api/ai/ask` | Answer from the masked case view, citing evidence | See data above the user's gate |
+| Ask about this case | `/api/ai/ask` | Answer from retrieved sources (§13.5) with numbered citations | See data above the user's gate; answer procedure questions from memory |
 | Checklists and drafts | `/api/ai/checklist`, `/api/ai/draft` (kinds: `followup`, `lawyer_notes`, `expert`) | Draft letters, notes for a lawyer and checklists | Send anything; give legal advice; draft a will (the `will` kind was removed) |
 
 ### 13.3 Safety rules
 
-- **Grounding:** prompts include only the masked, gate-appropriate case view.
-- **Prompt injection:** document text is wrapped and labelled as untrusted data; model output can never trigger a tool, change a gate or alter permissions.
+- **Grounding:** prompts include only the masked, gate-appropriate case view and passages retrieved for the question (§13.5).
+- **Prompt injection:** document text and retrieved passages are fenced (`<<<` … `>>>`) and labelled as reference material, not instructions; model output can never trigger a tool, change a gate or alter permissions.
 - **No invented facts:** if a value isn't in the evidence, the answer says so.
 - **Data to AI:** synthetic data only until the Pilot; for the Pilot, an approved provider configuration with data-residency, retention and no-training terms (D-05, FL-46).
 - **Logging:** store model, model version, prompt template version and output; never log raw sensitive inputs.
@@ -455,6 +458,28 @@ To build:
 ### 13.4 Case manager
 
 Today the "case manager" is the deterministic **journey engine** (next-best task, dependencies, stage) plus AI routes. The PRD's single case manager (FL-38) is built by adding a coordinator that reads saved case facts and proposes the next step as a typed action card; consequential actions always go through an approval screen.
+
+### 13.5 Retrieval for the case assistant (RAG)
+
+**PRD:** FL-38, FL-39, FL-06, FL-12. Code: `src/server/knowledge/`. Issue #43.
+
+```
+question ─► sync procedure library (once per process; changed passages replaced by content hash)
+         ─► if the discovery gate is reached: (re)chunk the case's extracted documents
+             (summary + extracted fields + redacted text, ~700 chars, 120 overlap)
+         ─► keyword ranking (BM25; negations like "no nominee" become their own token)
+         ─► + vector ranking (cosine) when an embedding model is configured; missing vectors filled lazily (≤200 per query)
+         ─► reciprocal-rank fusion (k = 60) → top 6; an off-topic question returns nothing
+         ─► prompt: [1] case file + [2..n] passages, fenced as data
+         ─► answer with [n] citations; citations to sources that weren't retrieved are removed
+```
+
+- **Two sources.** The **procedure library** (`library.ts`) is a plain-language summary of each official source in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) — RBI, SEBI, IRDAI, LIC, discovery portals — plus the official resources directory. Each passage carries the link and the date it was checked; passages not confirmed on an official page say so in their text. **Case documents** are the same redacted text the family can open in field review, searched only once `canDiscover()` is true, and redacted again on the way out.
+- **Storage:** `KnowledgeChunk` (scope `library` or `case`; vectors as JSON with the model name). On Cloud SQL the vector column becomes pgvector; nothing else changes.
+- **Without a key:** search is keyword-only and the route returns the best-matching passages (`mode: "passages"`) instead of a 503.
+- **Response:** `{ mode, answer, sources[{ n, kind, title, publisher, url, checkedOn, documentId, excerpt }], grounded, retrieval, caseDocumentsSearched }`. The panel lists the cited sources; official pages open in a new tab, documents open in the case. Answers are saved to `QaMessage`.
+- **Quality:** `test/rag.test.ts` holds an evaluation set of family questions → the passage(s) that answer them; each must be in the top 3 with keyword search alone, and top-1 accuracy must stay ≥ 75%. Add a question whenever a passage is added.
+- **Limits:** keyword search is English-only (Hindi questions need the embedding model); the library is only as current as SOURCE_VALIDATION.md — re-check it on every regulator circular.
 
 ---
 
@@ -609,6 +634,8 @@ All variables are listed in `frontend/.env.example`. Secrets come from Secret Ma
 | `GEMINI_API_KEY` | Gemini API key (or use Vertex) | Yes |
 | `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI | Yes |
 | `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | Model selection | Yes |
+| `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMS` | Embeddings for the case assistant's search (§13.5) | Yes |
+| `OCR_LANGS`, `OCR_MAX_PDF_PAGES` | Local OCR languages and scanned-PDF page limit (§8.1) | Yes |
 | `AI_TIMEOUT_MS` | AI call timeout (45 000) | Yes |
 | `RATE_LIMIT_AI_PER_MINUTE` | AI rate limit per session (20) | Yes |
 | `PAN_HASH_SECRET` | HMAC key for PAN (required in production) | Yes |
@@ -654,7 +681,7 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | Insurance in MVP | PRD §8.1 | Category exists in demos | Insurance claim procedure and pack |
 | Claims | FL-12–FL-17, FL-36, FL-37 | Journey tasks only | **Claim model, procedures, packs, approval, receipts, outcomes** |
 | Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
-| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks, grounding; synthetic data only | Case-manager coordinator; injection hardening; evaluation set; fixture provider at runtime; approved provider terms before real data (FL-46) |
+| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks; grounded Q&A with retrieval and citations (§13.5); retrieval evaluation set; synthetic data only | Case-manager coordinator; full AI evaluation set (AI_EVALUATION); fixture provider at runtime; approved provider terms before real data (FL-46) |
 | Voice | FL-20, FL-41 | — | **Not started** |
 | Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks | Reminders; operator queue; holds; help/complaints; procedure versioning |
 | Audit, deletion | FL-18, FL-19 | `CaseEvent` timeline | User-visible audit; delete endpoints; retention |

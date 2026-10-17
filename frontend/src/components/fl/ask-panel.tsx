@@ -1,24 +1,91 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { api } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Bot, Send, X } from "lucide-react";
+import type { AnswerSource } from "@/server/knowledge/citations";
+import { Bot, ExternalLink, FileText, Landmark, Send, X } from "lucide-react";
 
 interface QA {
   q: string;
   a: string;
   error?: boolean;
+  sources?: AnswerSource[];
+  grounded?: boolean;
+  passagesOnly?: boolean;
 }
 
-const SUGGESTIONS = ["What should I do next?", "Which documents do I still need?", "Explain where we are in simple words"];
+interface AskResponse {
+  answer: string;
+  sources: AnswerSource[];
+  grounded: boolean;
+  mode: "ai" | "passages";
+}
+
+const SUGGESTIONS = [
+  "What should I do next?",
+  "How long can the bank take to settle a claim?",
+  "There's no nominee on the fund — what do we need?",
+];
+
+function formatDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Numbered sources under an answer: official pages open in a new tab; documents open in the case. */
+function SourceList({ caseId, sources, showExcerpt }: { caseId: string; sources: AnswerSource[]; showExcerpt: boolean }) {
+  return (
+    <div className="max-w-[95%] rounded-xl border bg-card/60 px-3 py-2.5">
+      <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Sources</div>
+      <ol className="space-y-2">
+        {sources.map((s) => {
+          const Icon = s.kind === "procedure" ? Landmark : s.kind === "document" ? FileText : Bot;
+          const title = <span className="font-medium text-navy">{s.title}</span>;
+          return (
+            <li key={s.n} className="flex gap-2 text-[13px] leading-snug">
+              <span className="mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-soft px-1 text-[11px] font-semibold text-teal-brand">
+                {s.n}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-start gap-1.5">
+                  <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  {s.kind === "procedure" && s.url ? (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {title}
+                      <ExternalLink className="ml-1 inline h-3 w-3 align-[-1px]" aria-hidden />
+                      <span className="sr-only"> (official page, opens in a new tab)</span>
+                    </a>
+                  ) : s.kind === "document" && s.documentId ? (
+                    <Link href={`/cases/${caseId}/records/documents/${s.documentId}`} className="hover:underline">
+                      {title}
+                    </Link>
+                  ) : (
+                    title
+                  )}
+                </div>
+                <div className="text-muted-foreground">
+                  {s.publisher}
+                  {s.checkedOn ? ` · checked ${formatDate(s.checkedOn)}` : ""}
+                </div>
+                {showExcerpt && <p className="mt-1 text-ink/75">{s.excerpt}</p>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
 /**
  * The case assistant. Floating on desktop (with onClose) or inline in the
- * Conversation area (without). Answers come from the case file only; this
- * thread is not saved yet (needs GET /api/cases/:id/messages).
+ * Conversation area (without). Answers are grounded in the case file, its
+ * documents and the official procedure library, with numbered sources.
+ * Answers are saved, but this panel does not reload them yet (needs GET /api/cases/:id/messages).
  */
 export default function AskPanel({ caseId, onClose }: { caseId: string; onClose?: () => void }) {
   const [items, setItems] = useState<QA[]>([]);
@@ -34,8 +101,14 @@ export default function AskPanel({ caseId, onClose }: { caseId: string; onClose?
     setItems((arr) => [...arr, { q: question, a: "" }]);
     setBusy(true);
     try {
-      const res = await api.post<{ answer: string }>("/api/ai/ask", { caseId, question });
-      setItems((arr) => arr.map((x, i) => (i === arr.length - 1 ? { ...x, a: res.answer } : x)));
+      const res = await api.post<AskResponse>("/api/ai/ask", { caseId, question });
+      setItems((arr) =>
+        arr.map((x, i) =>
+          i === arr.length - 1
+            ? { ...x, a: res.answer, sources: res.sources, grounded: res.grounded, passagesOnly: res.mode === "passages" }
+            : x
+        )
+      );
     } catch (e) {
       setItems((arr) =>
         arr.map((x, i) =>
@@ -68,8 +141,8 @@ export default function AskPanel({ caseId, onClose }: { caseId: string; onClose?
         {!items.length && (
           <div>
             <p className="text-[15px] leading-relaxed text-ink/75">
-              Ask anything about this case. Answers come only from what is saved in it — I won&apos;t guess or decide who is
-              entitled to what.
+              Ask anything about this case. Answers come from what is saved in it and from official rules (RBI, SEBI,
+              IRDAI), with numbered sources — I won&apos;t guess or decide who is entitled to what.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
@@ -89,14 +162,20 @@ export default function AskPanel({ caseId, onClose }: { caseId: string; onClose?
             <div key={i} className="space-y-2">
               <div className="ml-auto w-fit max-w-[88%] rounded-2xl rounded-br-md bg-navy px-4 py-2.5 text-[15px] leading-relaxed text-white">{x.q}</div>
               {x.a ? (
-                <div
-                  className={cn(
-                    "w-fit max-w-[95%] whitespace-pre-wrap rounded-2xl rounded-bl-md border px-4 py-3 text-[15px] leading-relaxed",
-                    x.error ? "border-destructive/25 bg-destructive/5 text-destructive" : "bg-background text-ink/90"
+                <>
+                  <div
+                    className={cn(
+                      "w-fit max-w-[95%] whitespace-pre-wrap rounded-2xl rounded-bl-md border px-4 py-3 text-[15px] leading-relaxed",
+                      x.error ? "border-destructive/25 bg-destructive/5 text-destructive" : "bg-background text-ink/90"
+                    )}
+                  >
+                    {x.a}
+                  </div>
+                  {!!x.sources?.length && <SourceList caseId={caseId} sources={x.sources} showExcerpt={!!x.passagesOnly} />}
+                  {x.grounded === false && !x.error && !x.passagesOnly && (
+                    <p className="text-[13px] text-muted-foreground">No source was cited for this answer — check it before relying on it.</p>
                   )}
-                >
-                  {x.a}
-                </div>
+                </>
               ) : (
                 <div className="typing-dots w-fit px-3 py-2 text-teal-brand" role="status" aria-label="Thinking">
                   <span />
