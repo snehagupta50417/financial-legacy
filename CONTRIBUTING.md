@@ -12,7 +12,7 @@ The PR template includes this checklist.
 
 ## Order of authority
 
-[ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) → [BRD.md](BRD.md) / [LLD.md](LLD.md) → [DESIGN.md](DESIGN.md). New product behaviour goes into the PRD first. [BACKEND_PLAN.md](BACKEND_PLAN.md) is hackathon-only.
+[ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) → [BRD.md](BRD.md) / [LLD.md](LLD.md) → [DESIGN.md](DESIGN.md). New product behaviour goes into the PRD first.
 
 ## Working practice
 
