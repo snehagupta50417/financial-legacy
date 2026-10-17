@@ -109,6 +109,22 @@ export interface ProofView {
   createdAt: string;
 }
 
+export interface ReviewedFieldView {
+  id: string;
+  label: string;
+  proposedValue: string;
+  value: string;
+  confidence: number;
+  sourceExcerpt: string;
+  critical: boolean;
+  /** proposed | accepted | corrected | rejected */
+  state: string;
+  reason: string | null;
+  reviewedAt: string | null;
+  /** Number of earlier decisions on this field. */
+  changes: number;
+}
+
 export interface CaseWorkspace {
   gate: GateSummary;
   claimants: {
@@ -151,16 +167,43 @@ export interface CaseWorkspace {
     holderName: string | null;
     evidence: string | null;
     discoveryStatus: string;
-    verificationStatus: string;
+    /** self_declared | potential_match | document_backed | institution_verified (FL-07) */
+    evidenceStatus: string;
+    /** Possible duplicate under review (FL-08): the holding it may duplicate. */
+    duplicateOfId: string | null;
+    /** candidate | distinct | merged */
+    duplicateState: string | null;
     confidence: number;
     notes: string | null;
     sourceDocumentId: string | null;
     entitled: boolean;
     valueBand: string | null;
     last4: string | null;
+    /** Latest reviewed, dated amount and what it means (FL-09); null when unknown or hidden. */
+    amount: {
+      amount: string;
+      display: string;
+      currency: string;
+      amountType: string;
+      meaning: string;
+      label: string;
+      asOfDate: string | null;
+      sourceDocumentId: string | null;
+    } | null;
+    /** An amount exists but is hidden until entitlement (G4). */
+    amountHidden: boolean;
     /** true when shown below G4 (institution, category, value band, last-4 only) */
     masked: boolean;
   }[];
+  /** Honest total (FL-29): one reviewed, dated amount per holding, with every exclusion explained. */
+  totals: {
+    label: string;
+    totals: { currency: string; amount: string; display: string }[];
+    counted: { assetId: string; amount: string; currency: string; amountType: string; asOfDate: string }[];
+    excluded: { assetId: string; institution: string; reason: string }[];
+    oldestDate: string | null;
+    newestDate: string | null;
+  };
   documents: {
     id: string;
     category: string;
@@ -169,12 +212,15 @@ export interface CaseWorkspace {
     sizeLabel: string | null;
     extractionStatus: string;
     extractionNote: string | null;
+    /** Current values of fields that weren't rejected (kept for older screens). */
     extractedFields: {
       label: string;
       value: string;
       confidence: number;
       sourceExcerpt: string;
     }[];
+    /** Every field with its review decision (FL-06, FL-26). */
+    fields: ReviewedFieldView[];
     userVerified: boolean;
     isSynthetic: boolean;
     createdAt: string;

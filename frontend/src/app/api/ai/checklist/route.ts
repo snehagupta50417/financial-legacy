@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const visibleAssets = unlocked ? legacyCase.assets.map((a) => maskAsset(legacyCase, a)) : [];
 
   const context = visibleAssets
-    .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""}, verification: ${a.verificationStatus}`)
+    .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? ` (${a.maskedRef})` : ""}, verification: ${a.evidenceStatus.replace(/_/g, " ")}`)
     .join("\n");
 
   const res = await completeJson<Checklist>(

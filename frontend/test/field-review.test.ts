@@ -5,9 +5,11 @@ import {
   initialReviews,
   isCriticalField,
   locateExcerpt,
+  reviewsFromServer,
   summarise,
-  toPatchBody,
+  toDecisions,
   type ExtractedField,
+  type ServerField,
 } from "@/lib/field-review";
 
 const fields: ExtractedField[] = [
@@ -59,20 +61,30 @@ describe("FL-26 accept / correct / reject", () => {
     expect(decide(base, 1, "corrected", "R. K. Sharma")[1].decision).toBe("accepted");
   });
 
-  it("builds the PATCH body: drops rejected, applies corrections, verifies only when complete", () => {
-    let r = initialReviews(fields, false);
-    r = decide(r, 0, "accepted");
-    r = decide(r, 1, "corrected", "Ramesh Kumar Sharma");
-    r = decide(r, 2, "accepted");
-    const partial = toPatchBody(fields, r);
-    expect(partial.userVerified).toBe(false);
+  it("sends only the decisions that changed, with corrections and reasons", () => {
+    const server: ServerField[] = fields.map((f, i) => ({
+      ...f,
+      id: `f${i}`,
+      proposedValue: f.value,
+      state: i === 0 ? "accepted" : "proposed",
+      reason: null,
+    }));
+    let r = reviewsFromServer(server);
+    expect(r[0].decision).toBe("accepted");
+    r = decide(r, 0, "accepted"); // unchanged: not sent again
+    r = decide(r, 1, "corrected", "Ramesh Kumar Sharma", "Initials expanded from the passbook");
+    r = decide(r, 3, "rejected", undefined, "Not a value");
+    expect(toDecisions(server, r)).toEqual([
+      { fieldId: "f1", decision: "corrected", value: "Ramesh Kumar Sharma", reason: "Initials expanded from the passbook" },
+      { fieldId: "f3", decision: "rejected", reason: "Not a value" },
+    ]);
+  });
 
-    r = decide(r, 3, "rejected");
-    const body = toPatchBody(fields, r);
-    expect(body.userVerified).toBe(true);
-    expect(body.extractedFields.map((f) => f.label)).toEqual(["Institution", "Account holder", "Last known balance"]);
-    expect(body.extractedFields[1].value).toBe("Ramesh Kumar Sharma");
-    expect(body.extractedFields[1].sourceExcerpt).toBe("Account Holder: R. K. SHARMA"); // citation kept
+  it("starts from what the server saved, including corrections", () => {
+    const r = reviewsFromServer([
+      { ...fields[1], id: "a", proposedValue: "R. K. Sharma", value: "Ramesh Kumar Sharma", state: "corrected", reason: "From passbook" },
+    ]);
+    expect(r[0]).toEqual({ decision: "corrected", original: "R. K. Sharma", corrected: "Ramesh Kumar Sharma", reason: "From passbook" });
   });
 });
 

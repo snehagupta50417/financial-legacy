@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       evidence: "Added manually by user",
       confidence: 1,
       discoveryStatus: "confirmed",
-      verificationStatus: "user_confirmed",
+      // The family told us about it; a reviewed document can raise this later (FL-07).
+      evidenceStatus: "self_declared",
     },
   });
   await logEvent(legacyCase.id, "asset", `User added asset manually: ${created.institution}`, "user", created.id);

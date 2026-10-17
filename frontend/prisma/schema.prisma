@@ -85,7 +85,13 @@ model AssetRecord {
   evidence          String?
   sourceDocumentId  String?
   discoveryStatus   String   @default("possible") // possible | confirmed | dismissed
-  verificationStatus String  @default("unverified") // unverified | user_confirmed | institution_verified
+  verificationStatus String  @default("unverified") // DEPRECATED: read evidenceStatus (kept for old rows)
+  // The one status shown to people (PRD FL-07). Set only by rules/evidence.ts.
+  evidenceStatus    String   @default("self_declared") // self_declared | potential_match | document_backed | institution_verified
+  // Duplicate review (FL-08): same institution + category + last-4 is a candidate, never merged automatically.
+  duplicateOfId     String?
+  duplicateState    String?  // candidate | distinct | merged
+  observations      Observation[]
   confidence        Float    @default(0.5)
   notes             String?
   entitled          Boolean  @default(false) // G4 for this asset
@@ -115,6 +121,7 @@ model DocumentRecord {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   chunks           KnowledgeChunk[]
+  fields           DocumentField[]
 }
 
 model JourneyTask {
@@ -343,4 +350,63 @@ model KnowledgeChunk {
 
   @@index([scope, caseId])
   @@index([documentId])
+}
+
+// One value read from a document, and the person's decision on it (PRD FL-06, FL-26).
+// extractedFields on DocumentRecord keeps the original AI proposal; this is the reviewed truth.
+model DocumentField {
+  id            String         @id @default(cuid())
+  documentId    String
+  document      DocumentRecord @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  ordinal       Int
+  label         String
+  proposedValue String
+  value         String // current value: proposedValue, or the correction
+  confidence    Float          @default(0.5)
+  sourceExcerpt String         @default("")
+  critical      Boolean        @default(false)
+  state         String         @default("proposed") // proposed | accepted | corrected | rejected
+  reason        String?
+  reviewedAt    DateTime?
+  reviewedBy    String? // session id until real sign-in (B3)
+  history       FieldReviewEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([documentId, ordinal])
+}
+
+// Append-only history of every review decision: who, when, why, and the previous version.
+model FieldReviewEvent {
+  id        String        @id @default(cuid())
+  fieldId   String
+  field     DocumentField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  fromState String
+  toState   String
+  fromValue String
+  toValue   String
+  reason    String?
+  actor     String
+  createdAt DateTime      @default(now())
+}
+
+// A dated amount for a holding (PRD FL-09, FL-28, FL-29). Append-only: a newer or
+// corrected amount supersedes an older one; nothing is overwritten or deleted.
+model Observation {
+  id               String      @id @default(cuid())
+  assetId          String
+  asset            AssetRecord @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  amount           String // decimal string, e.g. "125728.00" — never a float
+  currency         String      @default("INR")
+  amountType       String // cash_balance | current_value | sum_assured | principal | maturity_value | premium | units | other
+  asOfDate         String? // YYYY-MM-DD; null = undated (never counted in totals)
+  label            String // what the document called it, e.g. "Closing balance"
+  sourceDocumentId String?
+  sourceFieldId    String?
+  reviewedAt       DateTime?
+  reviewedBy       String?
+  supersededAt     DateTime?
+  createdAt        DateTime    @default(now())
+
+  @@index([assetId])
 }

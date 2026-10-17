@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const visibleAssets = unlocked ? legacyCase.assets.map((a) => maskAsset(legacyCase, a)) : [];
 
   const assetLines = visibleAssets
-    .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? `, ref ${a.maskedRef}` : ""} [${a.verificationStatus}]`)
+    .map((a) => `- ${a.category} at ${a.institution}${a.maskedRef ? `, ref ${a.maskedRef}` : ""} [${a.evidenceStatus.replace(/_/g, " ")}]`)
     .join("\n");
   const docLines = visibleDocs
     .map((d) => `- ${d.fileName} (${d.category}, extraction: ${d.extractionStatus})`)

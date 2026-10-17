@@ -25,6 +25,12 @@ export async function GET(
   });
 }
 
+const DOC_CATEGORIES = new Set(["bank_statement", "policy_document", "death_certificate", "will", "claim_letter", "receipt", "other"]);
+
+/**
+ * Change a document's type. Values are reviewed through PUT /api/documents/:id/review,
+ * which keeps who changed what and why (FL-26) — this route no longer rewrites them.
+ */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,33 +41,13 @@ export async function PATCH(
   const { doc } = access;
   const body = await req.json().catch(() => null);
 
-  const data: Record<string, unknown> = {};
-  if (typeof body?.extractedFields !== "undefined") {
-    const fields = Array.isArray(body.extractedFields)
-      ? body.extractedFields.map((f: { label?: string; value?: string; confidence?: number; sourceExcerpt?: string }) => ({
-          label: String(f?.label ?? ""),
-          // Full identifiers are never stored (plan §5)
-          value: redactIdentifiers(String(f?.value ?? "")).slice(0, 500),
-          confidence: typeof f?.confidence === "number" ? f.confidence : 0.9,
-          sourceExcerpt: redactIdentifiers(String(f?.sourceExcerpt ?? "Corrected by user")).slice(0, 300),
-        }))
-      : [];
-    data.extractedFields = JSON.stringify(fields);
+  if (body && ("extractedFields" in body || "userVerified" in body)) {
+    return Response.json({ error: "Review values with PUT /api/documents/:id/review" }, { status: 400 });
   }
-  if (typeof body?.userVerified === "boolean") data.userVerified = body.userVerified;
-  if (typeof body?.category === "string") data.category = body.category;
-
-  const updated = await db.documentRecord.update({ where: { id: doc.id }, data });
-
-  if (body?.userVerified === true) {
-    await logEvent(
-      doc.caseId,
-      "document",
-      `User verified extracted fields of "${doc.fileName}"`,
-      "user",
-      doc.id
-    );
+  if (typeof body?.category !== "string" || !DOC_CATEGORIES.has(body.category)) {
+    return Response.json({ error: "category must be one of: " + [...DOC_CATEGORIES].join(", ") }, { status: 400 });
   }
-
+  const updated = await db.documentRecord.update({ where: { id: doc.id }, data: { category: body.category } });
+  await logEvent(doc.caseId, "document", `User set "${doc.fileName}" as ${body.category.replace(/_/g, " ")}`, "user", doc.id);
   return Response.json({ document: { ...updated, extractedFields: parseFields(updated.extractedFields) } });
 }

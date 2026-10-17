@@ -80,7 +80,7 @@ These turn the PRD's product principles into engineering rules.
  │   domain/         case service · journey engine · gates
  │   ai/             provider interface · Gemini adapter · fixture provider
  │   providers/      identity · death proof · relationship · entitlement (mock now)
- │   rules/          claim path · confidence · totals            (to build)
+ │   rules/          evidence · observations · totals · duplicates (claim path to build)
  │   connectors/     connector interface · mock connectors       (Later)
  │   pdf/            claim-pack templates                        (to build)
  │   data/           official resources · demo data · synthetic registries
@@ -146,7 +146,8 @@ frontend/
       data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
         reference/            real public reference snapshot: fund schemes + NAVs, bank branches, pincodes, RBI rates (SOURCES.md)
         synthetic/            demo-case generator: real reference data + synthetic, masked people and identifiers
-      rules/                  (to build) claim-path.ts · evidence.ts · totals.ts
+      rules/                  evidence.ts · observations.ts · totals.ts · duplicates.ts (pure, deterministic); claim-path.ts (to build)
+      domain/evidence-service.ts  applies the rules to stored records (fields, review history, statuses, amounts, duplicates)
       pdf/                    (to build) claim-pack templates
       connectors/             (Later) base.ts · mock/* · real/*
     lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts
@@ -192,9 +193,9 @@ Models defined but not yet used by code: `ClaimPack`, `Signal`, `QaMessage`, `Re
 
 | Change | Why | PRD |
 | --- | --- | --- |
-| Add `AssetRecord.evidenceStatus`: `SELF_DECLARED \| POTENTIAL_MATCH \| DOCUMENT_BACKED \| INSTITUTION_VERIFIED` (§10) | PRD requires exactly these four labels | FL-07 |
-| Add `Observation` model: `assetId`, `amount` (decimal string), `amountType`, `currency`, `asOfDate`, `sourceDocumentId`/`signalId`, `reviewedAt`, `reviewedBy` — append-only | Dated amounts with history; honest totals | FL-09, FL-28, FL-29 |
-| Add `FieldReview` (or extend `DocumentRecord.extractedFields`) with per-field `state: proposed \| accepted \| corrected \| rejected`, reviewer and reason | Critical fields must be reviewed before use | FL-06, FL-26 |
+| **Built (#14):** `AssetRecord.evidenceStatus`: `self_declared \| potential_match \| document_backed \| institution_verified` (§10); `duplicateOfId`, `duplicateState` | PRD requires exactly these four labels | FL-07, FL-08 |
+| **Built (#14):** `Observation`: `assetId`, `amount` (decimal string), `amountType`, `currency`, `asOfDate`, `label`, `sourceDocumentId`, `sourceFieldId`, `reviewedAt`, `reviewedBy`, `supersededAt` — append-only (`signalId` when discovery signals land) | Dated amounts with history; honest totals | FL-09, FL-28, FL-29 |
+| **Built (#14):** `DocumentField` (per-field `state: proposed \| accepted \| corrected \| rejected`, `proposedValue`, `value`, `critical`, reviewer, reason) + append-only `FieldReviewEvent` (from/to state and value, reason, actor). `extractedFields` JSON keeps the AI's original proposal | Critical fields must be reviewed before use | FL-06, FL-26 |
 | Add `Approval`: exact content hash, recipient, channel, purpose, expiry, state | Approval of exactly what is sent | FL-14 |
 | Add `Claim` (one per asset) with states and outcomes (§11); link `ClaimPack` to it | Claims tracked independently to an outcome | FL-12–FL-16 |
 | Add `Hold`: scope, reason, created/resolved by | Pause specific actions | FL-47 |
@@ -292,8 +293,11 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
           (src/server/ocr/rule-extract.ts) → quality "partial" at best, warning shown
        ─► redact identifiers BEFORE storage (6+ digit runs, 8+ digit groups, Aadhaar, PAN; dates kept)
        ─► store redacted text (≤20k chars) + proposed fields; original file NOT stored in v0
-       ─► user reviews each critical field (accept / correct / reject)        ◄── to build
-       ─► accepted fields create/update holdings and observations             ◄── to build
+       ─► each value stored as a DocumentField (redacted, critical flag)
+       ─► user accepts / corrects / rejects each field — PUT /api/documents/:id/review (who, when, why, previous value kept)
+       ─► the holdings the document backs re-derive their evidence status; accepted or corrected amounts become
+          dated observations (corrections supersede, never overwrite); clues become potential matches,
+          flagged as possible duplicates instead of merged
 ```
 
 ### 8.2 Rules
@@ -345,7 +349,7 @@ interface Connector {
 
 **PRD:** FL-07, FL-08, FL-09, FL-28, FL-29.
 
-### 10.1 Evidence status (to build — replaces the current two status fields)
+### 10.1 Evidence status (built — `rules/evidence.ts`)
 
 | Status | Set when | Set by |
 | --- | --- | --- |
@@ -354,16 +358,17 @@ interface Connector {
 | `DOCUMENT_BACKED` | A reviewed document supports it | User review of extracted fields |
 | `INSTITUTION_VERIFIED` | Reviewed evidence **from the institution** confirms it | Operator only, with attributable institution evidence |
 
-Migration from today's fields: `discoveryStatus=possible` → `POTENTIAL_MATCH`; `confirmed` + `verificationStatus=user_confirmed` → `DOCUMENT_BACKED` if a reviewed document is linked, else `SELF_DECLARED`; `institution_verified` → `INSTITUTION_VERIFIED` only with linked institution evidence. `dismissed` stays as a separate lifecycle flag. AI confidence and name similarity can **never** set `INSTITUTION_VERIFIED`.
+Rules as built: not yet confirmed by the user → `potential_match`, whatever a document says. Confirmed + a linked document whose critical fields all have a decision and whose identifying reference wasn't rejected → `document_backed`; otherwise `self_declared`. `institution_verified` is sticky and set only by an operator (no route sets it yet — B9). `dismissed` stays a separate lifecycle flag. Old rows are upgraded the first time a case is opened (`backfillCase`). `verificationStatus` is kept only for old rows and is no longer read. AI confidence and name similarity can **never** raise a status.
 
-### 10.2 Duplicates (to build)
+### 10.2 Duplicates (built — `rules/duplicates.ts`)
 
-Today documents merge into an existing asset by a loose institution-name match (a known bug, not yet fixed). Target: same institution + category + last-4 is a **candidate** duplicate, shown for review. No automatic merge on name alone; merges keep all evidence and can be undone (FL-08).
+Same institution (normalised, with aliases such as LIC / Life Insurance Corporation of India) + same type family (bank account and bank deposit are one family) + same last 4 digits makes a **candidate**: the new holding is created with `duplicateState = candidate` and shown for review. No automatic merge, and no match without a last-4. "Same holding" sets `merged` (the duplicate's evidence and amounts count for the survivor); "Different holdings" sets `distinct`; a merge can be undone (FL-08). The old loose name merge is gone.
 
-### 10.3 Totals (to build, `rules/totals.ts`)
+### 10.3 Totals (built — `rules/totals.ts`)
 
 - Count **one** reviewed, dated observation per holding: the latest with `amountType` in {`CASH_BALANCE`, `CURRENT_VALUE`}.
-- Exclude, with a stated reason: potential matches, duplicates, conflicts, holdings on hold, undated values, historical values, FD principal/maturity, insurance sum assured, units, negative balances.
+- Exclude, with a stated reason: potential matches, duplicates, conflicts, holdings on hold, undated values, historical values, FD principal/maturity, insurance sum assured, units, negative balances, and amounts hidden below G4 for this person. (Holds arrive with B9.)
+- Statement "Cr" / "Dr" mean credit / debit; only spelled-out lakh / crore scale an amount. Amounts are summed in paise with BigInt.
 - Amounts are **decimal strings**; currencies are never mixed.
 - No eligible values → total is `null` ("unknown"), not ₹0. An evidenced zero is `0.00`.
 - Label: **"Reviewed value from dated sources"** — never "your wealth".
@@ -675,9 +680,9 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | Intake and journeys | FL-01, FL-02, FL-22 | Intake with AI + fallback; 7 case types; journey engine | Restore chat (`/messages`); user correction of journey type |
 | Trust gates and authority | FL-03, FL-04, FL-23 | G0–G4 with mock providers; guards; freeze; masking | Proof expiry, reviewer/reason, operator unfreeze, real providers |
 | Real sign-in | FL-45, FL-48 | Session UUID only | **Real authentication** |
-| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction, redaction | Per-field review states; invalidation; malware scan; encrypted originals |
+| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction (AI, OCR, rules), redaction; per-field review with history (#14) | Invalidation of claim packs on material change (B6); malware scan; encrypted originals |
 | Discovery | FL-10 | Resources directory | Discovery plan; `ResourceVisit` flow; outcome logging; no-result/partial states |
-| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Two status fields | **Four evidence statuses**; observations; totals rules |
+| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Four evidence statuses, append-only observations, honest totals, duplicate review (#14) | Nominee information per holding (B6); holds (B9) |
 | Insurance in MVP | PRD §8.1 | Category exists in demos | Insurance claim procedure and pack |
 | Claims | FL-12–FL-17, FL-36, FL-37 | Journey tasks only | **Claim model, procedures, packs, approval, receipts, outcomes** |
 | Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
