@@ -42,7 +42,7 @@
 ## 3. How data flows (trust boundaries)
 
 ```
- [Browser] ──HTTPS──► [Next.js API on Cloud Run] ──► [Database: Cloud SQL / SQLite in v0]
+ [Browser] ──HTTPS──► [Next.js API on Cloud Run] ──► [Database: SQLite in v0 / free option to choose]
      │                     │        │
      │ uploads             │        └──► [AI provider: Gemini / Vertex]   ← boundary: data leaves us
      │                     │
@@ -66,7 +66,7 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 | T3 | Two claimants for the same deceased person | Same PAN hash or DOB + name match **freezes both cases** until an operator reviews | ✅ | LLD §7.3 |
 | T4 | Relative sees assets nominated to someone else | Masking below G4; full details per asset only after entitlement proof | ✅ masking / 🔧 full identifiers | LLD §7.3, FL-03 |
 | T5 | "Deceased" person is actually alive (fraud) | Living-person guard freezes the case on activity after the date of death | ✅ logic / 📌 needs source signals | LLD §7.3 |
-| T6 | Claim pack contents changed after the user approved it | Approval binds exact pack hash, recipient, channel and purpose; any change invalidates it | 🔧 | LLD §11.3, FL-14 |
+| T6 | Claim pack contents changed after the user approved it | Approval binds the pack's SHA-256, recipient, channel and purpose; expires after 15 minutes; any change (including a corrected document field) makes a new version and invalidates it | ✅ | LLD §11.3, FL-14 |
 
 ### 4.2 Getting into someone else's account or case
 
@@ -82,7 +82,7 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 | # | Threat | Mitigation | Status | Ref |
 | --- | --- | --- | --- | --- |
 | T11 | Prompt injection inside an uploaded document | Document text is wrapped and labelled as untrusted data; model output is validated with Zod; **the AI cannot change gates, permissions or verification** — those are deterministic code | ✅ partly / 🔧 injection test set | LLD §13.3, FL-39 |
-| T12 | AI invents a holding, amount or procedure | Extracted fields are proposals until a person reviews them; procedures come from versioned reference data, not the model | 🔧 field review | LLD §8, FL-06 |
+| T12 | AI invents a holding, amount or procedure | Extracted fields are proposals until a person reviews them (per-field review with history); procedures come from versioned reference data; the assistant answers only from cited sources | ✅ | LLD §8, §11.2, §13.5, FL-06 |
 | T13 | AI leaks data above the user's gate in an answer | Prompts include only the masked, gate-appropriate case view | ✅ | LLD §13.3 |
 | T14 | Model alias changes behaviour silently | Pin model versions before the Pilot; record model and prompt version per response; re-run the evaluation set (see [AI_EVALUATION.md](AI_EVALUATION.md)) | ⏳ | FL-44, FL-53 |
 
@@ -91,18 +91,18 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 | # | Threat | Mitigation | Status | Ref |
 | --- | --- | --- | --- | --- |
 | T15 | Database copy or backup leaked | Identifiers redacted before storage; PAN stored only as HMAC; full identifiers (when added) separately encrypted with keys in Secret Manager; managed encryption at rest | ✅ redaction, HMAC / 🔧 field encryption | LLD §16.2 |
-| T16 | Real personal data committed to git (it happened: `frontend/db/custom.db`) | `*.db` ignored; file removed. **History purge still pending — owner action** | ⏳ purge | DECISIONS M0 |
-| T17 | Data sent to the AI provider is retained or used for training | Synthetic data only until approved terms (data residency, retention, no training) | ⏳ | FL-46, [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) |
+| T16 | Real personal data committed to git (it happened: `frontend/db/custom.db`) | `*.db` ignored; file removed and purged from git history (17 Oct 2026). Cached copies: GitHub Support request and a fork owner's copy are owner actions | ✅ purge / ⏳ cached copies | DECISIONS M0 |
+| T17 | Data sent to the AI provider is retained or used for training | The free Gemini tier **does** allow Google to use prompts and human review, so: synthetic data only; real cases run without AI unless a paid tier with no-training terms is approved ([FREE_TIER_PLAN.md §4](FREE_TIER_PLAN.md#4-what-the-free-ai-terms-mean)) | ⏳ | FL-46, [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) |
 | T18 | Download links shared or leaked | Short-lived, user-bound, audited links; never in URLs or logs; user warned copies can't be recalled | 🔧 | FL-34 |
 | T19 | Sensitive values in application logs | Structured logs with no document contents, identifiers or amounts; request IDs only | 🔧 | LLD §17.2 |
-| T20 | Malicious file (malware, zip bomb, huge image) | Size limit; byte-sniffed type allow-list (PDF, PNG, JPEG, WebP) | ✅ / ⏳ malware scan | LLD §8, FL-05 |
+| T20 | Malicious file (malware, zip bomb, huge image) | Size limit; byte-sniffed type allow-list (PDF, PNG, JPEG, WebP, text); OCR limited to the first 5 PDF pages | ✅ / ⏳ malware scan (no free scanner chosen) | LLD §8, FL-05 |
 
 ### 4.5 Insiders
 
 | # | Threat | Mitigation | Status | Ref |
 | --- | --- | --- | --- | --- |
 | T21 | Operator browses cases they aren't assigned | Operators see only assigned cases; privileged actions require a reason and are audited | 🔧 | FL-23, FL-43 |
-| T22 | Operator approves a disclosure on the user's behalf | Only the owner or claimant can approve; enforced in code | 🔧 | FL-14 |
+| T22 | Operator approves a disclosure on the user's behalf | Only the case owner can approve (no operator role exists); enforced in code. Re-check when an operator role is added (B9) | ✅ v0 | FL-14 |
 | T23 | Support staff see financial documents | Support has no general access; support messages never carry documents | 🔧 | FL-49 |
 | T24 | Audit trail edited to hide abuse | Append-only events; no update or delete path; reviewed periodically | ✅ append-only model / 🔧 review | FL-18 |
 
@@ -118,22 +118,22 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 
 | # | Threat | Mitigation | Status | Ref |
 | --- | --- | --- | --- | --- |
-| T28 | Malicious or vulnerable npm dependency | Lockfile committed; dependency scanning in CI; remove unused packages (`next-auth`/`next-intl` if not adopted) | 🔧 | LLD §3, §19 |
+| T28 | Malicious or vulnerable npm dependency | Lockfile committed; CI installs with `npm ci`; unused `next-auth` / `next-intl` removed. Dependency scanning still to add (e.g. GitHub's free Dependabot alerts) | ✅ / 🔧 scanning | LLD §3, §19 |
 | T29 | Scammers impersonate Financial Legacy | Public statement: we never ask for passwords, OTPs or fees by phone; official domain only; report channel | ⏳ | BRD §8.3 |
 
 ## 5. Highest risks before the Pilot
 
 1. **T7 — no real authentication.** Blocks any real data.
 2. **T1/T2 — mock identity and death providers.** Real providers or trained operator review must exist before real claims.
-3. **T16 — personal data in git history.** Purge before the repository is shared further.
-4. **T17 — AI provider terms.** Approved configuration before any real document reaches a model.
-5. **T6/T22 — approvals not built.** Nothing should leave the product without them.
+3. **T17 — free AI terms.** The unpaid Gemini tier may use prompts; no real document may reach it.
+4. **No permanent database.** SQLite on Cloud Run is wiped on restart; choose a free option before any data must persist ([FREE_TIER_PLAN.md §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)).
+5. **T20 — no malware scanning.** Synthetic uploads only until a free scanner is chosen.
 
 ## 6. Security testing plan
 
 - Route tests for every guard: foreign IDs → 404, locked gate → 403, frozen → 423, no assets below G3, no full identifiers below G4 ([LLD §19](../LLD.md#19-testing-and-evaluation)).
 - Prompt-injection test documents in the AI evaluation set.
-- Dependency and secret scanning in CI.
+- Dependency and secret scanning in CI (CI itself is built: type-check, lint, tests, build).
 - An independent penetration test before the Pilot.
 - Incident runbooks (unauthorised access, leaked credentials, wrong evidence linked to a case, deletion failure) before the Pilot.
 

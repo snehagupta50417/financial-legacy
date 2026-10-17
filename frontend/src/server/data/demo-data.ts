@@ -34,8 +34,7 @@ export interface DemoCaseSeed {
     maskedRef: string | null;
     holderName: string | null;
     evidence: string;
-    confidence: number;
-    verificationStatus: string;
+    confidence: number;
   }[];
   completedTaskTitles: string[];
 }

@@ -8,7 +8,7 @@
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) (behaviour and scope) → [LLD.md](LLD.md) (data, permissions, workflow) → this document (presentation and interaction). Design never adds features or bypasses a permission. |
 | **Describes** | The target design for the MVP, mapped onto the real app in [`frontend/`](frontend/) (a Next.js app with one route per area, §2.1). Where the app differs today, this document says so. |
-| **Status** | Built today: conversation-first landing and start, one route per case area with a desktop sidebar (case, areas, six-step journey) and mobile bottom navigation, Conversation home with action cards, holdings grouped by evidence status, legacy record with gaps checklist and "Notes for your lawyer", trust-gate panel, masked and locked states, document upload and extraction, side-by-side field review (per-field states kept in the browser until the API stores them). Not built: voice, claims screens, legacy snapshot export and trusted contacts, discovery plan, activity and privacy screens, saved assistant history. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| **Status** | Built today: conversation-first landing and start, one route per case area with a desktop sidebar (case, areas, six-step journey) and mobile bottom navigation, Conversation home with action cards, holdings grouped by evidence status, legacy record with gaps checklist and "Notes for your lawyer", trust-gate panel, masked and locked states, document upload and extraction, side-by-side field review (decisions saved per field on the server, with history), claims list and a page per claim (path, documents, pack approval and download, submission and outcome tracking). Not built: voice, legacy snapshot export and trusted contacts, discovery plan, activity and privacy screens, reloading saved assistant answers. See [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 
 ---
 
@@ -43,7 +43,7 @@ Since round 2 of the frontend work (issue #35) each area has its own URL, so pag
 | `/cases/{id}/records` | **Records → Assets** |
 | `/cases/{id}/records/documents` | **Records → Documents** (upload and list) |
 | `/cases/{id}/records/documents/{docId}` | **Field review** for one document (§5.4) |
-| `/cases/{id}/plan` *or* `/cases/{id}/claims` | **Plan** (living person) or **Claims** (deceased holder); the other one redirects. Claims is an interim list of one card per holding until the claims screens (§7.2) are built |
+| `/cases/{id}/plan` *or* `/cases/{id}/claims` | **Plan** (living person) or **Claims** (deceased holder); the other one redirects. Claims lists one card per holding; each claim opens at `/cases/{id}/claims/{claimId}` |
 | `/cases/{id}/steps` | **Steps** (tasks) |
 | `/cases/{id}/help` | Get help |
 | `/resources` | Official portals |
@@ -57,7 +57,7 @@ Every case page shares one frame (frontend revamp, issue #37): on desktop a side
 | **My cases** | List of the person's cases: subject, goal, state and next task. **New case** and **Continue**. No balances or document previews in another case's card. | `/cases` |
 | **Conversation** | Saved messages, a short summary of reviewed facts, the next task and action cards. Default entry to a case. | `/cases/{id}` (summary, action cards, facts, assistant; no saved history yet) |
 | **Records** | Documents, discovery plan and assets as labelled sub-views | `/cases/{id}/records` (assets, documents; no discovery plan yet) |
-| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | `/plan` (legacy record, gaps, notes for your lawyer) or `/claims` (interim cards) |
+| **Plan** *(living person)* or **Claims** *(deceased person)* | Legacy record, or one card per claim | `/plan` (legacy record, gaps, notes for your lawyer) or `/claims` (claim cards; one page per claim) |
 | **Tasks** | Owner, due date, waiting-on, blocked state, next action | `/cases/{id}/steps` |
 | Case menu | Verification (trust gates), activity history, privacy and consent | Gate panel; no activity/privacy screens yet |
 | Help | Talk to a person; official resources | `/cases/{id}/help`, `/resources` |
@@ -196,7 +196,7 @@ Proposed: ₹5,00,000                Nominee: Sunita Sharma
 
 A correction shows the original and the new value and asks for a reason when it matters. "Saved" appears only after the server confirms. Financial drafts are never kept in browser storage.
 
-**Built (round 2):** `/cases/{id}/records/documents/{docId}`. The document's stored, redacted text is on the left; "Show in document" highlights the field's source excerpt (and on mobile scrolls up to it, with "Back to field"). Each field shows **Important** for critical fields (FL-06), its confidence, source, review status and Accept / Correct / Reject. **Save review** is enabled once every field has a decision; rejected values are removed and corrections replace the value, through `PATCH /api/documents/:id`. Not built yet: asking for a reason, keeping the previous value on the server, and invalidating dependants (FL-26) — see DECISIONS.md.
+**Built (round 2):** `/cases/{id}/records/documents/{docId}`. The document's stored, redacted text is on the left; "Show in document" highlights the field's source excerpt (and on mobile scrolls up to it, with "Back to field"). Each field shows **Important** for critical fields (FL-06), its confidence, source, review status and Accept / Correct / Reject. **Save review** is enabled once every field has a decision; rejected values are removed and corrections replace the value, through `PATCH /api/documents/:id`. Not built yet: asking for a reason, keeping the previous value on the server, and invalidating dependants (FL-26) — see DECISIONS.md. *(Updated 17 Oct 2026: decisions are saved per field on the server with history — `PUT /api/documents/:id/review` — and can be saved part-way; correct and reject take an optional reason.)*
 
 ---
 

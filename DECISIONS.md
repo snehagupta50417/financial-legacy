@@ -1,8 +1,8 @@
 # Decisions
 
-Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest last.
+Implementation decisions, newest last. The early entries (M0–M3) followed the hackathon plan `BACKEND_PLAN.md`, which was later folded into LLD §21 and removed (it is in git history).
 
-> **Note (17 Oct 2026):** the tests described under M1–M3 (Vitest route tests with a temporary SQLite DB, `test/live-ai.test.ts`, the Playwright run) were **not committed** — `frontend/test/` does not exist in the repository. Treat those results as unverified until the tests are committed (LLD §19, build step B1).
+> **Note (17 Oct 2026):** the tests described under M1–M3 (Vitest route tests with a temporary SQLite DB, `test/live-ai.test.ts`, the Playwright run) were **not committed** — `frontend/test/` does not exist in the repository. Treat those results as unverified until the tests are committed (LLD §19, build step B1). *(Later the same day a new suite was committed — see the entries from issue #31 onward; 106 tests and CI as of the "Free tier only" entry.)*
 
 ## M0 — Security cleanup
 
@@ -37,7 +37,7 @@ Implementation decisions taken while following `BACKEND_PLAN.md` (v2), newest la
 ## M2 — Schema and trust gates
 
 - **Layout:** server-only code moved to `src/server/` (plan §12). `src/lib/` keeps only client-shared code (`types.ts`, `client.ts`, `utils.ts`).
-- **Schema:** all §5 models were added in one migration: `DeceasedPerson`, `Claimant`, `Proof`, `Signal`, `Institution`, `ClaimPack`, `Draft`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`. Later milestones add no further schema churn. *(Superseded 17 Oct 2026: LLD §5.2 adds `Observation`, `FieldReview`, `Approval`, `Claim`, `Hold`, `LegacySnapshot`, `TrustedContact`, `User` and `AssetRecord.evidenceStatus` for the PRD MVP.)* Enums are documented in the schema and enforced by Zod at the API.
+- **Schema:** all §5 models were added in one migration: `DeceasedPerson`, `Claimant`, `Proof`, `Signal`, `Institution`, `ClaimPack`, `Draft`, `QaMessage`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`. Later milestones add no further schema churn. *(Superseded 17 Oct 2026: LLD §5.2 adds `Observation`, per-field review (built as `DocumentField` + `FieldReviewEvent`), `Approval`, `Claim`, `Hold`, `LegacySnapshot`, `TrustedContact`, `User` and `AssetRecord.evidenceStatus` for the PRD MVP.)* Enums are documented in the schema and enforced by Zod at the API.
 - **Journey kinds:** `living_individual` and `estate_planning` are **personal**; they need only G1, and the user's own assets are shown in full. `caregiver` needs G1 and then G3, where G3 is the relative's recorded consent (`method: relative_consent`, which also writes a `ConsentRecord`). Everything else, including unclassified `general`, takes the strict G1 → G2 → G3 path.
 - **Guard:** `src/server/core/access.ts` (`caseAccess` / `assetAccess` / `documentAccess` with `owner | discovery`).
   - Foreign IDs return 404.
@@ -107,8 +107,8 @@ Decisions taken while rewriting the document set (ONE_PAGER → PRD v0.6.2 → B
 ## Platform decisions — 17 Oct 2026
 
 - **Git history:** `frontend/db/custom.db` purged from all history with `git filter-branch`; `main` force-pushed (118 commits kept, current files identical); merged branches deleted. Copies may remain in the fork, in `tash149/financial-legacy`, and in GitHub's stored pull-request refs (GitHub Support must clear those).
-- **Voice (D-09):** Google Cloud Speech-to-Text (Chirp) and Text-to-Speech. Launch languages: English (India), Hindi, Hinglish, Tamil. No raw audio retained.
-- **Sign-in:** Google Identity Platform — phone OTP as the main method, Google sign-in as an option. `next-auth` not needed.
+- **Voice (D-09):** Google Cloud Speech-to-Text (Chirp) and Text-to-Speech. Launch languages: English (India), Hindi, Hinglish, Tamil. No raw audio retained. *(Superseded twice: by the research revision below, then by the free-tier rule — see "Free tier only".)*
+- **Sign-in:** Google Identity Platform — phone OTP as the main method, Google sign-in as an option. `next-auth` not needed. *(Superseded by the free-tier rule: Google sign-in only — see "Free tier only".)*
 - **Google Cloud:** existing project for development; a separate production project before the Pilot; region `asia-south1`. Setup in `docs/CLOUD_SETUP.md`.
 - **Process:** every PR follows `CONTRIBUTING.md` (tests pass, FL IDs named, docs updated). The MVP build steps are issues #10–#20.
 
@@ -135,8 +135,8 @@ Four research passes (data protection law, licensing and integrations, official 
 - **Account Aggregator:** not for deceased persons' data; at most a regulated partner for living users' own assets, Later.
 - **Insurance timelines verified:** 15 days from intimation (45 if investigated), Bank Rate + 2% for delay (IRDAI Master Circular, 5 Sep 2024).
 - **Data protection:** SPDI Rules apply today; DPDP Rules notified 13 Nov 2025, most duties from ~13 May 2027. Build to the 2027 standard now.
-- **Voice (revises the earlier D-09 decision — confirmed by the founder):** Google Speech-to-Text is not available in India; prefer Gemini audio on Vertex AI in Mumbai for recognition, Google TTS in Mumbai for replies; Chirp outside India only as a disclosed fallback.
-- **Sign-in (revises the earlier decision — confirmed by the founder):** OTP SMS needs TRAI DLT registration; prefer a DLT-registered Indian SMS gateway with our own OTP check (keeps phone numbers in India); Google sign-in stays as an option.
+- **Voice (revises the earlier D-09 decision — confirmed by the founder):** Google Speech-to-Text is not available in India; prefer Gemini audio on Vertex AI in Mumbai for recognition, Google TTS in Mumbai for replies; Chirp outside India only as a disclosed fallback. *(Superseded by the free-tier rule: Vertex AI bills.)*
+- **Sign-in (revises the earlier decision — confirmed by the founder):** OTP SMS needs TRAI DLT registration; prefer a DLT-registered Indian SMS gateway with our own OTP check (keeps phone numbers in India); Google sign-in stays as an option. *(Superseded by the free-tier rule: Google sign-in only.)*
 
 ## Cautious legal positions instead of a lawyer — 17 Oct 2026
 
@@ -229,3 +229,14 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Submission is the family's act, and idempotent.** No receipt = "not sure it was received — check before re-sending". The due date is the submission date plus the procedure's days. Pre-submission steps are owned by the family without a due date: there is no external deadline to invent. A rejection is never counted as money recovered; a partial settlement keeps tracking the rest; reopening keeps earlier packs and events.
 - **Nominee information on holdings.** `nomineeStatus` / `jointHolderStatus` come from the family's answers, the entitlement check, or a reviewed "Nominee" field (e.g. "Not registered" on the CAS marks that folio as having none).
 - The journey rail counts claims: "Prepare claims" is current once a claim starts and done when every claimable holding's claim is submitted; "Track to the end" follows submitted claims to their outcomes.
+
+## Free tier only, and a clean-up — 17 Oct 2026
+
+- **Rule (founder):** use only free tiers and the free credits we already have; AI through a Gemini API key; deploy on Google Cloud. Written up, with each service's free limit and sources, in `docs/FREE_TIER_PLAN.md`; `docs/CLOUD_SETUP.md` rewritten to match.
+- **Dropped because they bill:** Cloud SQL (no free tier; one 30-day trial only), Vertex AI (per use), Memorystore, phone OTP (SMS billed beyond 10 a day; DLT costs), Speech-to-Text beyond 60 free minutes, Cloud Storage outside US regions. The Vertex code path stays, unused, for a future paid setup; its default region is now `asia-south1`.
+- **Sign-in:** Google sign-in through Identity Platform / Firebase Authentication — free up to 50,000 monthly users. Supersedes the phone-OTP decisions above.
+- **AI data:** the unpaid Gemini tier lets Google use prompts to improve products, allows human review and forbids personal information. So: synthetic data only. Real cases either run with AI off (the app already works without a key) or wait for an approved paid tier — that would change this rule.
+- **Database — open:** SQLite on Cloud Run is wiped on restart. Free options (a US-only `e2-micro` VM with Postgres, a free external Postgres, Firestore with a data-layer rewrite) each have a cost in residency, limits or work. B2 is on hold until the founder chooses.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) runs type-check, lint, tests and a production build on every PR and push to main. Free within 2,000 minutes a month for a private repo. No secrets needed. The two remaining lint errors (shadcn `carousel.tsx`, `use-mobile.ts`) were fixed so lint can gate PRs.
+- **Removed (unused):** the "Hello, world" API route; models `UserProfile`, `Signal`, `Institution`, `Draft`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`; holding fields `verificationStatus`, `sourceSignalIds`, `institutionId`; packages `next-auth`, `next-intl`; env vars for connectors, the console key, demo mode and log level. Each returns with the feature that needs it. Package renamed `financial-legacy`.
+- **Docs brought up to date** with what is built (OCR, RAG, B4, B6, tests, CI): LLD (v0.6), README, PRD (v0.6.3, new D-14), privacy assessment, threat model, feasibility, BRD and the factual lines in DESIGN.

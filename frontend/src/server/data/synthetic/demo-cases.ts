@@ -203,10 +203,10 @@ Nominee: Not registered (Folio ${sbiFolio})`,
       },
     ],
     assets: [
-      { category: "bank_deposit", institution: "Punjab National Bank", maskedRef: `A/c **${acctLast4}`, holderName: holder, evidence: `PNB ${pnb.branch} (${pnb.ifsc}): ₹${inr(closing)} Cr on 31 Mar 2016; inoperative; check UDGAM`, confidence: 0.91, verificationStatus: "user_confirmed" },
-      { category: "insurance", institution: "LIC of India", maskedRef: `Policy **${policyLast4}`, holderName: holder, evidence: `${lic.name} (Table ${lic.table}), sum assured ₹${inr(sumAssured, 0)}; last premium Feb 2018`, confidence: 0.89, verificationStatus: "user_confirmed" },
-      { category: "mutual_fund", institution: "HDFC Mutual Fund", maskedRef: `Folio **${hdfcFolio.slice(-7)}`, holderName: holder, evidence: `HDFC Flexi Cap Fund (was HDFC Equity Fund): ₹${inr(hdfcValue, 0)} in Dec 2019; indicative ${rupees(hdfcToday)} today`, confidence: 0.92, verificationStatus: "user_confirmed" },
-      { category: "mutual_fund", institution: "SBI Mutual Fund", maskedRef: `Folio **${sbiFolio.slice(-4)}`, holderName: holder, evidence: `SBI Large Cap Fund (was SBI Blue Chip Fund): ₹${inr(sbiValue, 0)} in Dec 2019; indicative ${rupees(sbiToday)} today; no nominee`, confidence: 0.9, verificationStatus: "user_confirmed" },
+      { category: "bank_deposit", institution: "Punjab National Bank", maskedRef: `A/c **${acctLast4}`, holderName: holder, evidence: `PNB ${pnb.branch} (${pnb.ifsc}): ₹${inr(closing)} Cr on 31 Mar 2016; inoperative; check UDGAM`, confidence: 0.91 },
+      { category: "insurance", institution: "LIC of India", maskedRef: `Policy **${policyLast4}`, holderName: holder, evidence: `${lic.name} (Table ${lic.table}), sum assured ₹${inr(sumAssured, 0)}; last premium Feb 2018`, confidence: 0.89 },
+      { category: "mutual_fund", institution: "HDFC Mutual Fund", maskedRef: `Folio **${hdfcFolio.slice(-7)}`, holderName: holder, evidence: `HDFC Flexi Cap Fund (was HDFC Equity Fund): ₹${inr(hdfcValue, 0)} in Dec 2019; indicative ${rupees(hdfcToday)} today`, confidence: 0.92 },
+      { category: "mutual_fund", institution: "SBI Mutual Fund", maskedRef: `Folio **${sbiFolio.slice(-4)}`, holderName: holder, evidence: `SBI Large Cap Fund (was SBI Blue Chip Fund): ₹${inr(sbiValue, 0)} in Dec 2019; indicative ${rupees(sbiToday)} today; no nominee`, confidence: 0.9 },
     ],
     completedTaskTitles: [],
   };
@@ -290,7 +290,7 @@ Sr. Divisional Manager (Claims)`,
       },
     ],
     assets: [
-      { category: "insurance", institution: "LIC of India", maskedRef: `Policy **${policyLast4}`, holderName: deceased, evidence: `${lic.name} (Table ${lic.table}), sum assured ₹${inr(sumAssured, 0)}; claim ${claimRef} awaiting documents`, confidence: 0.96, verificationStatus: "user_confirmed" },
+      { category: "insurance", institution: "LIC of India", maskedRef: `Policy **${policyLast4}`, holderName: deceased, evidence: `${lic.name} (Table ${lic.table}), sum assured ₹${inr(sumAssured, 0)}; claim ${claimRef} awaiting documents`, confidence: 0.96 },
     ],
     completedTaskTitles: ["Upload the rejection letter and all correspondence"],
   };
@@ -361,10 +361,10 @@ function demoC(): DemoCaseSeed {
       },
     ],
     assets: [
-      { category: "bank_deposit", institution: "HDFC Bank", maskedRef: `A/c **${acctLast4}`, holderName: "Joint holding", evidence: `Savings ≈ ₹${inr(savings, 0)} + FD ₹${inr(fd, 0)} @ ${fdRate}%, ${hdfc.branch} (${hdfc.ifsc})`, confidence: 0.85, verificationStatus: "unverified" },
-      { category: "shares", institution: "ICICI Bank (demat)", maskedRef: null, holderName: null, evidence: "TCS 40, Reliance 60 shares; dividends not updated since 2021", confidence: 0.84, verificationStatus: "unverified" },
-      { category: "mutual_fund", institution: "SBI Mutual Fund", maskedRef: null, holderName: "Father (transferred)", evidence: `SBI Large Cap Fund, ${inr(mfUnits, 3)} units; indicative ${rupees(mfToday)} today; no nominee`, confidence: 0.8, verificationStatus: "unverified" },
-      { category: "other", institution: "Pune flat (immovable property)", maskedRef: null, holderName: null, evidence: "Loan closed 2023; release deed pending", confidence: 0.8, verificationStatus: "unverified" },
+      { category: "bank_deposit", institution: "HDFC Bank", maskedRef: `A/c **${acctLast4}`, holderName: "Joint holding", evidence: `Savings ≈ ₹${inr(savings, 0)} + FD ₹${inr(fd, 0)} @ ${fdRate}%, ${hdfc.branch} (${hdfc.ifsc})`, confidence: 0.85 },
+      { category: "shares", institution: "ICICI Bank (demat)", maskedRef: null, holderName: null, evidence: "TCS 40, Reliance 60 shares; dividends not updated since 2021", confidence: 0.84 },
+      { category: "mutual_fund", institution: "SBI Mutual Fund", maskedRef: null, holderName: "Father (transferred)", evidence: `SBI Large Cap Fund, ${inr(mfUnits, 3)} units; indicative ${rupees(mfToday)} today; no nominee`, confidence: 0.8 },
+      { category: "other", institution: "Pune flat (immovable property)", maskedRef: null, holderName: null, evidence: "Loan closed 2023; release deed pending", confidence: 0.8 },
     ],
     completedTaskTitles: ["Build the complete asset & liability inventory"],
   };
