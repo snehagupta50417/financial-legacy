@@ -1,95 +1,89 @@
-# Backend Plan — FinLegacy AI
+# Hackathon Build Plan — Financial Legacy
 
-> **Read this first (17 Oct 2026).** This is the **hackathon milestone plan** (AI Builder Cup, Phase A in [LLD §21](LLD.md#21-build-plan)). The product is now defined by [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) → [BRD.md](BRD.md) / [LLD.md](LLD.md), and **they win wherever this plan disagrees**. In particular:
+> **What this is:** the milestone plan for the **AI Builder Cup 2026** prototype (Google Cloud, BFSI theme), due **18 Oct 2026** — Phase A in [LLD §21](LLD.md#21-build-plan). After the hackathon, the LLD's Phase B (issues #10–#20) takes over.
 >
-> - **Discovery:** the MVP is document upload + guided official searches ([PRD §8.3](PRD.md#83-releases), [LLD §9](LLD.md#9-discovery)). "Connect, don't upload" (principle 4, §4) applies to Later connectors only; mock connectors may be used in the hackathon demo, labelled "Simulated".
-> - **Verify console** (§7, M5) is a **Later** capability (PRD FL-56), built for the demo only. It is not "the main future revenue line": no revenue stream is chosen yet ([BRD §7](BRD.md#7-business-model), decision D-08). The business model in §1 (flat fee per estate, per verified claim) is a hackathon assumption, not a decision.
-> - **Segments:** the pilot starts with **bereaved families** (D-01); NRI families are a later segment. **Trace** and **Protect** are not in the one-pager or PRD; treat them as unreviewed ideas.
-> - **Claim submission:** the product never marks a claim as "sent" on the user's behalf. The user approves the exact pack and submits it; the product records the receipt ([LLD §11.3](LLD.md#113-claim-lifecycle)). `POST /api/claim-packs/:id/submit` (§6.2) is replaced by `/approve` plus a receipt.
-> - **Claim packs:** the MVP needs bank/FD, mutual fund and life-insurance packs; IEPF is Later (§9's three v0 templates are a demo subset).
-> - **Regulatory figures** in §1 and §9 (₹15 lakh / ₹5 lakh simplified-settlement thresholds, 15-day settlement, Bank Rate + 4% compensation) are now **verified** against *RBI (Settlement of Claims in respect of Deceased Customers of Banks) Directions, 2025* (RBI/2025-26/82, 26 Sep 2025) — see [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3.1. The LLD keeps them in versioned, sourced configuration.
-> - **Q2 below is out of date:** [LLD.md](LLD.md) v0.5 now describes this codebase. The old Python/FastAPI LLD and `contracts/` are superseded.
-
-> **Status:** Approved plan (v2). Supersedes the Phase 1 read-only analysis.
-> **Repo:** new repo containing the existing Next.js `frontend/` (originally from `tash149/financial-legacy`).
-> **Deadline:** AI Builder Cup 2026 (Google Cloud, BFSI theme) prototype due **18 Oct 2026**. After that, this same codebase becomes the real MVP.
-> **Rule for the coding agent:** build in the order of §11. Finish and verify one milestone before starting the next. If anything here conflicts with the existing code, this file wins over the code (not over the PRD or LLD); note the decision in `DECISIONS.md`.
+> **Order of authority:** [ONE_PAGER.md](ONE_PAGER.md) → [PRD.md](PRD.md) → [BRD.md](BRD.md) / [LLD.md](LLD.md) → this plan. If anything here disagrees with them, they win. This plan wins only over the existing code.
+>
+> **Rule for the coding agent:** build in the order of §11. Finish and verify one milestone before starting the next. Follow [CONTRIBUTING.md](CONTRIBUTING.md) and [frontend/AGENTS.md](frontend/AGENTS.md). Record decisions in [DECISIONS.md](DECISIONS.md).
+>
+> **Version:** v3 (17 Oct 2026) — rewritten to match the one-pager, PRD v0.6.2 and LLD v0.5.1. v2 is in git history.
 
 ---
 
 ## 1. Product context (read first)
 
-**What FinLegacy AI is.** India holds well over ₹1 lakh crore in unclaimed financial assets (bank deposits in RBI's DEA Fund, unclaimed insurance, mutual funds, IEPF shares/dividends). Most of it belongs to people who have died and whose families don't know what existed or how to claim it. At the same time, banks and insurers struggle to pay death claims to the right person: RBI's 2025 Directions require deceased-customer claims to be settled within 15 days of complete documents (with Bank Rate + 4% compensation for delay), and insurers face fake-death and impostor claims with no shared way to detect them.
+**What Financial Legacy is.** An AI assistant that helps Indian individuals and families **discover** financial assets, **plan a legacy** so their family can find everything later, and **claim and recover** a deceased person's assets — managing the case, not just answering questions ([ONE_PAGER.md](ONE_PAGER.md)).
 
-**Two sides, one engine.**
-- **Heirs (B2C, "Recover"):** prove who they are and who died, connect sources, see the deceased's assets appear (masked, evidence-linked), get a per-asset claim plan and pre-filled claim packs. NRI heirs are a priority segment.
-- **Institutions (B2B, "Verify"):** a claims console where a bank/insurer checks a death claim's documents, cross-document consistency, duplicates and risk, and decides. This is the fraud/risk piece the hackathon theme asks for, and the main future revenue line.
-- Later products on the same engine: **Trace** (find heirs for dormant accounts before transfer to DEA/IEPF) and **Protect** (living family asset map, bundled by institutions).
+**Why it matters.** Official figures show large unclaimed sums: ₹60,518 crore of unclaimed deposits from public-sector banks in RBI's DEA Fund (Jan 2026), ₹8,974 crore with insurers and ₹3,749 crore in mutual funds (Feb 2026) — see [BRD §3](BRD.md#3-market-opportunity) for sources and caveats. About 89 lakh deaths are registered in India each year, each one potentially leaving a family to find and claim scattered assets.
 
-**Business model (for context, not built in v0):** heirs pay a flat fee per estate (charged to the estate, never a % of recovered money); banks/insurers pay per verified claim or annually; Trace is per heir found; Protect is free to families, funded by institutions.
+**What the hackathon prototype shows.** The pilot focus — **a bereaved family finding and claiming a parent's assets** (PRD Journey C) — end to end: prove identity, death and relationship; see assets appear masked and evidence-linked; get a per-asset claim plan and a prepared claim pack the family reviews and submits themselves.
 
-**Product principles (non-negotiable):**
+**Also shown, as a clearly labelled demo of a Later capability:** a **Verify console** where a bank or insurer reviews a death claim's documents for consistency, duplicates and completeness (PRD FL-56, Later). It illustrates the "software for institutions" revenue hypothesis ([BRD §7](BRD.md#7-business-model)); no revenue stream has been chosen yet (PRD D-08).
+
+**Product principles (non-negotiable — from PRD §6 and LLD §1):**
 1. **Prove before you see.** Name + DOB + PAN alone unlock nothing. No discovery and no asset data before gate G3 (§3).
-2. **Access decisions are deterministic code.** The LLM extracts, explains and drafts; it never decides access, entitlement or risk.
+2. **Code decides access.** The LLM extracts, explains and drafts; it never decides access, entitlement, verification or risk.
 3. **Mask by default.** Below G4 (per asset): institution, category, value band, last-4 only.
-4. **Connect, don't upload.** Discovery comes from connected sources (email, tax record, SMS via a future Android companion). Upload/camera scan is a fallback for old paper only.
-5. **Read, extract, forget.** Store extracted fields and short evidence snippets; never store raw email/SMS bodies.
+4. **Upload and guided search first.** MVP discovery is documents the family uploads plus guided use of official searches (UDGAM, MITRA/MFCentral, insurer searches, the government common portal). Email, tax-record and SMS **connectors are Later**; in the hackathon demo they may appear as mocks labelled "Simulated".
+5. **Read, extract, forget.** Store extracted fields and short evidence snippets; never raw email/SMS bodies.
 6. **Everything is logged** in an append-only audit trail visible to the user.
-7. **Humans confirm.** Separate confirmed facts, user-provided information and AI hypotheses. Never present an inferred asset as verified.
-8. **v0 uses synthetic data only.** No real personal documents are sent to any model in v0.
+7. **Humans confirm.** Four evidence statuses — self-declared, potential match, document-backed, institution-verified. An inferred asset is always a potential match, never verified.
+8. **The family approves and submits.** The product prepares claim packs; the user approves the exact pack and submits it to the institution. The product never says it submitted a claim.
+9. **Synthetic data only.** No real personal documents reach any model, test or screenshot.
 
-**Platform:** one responsive web app (heirs on phone or laptop, institution console on desktop). No native app. Reading phone SMS will later need a small Android companion; in v0 the SMS source is simulated and labelled as such.
+**Platform:** one responsive web app on Google Cloud Run (region `asia-south1`), deployed from source — no Docker. No native app.
 
 ---
 
-## 2. Key decisions (answers to the Phase 1 questions)
+## 2. Key decisions
 
 | # | Question | Decision |
 |---|---|---|
-| Q1 | What is "the backend"? | **v0 (until 18 Oct): option (b) — harden the existing Next.js API routes in place.** After the hackathon: option (a) — extract `src/server/**` into a standalone service with the same contract. |
-| Q2 | Do `LLD.md` / `contracts/` constrain this? | ~~**No.** Separate future track.~~ **Updated 17 Oct 2026:** LLD v0.5 now describes this codebase and the PRD wins; `contracts/` and Keycloak/RLS/`/v1/*` are superseded and not to be built. |
-| Q3 | Language / framework | **TypeScript** inside Next.js (existing logic is TS). Zod for validation. |
-| Q4 | Database | **SQLite via Prisma for v0** (reseeded for the demo; enums enforced with Zod since Prisma+SQLite lacks native enums). **Cloud SQL Postgres for the MVP** (provider switch). |
-| Q5 | Deployment | **Google Cloud Run, deployed from source with Google Cloud buildpacks — no Docker.** Do not add a Dockerfile, docker-compose or Caddy config; remove any that exist. The app must build with `npm run build` and start with `npm start`, listening on `$PORT`. Secrets via Secret Manager. |
-| Q6 | LLM provider | **Gemini** via `@google/genai` (AI Studio key or Vertex AI). Remove `z-ai-web-dev-sdk`. Keep a provider interface + `FixtureProvider` for tests. Synthetic data only in v0. |
-| Q7 | Auth | Anonymous `x-session-id` stays **only for G0** features (intake chat, resources, guides). Anything about a deceased person requires the trust gates (§3). Real sign-in (email OTP / OAuth) after the hackathon. |
-| Q8 | Store original uploads? | **No** in v0 (extracted text + fields only). MVP: encrypted Cloud Storage. |
-| Q9 | Images | **Keep and make them work** with Gemini vision (camera-scan fallback for share certificates, passbooks). |
-| Q10 | Deletion endpoints | **Yes:** delete case, delete session. |
-| Q11 | Committed `frontend/db/custom.db` | **Remove from git and purge from history** (it contains non-synthetic uploads). Add `*.db` to `.gitignore`. Check repo visibility. Do this before any other work. |
-| Q12 | Checklist / followup / consent / UserProfile | Keep checklist and followup (expose in UI later if time). **Consent becomes per-case and per-source** (§5). UserProfile: keep, unused. |
-| Q13 | Persist drafts and Q&A | **Yes** (new `Draft` and `QaMessage` records). |
-| Q14 | Restore intake chat | **Yes:** `GET /api/cases/:id/messages`. |
-| Q15 | Reminders / notifications | **No** in v0. |
-| — | Bugs listed in Phase 1 | **Fix all seven** (§10). |
+| Q1 | What is "the backend"? | Hardened Next.js API routes in `frontend/` (`src/server/**`). A standalone service later only if needed (LLD §21, M9). |
+| Q2 | Do `LLD.md` / `contracts/` constrain this? | **Yes — LLD v0.5.1 describes this codebase and the PRD wins.** The old `contracts/` folder was removed. |
+| Q3 | Language / framework | TypeScript inside Next.js; Zod for validation. |
+| Q4 | Database | SQLite via Prisma for the hackathon; Cloud SQL PostgreSQL with migrations for the MVP (issue #11). |
+| Q5 | Deployment | Cloud Run from source with buildpacks; `npm run build` / `npm start` on `$PORT`; secrets in Secret Manager. Setup: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). |
+| Q6 | LLM provider | Gemini via `@google/genai` (API key or Vertex AI); provider interface + fixture provider for tests. |
+| Q7 | Auth | Anonymous `x-session-id` only for the hackathon (synthetic data). MVP: Google Identity Platform — phone OTP + Google sign-in (issue #12). |
+| Q8 | Store original uploads? | Not in the hackathon. MVP: encrypted Cloud Storage. |
+| Q9 | Images | Gemini vision for scanned documents (passbooks, certificates). |
+| Q10 | Deletion endpoints | Yes: delete case, delete session. |
+| Q11 | Committed `frontend/db/custom.db` | Removed and **purged from git history** (17 Oct 2026). |
+| Q12 | Checklist / follow-up / consent / UserProfile | Keep; consent is per case and per source (§5). |
+| Q13 | Persist drafts and Q&A | Yes (`Draft`, `QaMessage`). |
+| Q14 | Restore intake chat | Yes: `GET /api/cases/:id/messages`. |
+| Q15 | Reminders / notifications | Not in the hackathon. In-app reminders in the MVP (issue #19). |
+| Q16 | Voice | Not in the hackathon. MVP: Google Cloud Speech-to-Text + Text-to-Speech; English (India), Hindi, Hinglish, Tamil (issue #18). |
 
 ---
 
-## 3. Trust gates (new — the core security model)
+## 3. Trust gates (the core security model)
 
-Gate state is stored per case (`gateReached`) and, for G4, per asset (`entitled`).
+Gate state is stored per case (`gateReached`) and, for G4, per asset (`entitled`). Details: [LLD §7](LLD.md#7-trust-gates-and-access-control).
 
-| Gate | Proof | How (v0) | Unlocks |
+| Gate | Proof | Hackathon provider (simulated, labelled) | Unlocks |
 |---|---|---|---|
-| **G0 Account** | control of a session (OTP later) | anonymous `x-session-id` | intake chat, resources directory, guides, demo loader |
-| **G1 Identity** | user is a real, specific person | `IdentityProvider` (mock: "Verify with DigiLocker"; NRI: passport + selfie, simulated) | create a case about a deceased person |
-| **G2 Death** | the named person has died | `DeathProofProvider` (mock DigiLocker fetch, or scan + Gemini read + name/DOB match) | case active; **still no discovery** |
-| **G3 Relationship** | user is a close relative | heir's own document naming the parent/spouse (mock), else legal-heir certificate | connectors + discovery; assets visible **masked** |
-| **G4 Entitlement** (per asset) | user may claim this asset | nominee/joint-holder confirmation or legal-heir/succession certificate (mock) | full details + claim pack for that asset |
+| **G0 Account** | control of a session | anonymous `x-session-id` | intake chat, guides, official resources, demos |
+| **G1 Identity** | user is a specific real person | mock DigiLocker; passport + selfie for users abroad | personal cases; opening a case about someone else |
+| **G2 Death** | the named person has died | mock DigiLocker registry lookup, or certificate scan read by Gemini and matched by code | case active; **still no discovery** |
+| **G3 Relationship or role** | evidenced claimant role — relative, nominee, legal heir, executor or surviving joint holder — or a living person's consent | heir's own document; legal-heir certificate; nominee/joint-holder record; executor in a will; relative consent (mock) | discovery; assets visible **masked** |
+| **G4 Entitlement** (per asset) | user may claim *this* asset | nominee/joint-holder record, legal-heir or succession certificate (mock) | full details + claim pack for that asset |
 
-Rules:
-- Implemented in `src/server/core/gate-engine.ts` as pure functions; enforced by a `requireGate(caseId, level)` guard used in every case-scoped route handler. The UI cannot skip a gate.
-- **Masking** in `src/server/core/masking.ts`: every asset leaving the API passes through it.
-- **Name matching:** transliteration-aware fuzzy match ("Rajesh Kumar Sharma" ≈ "R. K. Sharma"); mismatches go to manual review, never auto-reject.
-- **One case per deceased:** a second claimant opening a case for the same person (matched on name + DOB + PAN hash) links both cases and sets `frozenReason`; disclosure pauses until reviewed.
-- **Living-person guard:** if any source shows activity by the "deceased" after the date of death, freeze the case.
-- **Existing 7 journeys:** the journey engine stays. Journeys about a living person's own assets (`living_individual`, `estate_planning`) need only G1 and no death/relationship proof. Journeys about someone else's assets (`family_death`, `nominee_heir`, `rejected_claim`, `nri_cross_border`) go through G1–G3. `caregiver` (helping an elderly relative) requires G1 plus a recorded consent from the relative (mock) — never discovery without it.
+Rules (built in `src/server/core/`): pure gate functions with a `requireGate` guard on every case-scoped route; masking on every asset leaving the API; transliteration-aware name matching (mismatch → review, never auto-reject); **one case per deceased** (a second claimant's case freezes both until an operator reviews); living-person guard (activity after the date of death freezes the case).
+
+**Case types** map onto the PRD's three journeys ([LLD §6](LLD.md#6-case-types-and-journeys)): `living_individual` → Discover; `estate_planning`, `caregiver` → Plan a legacy (caregiver needs the relative's consent); `family_death`, `nominee_heir`, `rejected_claim`, `nri_cross_border` → Find and claim after a death.
 
 ---
 
-## 4. Discovery: connectors (new)
+## 4. Discovery
 
-Every external source sits behind one interface so real sources replace mocks without rewrites.
+**MVP / hackathon path:**
+1. **Uploaded documents** → extraction (unpdf or Gemini vision) → redacted fields → holdings as potential matches, or document-backed after review.
+2. **Guided official searches** from `src/server/data/resources.ts`: the product proposes the searches that fit the case, opens the portal, and the user logs the outcome — found / not found / partial / blocked / failed (`ResourceVisit`). A "found" outcome becomes a **potential match**. UDGAM covers only old unclaimed deposits in RBI's DEA Fund, not every account. No official portal offers an API ([docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md)).
+3. **Inference** from documents (e.g. recurring interest credits suggesting an FD) → potential match only.
+
+**Connectors — Later (demo mocks allowed):**
 
 ```ts
 interface Connector {
@@ -100,201 +94,153 @@ interface Connector {
 }
 ```
 
-- Mode per source via env: `CONNECTOR_MODE_EMAIL=mock|real`, etc. v0 = all `mock` except `scan` (real Gemini vision on synthetic images).
-- **Pipeline** (`src/server/agents/`): filter (financial senders only; OTP messages dropped) → Gemini structured extraction into `Signal` → match to `Institution` reference table → merge into `AssetRecord` (same institution + category + last4 = one asset) → infer hidden assets (always `possible`/suggested) → confidence → masked output.
-- **Confidence:** High = 2+ independent sources or an official statement; Medium = one direct source; Suggested = inferred.
-- **Registries** (UDGAM, MITRA, IEPF, Bima Bharosa): no public APIs. v0 = mock lookup. Real = guided workflow using the existing resources directory: open the official portal, then log the outcome back (`ResourceVisit`).
-- Real connectors planned next, in order: Gmail (OAuth read-only, ≤100 test users before Google's security review), tax record (heir-provided AIS/26AS file parsed), consolidated MF/demat statement (arrives via connected email), Android SMS companion.
-- Existing document upload (`POST /api/documents`) stays as the **fallback path** and feeds the same pipeline.
+- Mode per source: `CONNECTOR_MODE_<SOURCE>=mock|real`. In the hackathon, only `mock` (labelled "Simulated") plus real Gemini vision for scans of synthetic images.
+- Pipeline: filter financial senders (drop OTPs) → Gemini structured extraction into `Signal` → match to `Institution` → merge into `AssetRecord` (same institution + category + last-4 = candidate duplicate, reviewed) → confidence → masking.
+- Real connectors (Gmail read-only, tax record AIS/26AS, statements via email, Android SMS companion) are Later and need consent, approval and, for Gmail, Google's security review (PRD FL-27).
 
 ---
 
 ## 5. Data model
 
-Existing models are kept (see the Phase 1 field list, preserved in Appendix A). Changes and additions:
+Built models (M2) are listed in [LLD §5.1](LLD.md#51-existing-models): `Session`, `UserProfile`, `LegacyCase` (+ `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId`), `DeceasedPerson`, `Claimant`, `Proof`, `AssetRecord` (+ `entitled`, `valueBand`, `last4`), `DocumentRecord`, `Signal`, `Institution`, `JourneyTask`, `ClaimPack`, `ConsentRecord` (per case and source), `CaseEvent`, `IntakeMessage`, `QaMessage`, `Draft`, `ResourceVisit`, and — for the Later Verify console — `InstitutionClaim`, `CheckResult`.
 
-| Model | Change |
-|---|---|
-| `LegacyCase` | add `gateReached` (`G0..G4`), `frozenReason?`, `deceasedPersonId?`, `linkedCaseId?` |
-| `AssetRecord` | add `entitled` bool, `valueBand?`, `last4?`, `sourceSignalIds` JSON; keep `discoveryStatus` (`possible\|confirmed\|dismissed`) and `verificationStatus` |
-| `ConsentRecord` | add `caseId?`, `source?` (connector id), `scope`, `expiresAt?`, `revokedAt?` |
-| **`DeceasedPerson`** (new) | `name`, `nameVariants` JSON, `dob?`, `panHash?`, `dateOfDeath?`, `deathProofStatus` |
-| **`Claimant`** (new) | `caseId`, `sessionId`, `relationship`, `role` (`lead\|co_heir`), `identityStatus`, `relationshipStatus` |
-| **`Proof`** (new) | `caseId`, `kind` (`identity\|death\|relationship\|entitlement`), `assetId?`, `provider`, `status`, `matchedFields` JSON |
-| **`Signal`** (new) | `caseId`, `source`, `extractedFields` JSON, `snippet` (≤300 chars), `createdAt` — no raw bodies |
-| **`Institution`** (new, reference) | `name`, `aliases`, `smsSenderIds`, `emailDomains`, `category`, `claimFormTemplate?` |
-| **`ClaimPack`** (new) | `assetId`, `claimPath` (`nominee\|joint\|simplified\|succession`), `checklist` JSON, `formsGenerated` JSON, `status` |
-| **`Draft`** (new) | `caseId`, `kind` (`will\|expert\|followup\|checklist`), `content`, `createdAt` |
-| **`QaMessage`** (new) | `caseId`, `question`, `answer`, `createdAt` |
-| **`ResourceVisit`** (new) | `caseId`, `resourceId`, `openedAt`, `outcome?`, `notes?` |
-| **`InstitutionClaim`** (new, Verify) | `institutionName`, `policyOrAccountRef`, `deceasedName`, `claimantName`, `relationship`, `documents` JSON, `status` (`received\|checking\|needs_docs\|approved\|flagged\|escalated`), `riskLevel?`, `sourceCaseId?` |
-| **`CheckResult`** (new, Verify) | `claimId`, `check` (`consistency\|authenticity\|duplicate\|completeness`), `passed`, `reason`, `evidence` JSON |
-| `CaseEvent` | add event types `gate`, `connector`, `discovery`, `claim_pack`, `verify`; add `actor` value `staff` |
-
-All enums enforced with Zod at the API boundary. Never store full account numbers, full PAN or raw message bodies.
+The MVP adds `evidenceStatus`, `Observation`, field review, `Approval`, `Claim`, `Hold`, `LegacySnapshot`, `TrustedContact` and `User` ([LLD §5.2](LLD.md#52-changes-required-for-the-prd-mvp)). All enums enforced with Zod. Never store full account numbers, full PAN or raw message bodies (full identifiers come later as separately encrypted fields readable only at G4).
 
 ---
 
 ## 6. API contract
 
-### 6.1 Existing endpoints (keep the contract; add gates)
+Common rules: `x-session-id` header (hackathon); errors as `{ "error": string }`; foreign IDs return 404; locked gate 403 `{error, nextGate}`; frozen case 423; JSON-in-string fields always parsed. Full inventory with built/to-build status: [LLD §15.2](LLD.md#152-endpoints).
 
-Common rules unchanged: `x-session-id` header; errors as `{ "error": string }`; foreign IDs return 404; JSON-in-string fields always parsed in responses.
+**Built:** `GET /api/health`, `GET /api/resources`, `POST /api/intake`, `POST /api/demo`, `GET /api/cases`, `GET /api/cases/:id`, `POST /api/cases/:id/proofs/:kind`, `POST/PATCH /api/assets`, `POST /api/assets/:id/entitlement`, `POST/PATCH /api/documents`, `PATCH /api/tasks/:id`, `POST /api/ai/ask|draft|checklist`, `GET/POST /api/consent`.
 
-| Method | Path | Change |
-|---|---|---|
-| GET | `/api/cases` | unchanged; include `gateReached`, `frozenReason` |
-| GET | `/api/cases/:id` | `CaseWorkspace` now includes `gate`, `claimants`, `proofs`; assets pass through masking |
-| POST | `/api/intake` | unchanged contract; creating a case about someone else sets it to G0 and returns `nextGate`; **no asset clues are created from chat before G3** (store mentioned institutions as `assumptions` instead) |
-| POST | `/api/demo` | add `demo-reclaim` (the hackathon demo case, §8); existing demos stay |
-| POST/PATCH | `/api/assets`, `/api/assets/:id` | require G3 |
-| POST/PATCH | `/api/documents`, `/api/documents/:id` | require G3 for documents about the deceased; images now extracted with Gemini vision |
-| PATCH | `/api/tasks/:id` | unchanged |
-| POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | persist results (`QaMessage`, `Draft`); rate-limited |
-| GET/POST | `/api/consent` | now per case + source |
-| GET | `/api/resources` | unchanged (public) |
-| GET | `/api/health` | new: `{ status: "ok" }` |
-
-### 6.2 New endpoints
+**Hackathon additions:**
 
 | Method | Path | Purpose | Gate |
 |---|---|---|---|
-| POST | `/api/cases/:id/proofs/identity` | run `IdentityProvider` | → G1 |
-| POST | `/api/cases/:id/proofs/death` | run `DeathProofProvider` | → G2 |
-| POST | `/api/cases/:id/proofs/relationship` | relationship proof | → G3 |
-| POST | `/api/assets/:id/entitlement` | per-asset entitlement proof | → G4 (asset) |
-| POST | `/api/cases/:id/connectors/:source` | connect a source (consent recorded) | G3 |
-| DELETE | `/api/cases/:id/connectors/:source` | disconnect + delete unmerged signals | G3 |
-| POST | `/api/cases/:id/discover` | run discovery pipeline | G3 |
+| POST | `/api/cases/:id/discover` | run discovery (documents + mock connectors in demo) | G3 |
 | GET | `/api/cases/:id/discovery` | poll progress (assets appear incrementally) | G3 |
-| GET | `/api/cases/:id/plan` | claim-path per confirmed asset + ordered plan | G3 |
-| POST | `/api/assets/:id/claim-pack` | generate claim pack (checklist + PDFs) | G4 |
+| GET | `/api/cases/:id/plan` | claim path per confirmed asset + ordered plan | G3 |
+| POST | `/api/assets/:id/claim-pack` | generate claim pack (checklist + pre-filled forms) | G4 |
 | GET | `/api/claim-packs/:id/:form.pdf` | download a pre-filled form | G4 |
-| POST | `/api/claim-packs/:id/submit` | mark sent; creates an `InstitutionClaim` (feeds Verify) | G4 |
+| POST | `/api/claim-packs/:id/approve` | user approves the exact pack (content hash, recipient, purpose) | G4 |
+| POST | `/api/claims/:id/receipt` | user records that they submitted it, with any reference | G4 |
 | GET | `/api/cases/:id/messages` | restore intake chat | owner |
 | GET | `/api/cases/:id/audit` | audit trail | owner |
-| POST | `/api/resources/:id/visit` / `/api/visits/:id/outcome` | guided official-portal workflow | G0 |
+| POST | `/api/resources/:id/visit`, `/api/visits/:id/outcome` | guided official search | G0 / G3 |
 | DELETE | `/api/cases/:id`, `/api/session` | data deletion | owner |
-| GET | `/api/console/claims` | Verify queue | reviewer |
-| GET | `/api/console/claims/:id` | claim detail + check results | reviewer |
-| POST | `/api/console/claims/:id/verify` | run checks | reviewer |
-| POST | `/api/console/claims/:id/decision` | `approve \| request_docs \| escalate` (+ drafted message) | reviewer |
-| POST | `/api/admin/reset` | wipe + reseed demo data (disabled when `NODE_ENV=production` unless `DEMO_MODE=true`) | admin |
+| GET/POST | `/api/console/claims…` | Verify console (demo of Later FL-56) | reviewer |
+| POST | `/api/admin/reset` | wipe and reseed demo data (off in production unless `DEMO_MODE=true`) | admin |
 
-Reviewer access in v0: a simple `x-console-key` header (env secret) and a "LIC claims desk" login screen. Real roles come with real auth.
+There is **no** endpoint that marks a claim as sent on the user's behalf. In the demo, a recorded receipt may create an `InstitutionClaim` so the Verify console has something to review — labelled "Simulated".
 
 ---
 
-## 7. Verify console (new — institution side)
+## 7. Verify console (demo of a Later capability)
 
-- **Checks** (each stored as a `CheckResult` with evidence):
-  1. **Consistency:** names, dates of death, ages and relationships agree across death certificate, IDs and claim form (Gemini compares; code records pass/fail).
-  2. **Authenticity signals:** layout/font/date-field mismatch against the genuine certificate template (Gemini vision; flagged as "signal", not proof).
-  3. **Duplicate:** same deceased + same asset already claimed by a different claimant (mock shared claims index in v0).
-  4. **Completeness:** required documents for the chosen claim path.
-- **Risk score** computed by code from check results: Low / Medium / High, each reason linked to evidence. The LLM never sets the score.
-- **Actions:** approve, request documents (drafts a message to the claimant), escalate. Every action logged.
-- **SLA display:** days left under the RBI 15-day rule for bank claims.
+PRD FL-56 — Later. Built for the hackathon demo only, behind `CONSOLE_KEY` and a "claims desk" login, every screen labelled "Simulated".
+
+- **Checks**, each stored as a `CheckResult` with evidence: consistency (names, dates, relationships across documents — Gemini compares, code records pass/fail); authenticity **signals** (layout, font or date-field mismatches — a signal, never proof of fraud); duplicate claims across claimants; completeness for the chosen claim path.
+- **Risk level** (Low / Medium / High) computed by code from the checks, each reason linked to evidence. The LLM never sets it.
+- **Actions:** approve, request documents (drafts a message), escalate — all logged.
+- **Timeline display:** days left under RBI's 15-day settlement rule for bank claims.
 
 ---
 
 ## 8. Demo case (`demo-reclaim`, synthetic)
 
-- Deceased: **Rajesh Kumar Sharma**, Delhi. Heir: daughter **Ananya Sharma**, Toronto (NRI).
-- Sources and what they reveal:
-  - Email: LIC premium reminders; CAMS consolidated MF statement.
-  - Tax record (AIS): SBI FD interest, HDFC savings interest, a **dividend from a company with no known holding → hidden shares (suggested)**.
-  - SMS (labelled "Needs Android companion · simulated"): SBI FD, HDFC savings alerts, plus 3 OTP messages that must be filtered out.
-  - Registry mock: one old dormant deposit.
-  - Camera scan: one old physical share certificate (generated image; real Gemini extraction).
-- Impostor: "nephew" **Vikram Sharma** claims the LIC policy with an **edited death certificate** (different date of death, mismatched font in the date field).
-- Expected result: ~7 assets (1 suggested); Ananya's LIC claim = Low risk; Vikram's = High (date mismatch + edited field + duplicate).
-- Seed files live in `src/server/data/demo-reclaim/` with a README listing every planted clue and the expected outcome. Seeds are only referenced by mock connectors and the demo loader.
+A pilot-style story: a bereaved family.
+
+- Deceased: **Rajesh Kumar Sharma**, Delhi. Heir: daughter **Ananya Sharma**, who lives in Toronto (shows the extra documents needed from abroad).
+- What the family has and finds:
+  - **Uploaded documents:** an LIC policy bond, a CAMS consolidated statement, an HDFC savings statement whose recurring interest credits suggest an FD (**potential match**).
+  - **Guided official search:** UDGAM outcome logged as one old dormant deposit (**potential match** until the bank confirms).
+  - **Scan:** an old physical share certificate (generated image; real Gemini extraction) — shown as a Later asset type.
+  - **Simulated connectors** (labelled): email and tax-record signals, including a dividend from a company with no known holding (**potential match**), and SMS alerts with 3 OTP messages that must be filtered out.
+- Impostor (for the Verify demo): "nephew" **Vikram Sharma** claims the LIC policy with an **edited death certificate** (different date of death, mismatched font in the date field).
+- Expected result: about 7 holdings, each with an evidence status; Ananya's LIC claim = Low risk; Vikram's = High (date mismatch + edited-field signal + duplicate claim).
+- Seed files live in `src/server/data/demo-reclaim/` with a README listing every planted clue and the expected outcome.
 
 ---
 
-## 9. Claim-path rules and claim packs (new)
+## 9. Claim-path rules and claim packs
 
-- `src/server/rules/claim-path.ts` (code, not LLM): per confirmed asset choose `nominee` / `joint` / `simplified` (deposit claims up to ₹15 lakh at commercial banks, ₹5 lakh at co-operative banks, per RBI 2025 Directions) / `succession` (above threshold or disputed). Gemini writes only the plain-language explanation.
-- Ordered recovery plan across assets (e.g. legal-heir certificate before bank claims), mapped onto the existing journey tasks.
-- PDF templates for v0 (3 only): bank deceased-claim form, IEPF-5 cover data sheet, indemnity letter — pre-filled from case data; full identifiers only at G4.
+`src/server/rules/claim-path.ts` — code, not the LLM, chooses the path per confirmed holding; Gemini only writes the plain-language explanation. Thresholds live in versioned configuration with their sources ([docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3):
 
-**v1 (after hackathon, keep in mind):** RBI delay-compensation calculator (Bank Rate + 4% if a bank misses 15 days) with drafted letter; escalation ladder (bank → RBI ombudsman; insurer → Bima Bharosa → Insurance Ombudsman); co-heir invites and NOC e-sign; rejected/delayed-claim journey depth.
+| Path | When |
+|---|---|
+| `nominee` | Nominee recorded and alive |
+| `joint` | Surviving joint holder |
+| `quick` | Mutual funds, no nominee, up to ₹10,000 per fund house, immediate relative (SEBI circular, 23 Jul 2026) |
+| `simplified` | No nominee: bank deposits up to ₹15 lakh at commercial banks / ₹5 lakh at co-operative banks (RBI Directions 2025, 26 Sep 2025); mutual funds up to ₹10 lakh (₹30 lakh demat) |
+| `succession` | Above threshold, disputed, or required by the institution |
+
+- Ordered recovery plan across assets (e.g. legal heir certificate before no-nominee claims), mapped onto journey tasks.
+- **Hackathon pack templates (MVP asset types):** bank deceased-claim form (RBI Annex I-A / I-B summary), mutual fund transmission request summary, and LIC death claim (Form 3783 summary). Pre-filled from reviewed case data; full identifiers only at G4; marked as prepared for the family, not official forms.
+- Shown to the family: banks must settle within **15 days** of complete documents, with compensation at least **Bank Rate + 4%** for delay; mutual funds within **21 days**. Insurance timelines only once verified.
+
+**After the hackathon (MVP):** delay-compensation letter, escalation ladder (bank → RBI ombudsman; insurer → Bima Bharosa → Insurance Ombudsman), rejected-claim journey depth (issue #16).
 
 ---
 
 ## 10. Bugs to fix while hardening
 
-1. Intake history not filtered by `caseId` (`intake/route.ts:118`) — leaks across cases.
-2. `POST /api/consent` attaches to "most recently updated case" — must take explicit `caseId`.
-3. `PATCH /api/documents/:id` returns `extractedFields` as a raw string — parse it.
-4. AI system prompt sent as `role: "assistant"` (`ai.ts:49, 97`) — use the system instruction field.
-5. Demo route crashes when all seeded tasks are completed (`demo/route.ts:151`).
-6. Asset de-dup by "institution contains first 12 chars" (`documents/route.ts:207`) — replace with `Institution` matching + category + last4.
-7. No rate limiting on AI endpoints; no upload MIME/magic-byte validation — add both.
+| # | Bug | Status (per [DECISIONS.md](DECISIONS.md)) |
+|---|---|---|
+| 1 | Intake history not filtered by `caseId` | Fixed (M2) |
+| 2 | `POST /api/consent` attaches to the most recent case | Open — must take explicit `caseId` |
+| 3 | `PATCH /api/documents/:id` returns raw `extractedFields` string | Fixed (M2) |
+| 4 | System prompt sent as `role: "assistant"` | Fixed (M1) |
+| 5 | Demo route crashes when all tasks complete | Fixed (M2) |
+| 6 | Asset de-dup by first 12 characters of institution | Open — replace with institution + category + last-4, reviewed |
+| 7 | No AI rate limit; no upload type validation | Fixed (M1 rate limit, M2 magic bytes) |
 
-Also: `typescript.ignoreBuildErrors: true` — turn it off and fix type errors before deploy.
+`typescript.ignoreBuildErrors` was removed in M0; keep it off.
 
 ---
 
 ## 11. Build order (deadline-first)
 
-Each milestone ends with tests passing and the UI working.
-
-| # | Milestone | Must-have for 18 Oct |
+| # | Milestone | Status |
 |---|---|---|
-| M0 | **Security cleanup:** purge `custom.db` from git history, `.gitignore`, check repo visibility; remove any Dockerfile / docker-compose / Caddy files; `/api/health`; `.env.example`; turn off `ignoreBuildErrors` | ✅ |
-| M1 | **Gemini swap:** provider interface, Gemini adapter, fixture provider, fallback behaviour, rate limits; fix bug 4 | ✅ |
-| M2 | **Schema + gates:** Prisma additions (§5), gate engine, masking, name matching, one-case-per-deceased, audit events; proof endpoints with mock providers; tests: no asset data below G3, no full identifiers below G4, duplicate case freezes both | ✅ |
-| M3 | **Gate UI:** proof screens (identity → death → relationship) and a "discovery locked" state in the workspace | ✅ |
-| M4 | **Connectors + discovery:** connector interface, mock connectors, `demo-reclaim` seeds, pipeline, Gemini vision for scans, incremental asset appearance; fix bugs 1, 3, 6 | ✅ |
-| M5 | **Verify console:** `InstitutionClaim`, `CheckResult`, checks, risk score, decisions, console UI | ✅ |
-| M6 | **Claim path + packs:** rules, plan, 3 PDFs, entitlement (G4), submit → `InstitutionClaim` | ✅ |
-| M7 | **Deploy (no Docker):** Cloud Run source deploy via buildpacks (Cloud Run "Continuously deploy from repository" or `gcloud run deploy --source .`); `npm start` honours `$PORT`; Secret Manager; demo reset; end-to-end run of the full story twice | ✅ |
-| M8 | Persist drafts/Q&A, chat restore, delete endpoints, consent per case; fix bugs 2, 5, 7 | if time |
-| M9 | **Post-hackathon:** extract `src/server/**` into a standalone service (Node/TS, same contract, also deployed from source without Docker); Postgres on Cloud SQL; real auth; real Gmail and tax-record connectors; encrypted file storage | after 18 Oct |
+| M0 | Security cleanup: remove `custom.db` (and purge history), `.gitignore`, remove Docker/Caddy, `/api/health`, `.env.example`, `ignoreBuildErrors` off | ✅ Done (history purged 17 Oct) |
+| M1 | Gemini swap: provider interface, Gemini adapter, fixture provider, fallbacks, rate limits | ✅ Done |
+| M2 | Schema + gates: models, gate engine, masking, name matching, one-case-per-deceased, audit events, proof endpoints with mock providers | ✅ Done |
+| M3 | Gate UI: proof screens and locked/masked/frozen states | ✅ Done |
+| M4 | Discovery: guided searches with outcome logging, document pipeline, mock connectors (labelled) for the demo, `demo-reclaim` seeds, Gemini vision for scans, incremental assets; fix bug 6 | Next |
+| M5 | Verify console (demo of Later FL-56): checks, risk level by code, decisions, console UI | Demo only |
+| M6 | Claim paths and packs: rules with cited thresholds, plan, 3 MVP-asset templates, entitlement (G4), approve + receipt | Next |
+| M7 | Deploy: Cloud Run from source, Secret Manager, demo reset, run the full story twice ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) | Next |
+| M8 | Persist drafts/Q&A, chat restore, delete endpoints; fix bug 2 | If time |
+| — | **After the hackathon:** LLD Phase B, issues #10–#20, starting with tests and CI (#10) | — |
 
-**Cut line if behind:** drop will/expert draft polish → drop M8 → drop PDFs (show checklist only). Never drop M2 (gates) or M5 (Verify).
+**Cut line if behind:** drop M8 → drop the Verify console (M5, a Later capability) → drop PDFs (show the checklist only). **Never drop the gates (M2/M3)** or the labelling of anything simulated.
 
 ---
 
-## 12. Code layout (inside Next.js for v0)
+## 12. Code layout
 
 ```
 frontend/src/
   app/api/...            # thin route handlers: validate (Zod) → call server/ → respond
   server/
-    core/                # gate-engine, masking, audit, session, name-matching, rate-limit
-    rules/               # claim-path, confidence, risk-score
-    connectors/          # base.ts, mock/*, real/* (stubs)
-    providers/           # identity, death-proof, registry (mock now)
-    ai/                  # provider interface, gemini.ts, fixture.ts, prompts.ts
-    agents/              # intake, source-reader, reconciler, inference, verify, copilot
-    domain/              # journey-engine, case-service (existing, ported)
+    core/                # gate-engine, masking, access, session, name-match, rate-limit, upload, crypto
+    rules/               # claim-path, confidence, totals
+    connectors/          # base.ts, mock/* (demo), real/* (Later)
+    providers/           # identity, death-proof, relationship, entitlement (mock now)
+    ai/                  # provider interface, gemini.ts, fixture.ts
+    domain/              # journey-engine, case-service, gates
     pdf/                 # claim-pack templates
-    data/                # resources, institutions, demo-reclaim/*, existing demos
+    data/                # resources, institutions, demo-reclaim/*, demo data
   prisma/schema.prisma
 ```
 
-`src/server/` must not import from `app/` or React code, so it can be lifted into a standalone service after the hackathon.
+`src/server/` must not import from `app/` or React code.
 
-**Env vars:** `GEMINI_API_KEY` (or Vertex config), `DATABASE_URL`, `CONNECTOR_MODE_*`, `CONSOLE_KEY`, `DEMO_MODE`, `MAX_UPLOAD_MB=8`, `RATE_LIMIT_*`, `LOG_LEVEL`.
+**Env vars:** see [LLD §18](LLD.md#18-configuration).
 
 ---
 
-## Appendix A — Phase 1 reference (existing app, preserved)
+## Appendix — the original prototype (before M0)
 
-### A.1 Existing frontend
-Next.js 16 (App Router, standalone), React 19, TS, Tailwind 4, shadcn/ui, lucide, react-markdown. Single route `/` with client view state (`landing | intake | workspace | resources`). Identity = `localStorage["finlegacy_session"]` UUID sent as `x-session-id`. Error contract: non-2xx → `{ error: string }` → `ApiError`.
-
-### A.2 Existing user flows
-F1 intake chat → case; F2 load demo A/B/C; F3 my cases; F4 workspace overview; F5 asset inventory (confirm/dismiss/reopen/add); F6 document centre (upload/extract/verify fields); F7 journey tracker (status, evidence, next-best); F8 estate planning (draft will); F9 expert briefing pack; F10 ask about this case; F11 official portals directory.
-
-### A.3 Existing endpoints
-`GET /api/cases`, `GET /api/cases/:id`, `POST /api/intake`, `POST /api/demo`, `POST /api/assets`, `PATCH /api/assets/:id`, `POST /api/documents` (multipart ≤8 MB), `PATCH /api/documents/:id`, `PATCH /api/tasks/:id` (returns full workspace; recomputes progress/next-best/stage), `POST /api/ai/ask`, `POST /api/ai/draft` (`followup|will|expert`), `POST /api/ai/checklist`, `GET/POST /api/consent`, `GET /api/resources` (public). Response shapes: `src/lib/types.ts` (`CaseWorkspace` at line 89).
-
-### A.4 Existing models
-`Session`, `UserProfile` (unused), `LegacyCase` (8 case types; stages `understanding|discovery|documentation|action|resolution`), `AssetRecord` (8 categories; `possible|confirmed|dismissed`; `unverified|user_confirmed|institution_verified`; masked refs only), `DocumentRecord` (7 categories; extraction status; rawText ≤20k; extractedFields JSON; original file not stored), `JourneyTask` (dependencies, priority, `isNextBest`, 6 statuses, integration type), `CaseEvent` (append-only timeline), `ConsentRecord`, `IntakeMessage`. All child relations cascade on delete.
-
-### A.5 Static data
-Demo scenario cards (`dialogs.tsx`), example prompts (`intake.tsx`), expert types (`expert-tab.tsx`), asset filters (`assets-tab.tsx`), `lib/demo-data.ts` (3 seeds), `lib/resources.ts` (7 official portals; `officialLinkFor` duplicates it — consolidate into `server/data/resources.ts`).
+Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui. Single route `/` with client view state (`landing | intake | workspace | resources`). Identity was a `localStorage` UUID sent as `x-session-id`. Original flows: intake chat → case; demo cases; my cases; workspace overview; asset inventory; document centre; journey tracker; estate planning (AI will draft — to become "Notes for your lawyer", DESIGN §7.1); expert briefing pack; ask about this case; official portals directory. The original endpoints are the "Built" list in §6.
