@@ -70,6 +70,7 @@ model LegacyCase {
   tasks           JourneyTask[]
   events          CaseEvent[]
   chunks          KnowledgeChunk[]
+  claims          Claim[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -92,6 +93,10 @@ model AssetRecord {
   duplicateOfId     String?
   duplicateState    String?  // candidate | distinct | merged
   observations      Observation[]
+  // Nominee and joint-holder information (FL-09); "unknown" until someone tells us or a document shows it.
+  nomineeStatus     String   @default("unknown") // recorded | none | unknown
+  jointHolderStatus String   @default("unknown") // surviving | none | unknown
+  claims            Claim[]
   confidence        Float    @default(0.5)
   notes             String?
   entitled          Boolean  @default(false) // G4 for this asset
@@ -99,7 +104,6 @@ model AssetRecord {
   last4             String?
   sourceSignalIds   String?  // JSON array of Signal ids
   institutionId     String?
-  claimPacks        ClaimPack[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -252,16 +256,83 @@ model Institution {
   claimFormTemplate String?
 }
 
+// One claim per holding (PRD FL-12–FL-16, FL-36, FL-37; LLD §11). The family submits it themselves.
+model Claim {
+  id                 String      @id @default(cuid())
+  caseId             String
+  case               LegacyCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  assetId            String
+  asset              AssetRecord @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  status             String      @default("draft") // see rules/claim-lifecycle.ts
+  path               String? // nominee | joint | quick | simplified | succession | no_nominee — chosen by rules/claim-path.ts
+  reviewReason       String? // why a person must look at it instead of a path being chosen
+  situation          String      @default("{}") // JSON answers: nominee, claimant relationship, amount band, bank type, dispute
+  procedureId        String?
+  procedureVersion   String?
+  procedureCheckedOn String?
+  checklist          String      @default("{}") // JSON: item id → { state: missing | have | linked, documentId? }
+  declarations       String      @default("[]") // JSON array of accepted declaration ids
+  waitingOn          String? // family | institution | financial_legacy
+  dueDate            String? // YYYY-MM-DD for the open item
+  institutionRef     String?
+  submittedAt        DateTime?
+  submissionChannel  String?
+  receiptRef         String?
+  outcome            String? // settled | transferred | partially_settled | rejected | unresolved_dispute
+  outcomeAmount      String? // decimal string
+  outcomeDate        String?
+  outcomeNote        String?
+  outcomeDocumentId  String?
+  remainderTracked   Boolean     @default(false)
+  packs              ClaimPack[]
+  events             ClaimEvent[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([caseId])
+}
+
+// A frozen version of a claim pack. A new version is saved whenever the content changes;
+// earlier versions are kept (FL-37). contentHash binds approvals to exactly these bytes.
 model ClaimPack {
-  id             String   @id @default(cuid())
-  assetId        String
-  asset          AssetRecord @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  claimPath      String   // nominee | joint | simplified | succession
-  checklist      String   @default("[]") // JSON
-  formsGenerated String   @default("[]") // JSON array of form ids
-  status         String   @default("draft") // draft | ready | submitted
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String     @id @default(cuid())
+  claimId     String
+  claim       Claim      @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  version     Int
+  contentHash String
+  content     String // JSON: procedure, path, items, pre-filled fields, declarations
+  status      String     @default("draft") // draft | ready | superseded
+  approvals   Approval[]
+  createdAt   DateTime   @default(now())
+
+  @@unique([claimId, version])
+}
+
+// Approval of exactly what will leave the product (FL-14): bound to one pack hash,
+// recipient, channel and purpose; expires; invalidated by any change.
+model Approval {
+  id          String    @id @default(cuid())
+  packId      String
+  pack        ClaimPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  contentHash String
+  recipient   String
+  channel     String
+  purpose     String
+  approvedBy  String
+  state       String    @default("active") // active | used | expired | invalidated
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+// Claim timeline: every step, request and outcome, kept for good (FL-15, FL-37).
+model ClaimEvent {
+  id        String   @id @default(cuid())
+  claimId   String
+  claim     Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  kind      String
+  note      String
+  actor     String // family | system | institution (as recorded by the family)
+  createdAt DateTime @default(now())
 }
 
 model Draft {

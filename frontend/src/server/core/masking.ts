@@ -47,6 +47,8 @@ export interface AssetRow {
   evidenceStatus: string;
   duplicateOfId: string | null;
   duplicateState: string | null;
+  nomineeStatus: string;
+  jointHolderStatus: string;
   confidence: number;
   notes: string | null;
   sourceDocumentId: string | null;
@@ -91,6 +93,10 @@ export interface AssetView {
   evidenceStatus: string;
   duplicateOfId: string | null;
   duplicateState: string | null;
+  /** recorded | none | unknown (FL-09) */
+  nomineeStatus: string;
+  /** surviving | none | unknown */
+  jointHolderStatus: string;
   confidence: number;
   notes: string | null;
   sourceDocumentId: string | null;
@@ -154,6 +160,8 @@ function pick(a: AssetRow): Omit<AssetView, "masked" | "amount" | "amountHidden"
     evidenceStatus: a.evidenceStatus,
     duplicateOfId: a.duplicateOfId,
     duplicateState: a.duplicateState,
+    nomineeStatus: a.nomineeStatus,
+    jointHolderStatus: a.jointHolderStatus,
     confidence: a.confidence,
     notes: a.notes,
     sourceDocumentId: a.sourceDocumentId,

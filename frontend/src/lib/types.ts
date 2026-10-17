@@ -173,6 +173,10 @@ export interface CaseWorkspace {
     duplicateOfId: string | null;
     /** candidate | distinct | merged */
     duplicateState: string | null;
+    /** recorded | none | unknown (FL-09) */
+    nomineeStatus: string;
+    /** surviving | none | unknown */
+    jointHolderStatus: string;
     confidence: number;
     notes: string | null;
     sourceDocumentId: string | null;
@@ -194,6 +198,18 @@ export interface CaseWorkspace {
     amountHidden: boolean;
     /** true when shown below G4 (institution, category, value band, last-4 only) */
     masked: boolean;
+  }[];
+  /** One claim per holding (FL-12–FL-16); details at /api/claims/:id. */
+  claims: {
+    id: string;
+    assetId: string;
+    status: string;
+    statusLabel: string;
+    path: string | null;
+    waitingOn: string | null;
+    dueDate: string | null;
+    outcome: string | null;
+    outcomeAmountDisplay: string | null;
   }[];
   /** Honest total (FL-29): one reviewed, dated amount per holding, with every exclusion explained. */
   totals: {

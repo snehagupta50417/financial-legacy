@@ -17,7 +17,10 @@ export interface Stage {
   detail: string;
 }
 
-type Ws = Pick<CaseWorkspace, "gate" | "case" | "assets" | "documents" | "tasks">;
+type Ws = Pick<CaseWorkspace, "gate" | "case" | "assets" | "documents" | "tasks"> & Partial<Pick<CaseWorkspace, "claims">>;
+
+const BEFORE_SUBMISSION = ["draft", "authority_review", "document_collection", "pack_review", "ready_for_submission"];
+const FINISHED = ["settled", "transferred", "rejected"];
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -68,13 +71,29 @@ export function journeyStages(ws: Ws): Stage[] {
       ? { key: "consolidate", title: "Check and organise", state: "current", detail: `${plural(pending, "item")} to check` }
       : { key: "consolidate", title: "Check and organise", state: "done", detail: "Everything found so far is checked" };
 
+  // Claims progress independently, so preparing one can start before every holding is checked.
+  const started = ws.claims ?? [];
+  const sent = started.filter((c) => !BEFORE_SUBMISSION.includes(c.status));
+  const finished = started.filter((c) => FINISHED.includes(c.status));
+  const claimable = holdings.filter((a) => a.evidenceStatus !== "potential_match");
+  const notStarted = claimable.filter((a) => !started.some((c) => c.assetId === a.id)).length;
+
   const actTitle = claims ? "Prepare claims" : "Prepare your legacy";
-  const act: Stage = reviewed
-    ? { key: "act", title: actTitle, state: "current", detail: claims ? "One claim per holding" : "Notes and gaps for your family" }
-    : { key: "act", title: actTitle, state: "upcoming", detail: "After checking" };
+  const act: Stage =
+    claims && started.length
+      ? sent.length === started.length && notStarted === 0
+        ? { key: "act", title: actTitle, state: "done", detail: `${plural(sent.length, "claim")} submitted by you` }
+        : { key: "act", title: actTitle, state: "current", detail: `${plural(started.length, "claim")} started${sent.length ? `, ${sent.length} submitted` : ""}` }
+      : reviewed
+        ? { key: "act", title: actTitle, state: "current", detail: claims ? "One claim per holding" : "Notes and gaps for your family" }
+        : { key: "act", title: actTitle, state: "upcoming", detail: "After checking" };
 
   const track: Stage =
-    ws.tasks.length > 0 && done === ws.tasks.length
+    sent.length > 0
+      ? finished.length === sent.length && notStarted === 0 && sent.length === started.length
+        ? { key: "track", title: "Track to the end", state: "done", detail: `${plural(finished.length, "claim")} closed` }
+        : { key: "track", title: "Track to the end", state: "ongoing", detail: `${plural(sent.length - finished.length, "claim")} with the institution or awaiting you` }
+      : ws.tasks.length > 0 && done === ws.tasks.length
       ? { key: "track", title: "Track to the end", state: "done", detail: "All saved steps done" }
       : waiting > 0
         ? { key: "track", title: "Track to the end", state: "ongoing", detail: `Waiting on ${plural(waiting, "institution")}` }

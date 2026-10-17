@@ -107,3 +107,20 @@ describe("legacy gaps (DESIGN §7.1)", () => {
     expect(legacyGaps(w).filter((g) => g.kind === "missing_info").map((g) => g.text)).toEqual(["Nominee name", "Folio number"]);
   });
 });
+
+describe("claims in the journey (FL-15)", () => {
+  const claim = (assetId: string, status: string) => ({ id: assetId + status, assetId, status }) as CaseWorkspace["claims"][number];
+
+  it("shows claims being prepared, then tracked, then closed", () => {
+    const a1 = { ...asset("confirmed"), id: "a1" };
+    const a2 = { ...asset("confirmed"), id: "a2" };
+    const base = { assets: [a1, a2] };
+    const stage = (claims: CaseWorkspace["claims"]) => {
+      const s = journeyStages({ ...ws({ living: false }, base), claims });
+      return [s.find((x) => x.key === "act")!.state, s.find((x) => x.key === "track")!.state];
+    };
+    expect(stage([claim("a1", "document_collection")])).toEqual(["current", "upcoming"]);
+    expect(stage([claim("a1", "submitted"), claim("a2", "pack_review")])).toEqual(["current", "ongoing"]);
+    expect(stage([claim("a1", "settled"), claim("a2", "rejected")])).toEqual(["done", "done"]);
+  });
+});

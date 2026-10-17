@@ -192,6 +192,15 @@ export async function refreshDocumentEvidence(documentId: string, actor: string)
   }
   const stale = active.filter((o) => !keep.has(o.id)).map((o) => o.id);
   if (stale.length) await db.observation.updateMany({ where: { id: { in: stale } }, data: { supersededAt: now } });
+
+  // A checked "Nominee" field is the holding's nominee information (FL-09).
+  for (const f of fields) {
+    if (!/nominee/i.test(f.label) || (f.state !== "accepted" && f.state !== "corrected")) continue;
+    const assetId = holdingForAmount(f, holdings, fields);
+    if (!assetId) continue;
+    const none = /not\s*registered|no\s*nominee|\bnone\b|\bnil\b|not\s*available/i.test(f.value);
+    await db.assetRecord.update({ where: { id: assetId }, data: { nomineeStatus: none ? "none" : "recorded" } });
+  }
 }
 
 export interface ClueInput {

@@ -80,9 +80,10 @@ These turn the PRD's product principles into engineering rules.
  │   domain/         case service · journey engine · gates
  │   ai/             provider interface · Gemini adapter · fixture provider
  │   providers/      identity · death proof · relationship · entitlement (mock now)
- │   rules/          evidence · observations · totals · duplicates (claim path to build)
+ │   rules/          evidence · observations · totals · duplicates · claim path · pack · lifecycle
  │   connectors/     connector interface · mock connectors       (Later)
- │   pdf/            claim-pack templates                        (to build)
+ │   pdf/            claim-pack PDF (pdf-lib)
+│   procedures/     versioned, cited claim procedures
  │   data/           official resources · demo data · synthetic registries
  ▼
  Prisma ─► SQLite (v0) ─► Cloud SQL PostgreSQL (MVP)
@@ -146,9 +147,11 @@ frontend/
       data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
         reference/            real public reference snapshot: fund schemes + NAVs, bank branches, pincodes, RBI rates (SOURCES.md)
         synthetic/            demo-case generator: real reference data + synthetic, masked people and identifiers
-      rules/                  evidence.ts · observations.ts · totals.ts · duplicates.ts (pure, deterministic); claim-path.ts (to build)
+      rules/                  evidence.ts · observations.ts · totals.ts · duplicates.ts · claim-path.ts · claim-pack.ts · claim-lifecycle.ts (pure, deterministic)
+      procedures/procedures.ts  versioned claim procedures (bank, mutual fund, LIC) with sources and check dates
+      domain/claim-service.ts   applies the claim rules to stored claims, packs, approvals and events
       domain/evidence-service.ts  applies the rules to stored records (fields, review history, statuses, amounts, duplicates)
-      pdf/                    (to build) claim-pack templates
+      pdf/claim-pack.ts       the approved pack as a PDF the family submits themselves
       connectors/             (Later) base.ts · mock/* · real/*
     lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts
     components/
@@ -196,8 +199,8 @@ Models defined but not yet used by code: `ClaimPack`, `Signal`, `QaMessage`, `Re
 | **Built (#14):** `AssetRecord.evidenceStatus`: `self_declared \| potential_match \| document_backed \| institution_verified` (§10); `duplicateOfId`, `duplicateState` | PRD requires exactly these four labels | FL-07, FL-08 |
 | **Built (#14):** `Observation`: `assetId`, `amount` (decimal string), `amountType`, `currency`, `asOfDate`, `label`, `sourceDocumentId`, `sourceFieldId`, `reviewedAt`, `reviewedBy`, `supersededAt` — append-only (`signalId` when discovery signals land) | Dated amounts with history; honest totals | FL-09, FL-28, FL-29 |
 | **Built (#14):** `DocumentField` (per-field `state: proposed \| accepted \| corrected \| rejected`, `proposedValue`, `value`, `critical`, reviewer, reason) + append-only `FieldReviewEvent` (from/to state and value, reason, actor). `extractedFields` JSON keeps the AI's original proposal | Critical fields must be reviewed before use | FL-06, FL-26 |
-| Add `Approval`: exact content hash, recipient, channel, purpose, expiry, state | Approval of exactly what is sent | FL-14 |
-| Add `Claim` (one per asset) with states and outcomes (§11); link `ClaimPack` to it | Claims tracked independently to an outcome | FL-12–FL-16 |
+| **Built (#16):** `Approval`: exact content hash, recipient, channel, purpose, expiry, state (active / used / expired / invalidated) | Approval of exactly what is sent | FL-14 |
+| **Built (#16):** `Claim` (one per holding) with status, path, situation, procedure id/version/check date, checklist, declarations, owner and due date, submission and outcome; `ClaimPack` is now a versioned snapshot per claim (content + hash); `ClaimEvent` timeline; `AssetRecord.nomineeStatus` / `jointHolderStatus` | Claims tracked independently to an outcome | FL-09, FL-12–FL-16 |
 | Add `Hold`: scope, reason, created/resolved by | Pause specific actions | FL-47 |
 | Add `LegacySnapshot`: frozen record, date, known gaps; `TrustedContact` (intent only) | Legacy planning | FL-11, FL-31, FL-34 |
 | Add `User` + real auth link; replace session-only ownership | Real sign-in | FL-45, FL-48 |
@@ -377,7 +380,7 @@ Same institution (normalised, with aliases such as LIC / Life Insurance Corporat
 
 ## 11. Claims
 
-**PRD:** FL-12–FL-17, FL-35–FL-37. **Mostly to build** (`ClaimPack` model exists; no code uses it).
+**PRD:** FL-12–FL-17, FL-35–FL-37. **Built for the MVP (#16)**; direct submission (FL-35) stays Later.
 
 ### 11.1 Claim path rules (`rules/claim-path.ts`, deterministic code)
 
@@ -385,19 +388,21 @@ For each confirmed holding, code — not the AI — chooses the path:
 
 | Path | When |
 | --- | --- |
-| `nominee` | A nominee is recorded and alive |
-| `joint` | A surviving joint holder exists |
+| `nominee` | A nominee is recorded |
+| `joint` | Banks: no nominee, and a surviving joint holder exists |
 | `quick` | Mutual funds only: no nominee, up to ₹10,000 per fund house, claimant is an immediate relative (SEBI circular of 23 Jul 2026) |
 | `simplified` | No nominee and within the simplified threshold: bank deposits up to ₹15 lakh at commercial banks or ₹5 lakh at co-operative banks (RBI Directions 2025, banks may set higher); mutual funds up to ₹10 lakh (₹30 lakh demat) |
-| `succession` | Above threshold, disputed, or required by the institution (for mutual funds, probate is no longer mandatory) |
+| `succession` | Above the threshold (for mutual funds, probate is no longer mandatory) |
+| `no_nominee` | LIC: no nominee — evidence of title needed; LIC publishes no small-amount limit |
+| *review* | No checked procedure for this institution (e.g. insurers other than LIC), a procedure that is suspended or older than 180 days, or a dispute — a person looks at it (FL-17, FL-44) |
 
-Thresholds, timelines (banks: 15 days, compensation at least Bank Rate + 4%; mutual funds: 21 days) and their sources live in versioned procedure configuration, not in code — see [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3 for the current rules and citations. Insurance timelines are not yet verified from a primary source.
+Thresholds, timelines (banks: 15 days, compensation at least Bank Rate + 4%; mutual funds: 21 days; LIC: 15 days from intimation, 45 if investigated, Bank Rate + 2%) and their sources live in `procedures/procedures.ts`, not in the rule — see [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) §3. Bank limits use the RBI floor unless the bank publishes a higher one (ICICI ₹2 crore); co-operative banks ₹5 lakh.
 
-The AI only writes the plain-language explanation of the chosen path.
+When a fact is missing the rule asks one question (nominee? joint holder? roughly how much? your relationship?) instead of guessing. A checked, dated balance or value beats the family's estimate. The entitlement check (G4) fills in nominee or joint holder when that is how the person is entitled. Explanations are written into the procedure, not generated by AI.
 
 ### 11.2 Procedures (FL-12, FL-44)
 
-Each institution + asset type + path has a **versioned procedure**: required documents, forms, where to submit, source URL and the date it was checked. Stored as reference data with a version number; each claim records the version it used. Out-of-date or missing procedures send the claim to review instead of guessing. MVP procedures: bank/FD deceased-claim, mutual fund transmission (via fund house/registrar), life insurance death claim.
+Each procedure (`procedures/procedures.ts`) has a version, regulator source, check date, status (active / suspended), timeline, where to submit, and per path the documents (required vs optional, with notes) and any extra declarations. Only what the source lists is required; anything an institution *may* ask for is a note. Each claim records the procedure id, version and check date. Suspended procedures, procedures older than 180 days, and institutions without a procedure send the claim to review. Built: bank deceased-claim (RBI Directions 2025), mutual fund transmission (SEBI, 23 Jul 2026), LIC death claim (LIC + IRDAI master circular). Other insurers: to add.
 
 ### 11.3 Claim lifecycle
 
@@ -408,11 +413,12 @@ DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR
       → SETTLED | TRANSFERRED | PARTIALLY_SETTLED (remainder tracked) | REJECTED | UNRESOLVED_DISPUTE
 ```
 
-- A pack can be built only after current authority (G4 for that asset) and required evidence are in place (FL-13).
-- **Approval** (FL-14) binds the exact pack bytes (hash), recipient, channel and purpose; it expires (reference: 15 minutes) and is invalidated by any change.
-- **MVP submission is manual:** the user downloads the approved pack and submits it; the product records the receipt or marks the submission unknown. It never claims it submitted on the user's behalf.
+- Before submission the status is **derived** from the facts (path chosen → entitled → required documents → declarations → approval), so it can't drift. After submission it only moves along recorded transitions (`rules/claim-lifecycle.ts`).
+- The pack is shown only at G4 for that holding (FL-13). Pre-filled values come only from reviewed data: verified records, fields the family accepted, checked amounts — each with its source. A pack can't be ready while a required document or a declaration is missing.
+- **Approval** (FL-14) binds the pack's SHA-256 over canonical JSON, recipient, channel and purpose; it expires after 15 minutes. Any change to the pack — including a corrected document field it uses (FL-26) — saves a new version and invalidates the approval. Unapproved drafts are updated in place; approved versions are kept.
+- **MVP submission is manual:** the user downloads the approved pack and submits it; the product records the receipt or marks the submission unknown ("check before re-sending"). Repeating a submission never creates a second one (FL-36). The pack is frozen once submitted. The due date is the submission date plus the procedure's days; every open claim shows who it is waiting on.
 - Outcomes need evidence; a rejection is never counted as recovery; claims progress independently (FL-16, FL-37).
-- **PDF templates** (`src/server/pdf/`): pre-filled from reviewed case data; full identifiers only at G4. Clearly marked as prepared by the user with our help — not official forms.
+- **PDF** (`src/server/pdf/claim-pack.ts`, pdf-lib): a checklist and summary — documents, checked values with sources, where to submit, timeline, declarations, procedure source, and the pack version and fingerprint on every page. Marked as prepared by the claimant, not an official form; the claimant writes full account numbers themselves (we never hold them). Downloadable only under a live approval.
 
 ---
 
@@ -540,11 +546,12 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | GET/POST | `/api/consent` | Consent per case and source | Owner | Built |
 | GET | `/api/cases/:id/messages` | Restore intake chat | Owner | To build |
 | GET | `/api/cases/:id/audit` | Audit trail for the user | Owner | To build |
-| GET | `/api/cases/:id/plan` | Claim path per asset + ordered plan | G3 | To build |
-| POST | `/api/assets/:id/claim-pack` | Generate claim pack | G4 | To build |
-| GET | `/api/claim-packs/:id/:form.pdf` | Download a pre-filled form (approved scope) | G4 | To build |
-| POST | `/api/claim-packs/:id/approve` | Approve exact handoff | G4 | To build |
-| POST | `/api/claims/:id/receipt`, `/api/claims/:id/outcome` | Record submission and outcome | G4 | To build |
+| POST | `/api/claims` | Start a claim for a confirmed holding (idempotent) | G3 | Built |
+| GET / PATCH | `/api/claims/:id` | Claim, path, pack, timeline / answers, checklist, declarations | G3 (pack shown at G4) | Built |
+| POST | `/api/claims/:id/approve` | Approve the exact pack (hash) | G4 | Built |
+| GET | `/api/claims/:id/pack` | Approved pack as PDF | G4 + live approval | Built |
+| POST | `/api/claims/:id/submission`, `/api/claims/:id/update` | Record submission; record what the institution did, outcome, reopen | G4 | Built |
+| PUT | `/api/documents/:id/review` | Per-field review decisions | G3 for deceased | Built |
 | POST | `/api/resources/:id/visit`, `/api/visits/:id/outcome` | Guided official search | G0 / G3 | To build |
 | POST | `/api/cases/:id/legacy/snapshot`, `/api/legacy/:id/export` | Legacy snapshot and export | Owner | To build |
 | POST | `/api/voice/session`, `/api/voice/transcript` | Voice capture and transcript | Owner | To build |
@@ -683,8 +690,8 @@ Startup should **refuse to run** in production when `PAN_HASH_SECRET` is missing
 | Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction (AI, OCR, rules), redaction; per-field review with history (#14) | Invalidation of claim packs on material change (B6); malware scan; encrypted originals |
 | Discovery | FL-10 | Resources directory | Discovery plan; `ResourceVisit` flow; outcome logging; no-result/partial states |
 | Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Four evidence statuses, append-only observations, honest totals, duplicate review (#14) | Nominee information per holding (B6); holds (B9) |
-| Insurance in MVP | PRD §8.1 | Category exists in demos | Insurance claim procedure and pack |
-| Claims | FL-12–FL-17, FL-36, FL-37 | Journey tasks only | **Claim model, procedures, packs, approval, receipts, outcomes** |
+| Insurance in MVP | PRD §8.1 | LIC death-claim procedure and pack (#16) | Procedures for other insurers |
+| Claims | FL-12–FL-17, FL-36, FL-37 | Claim model, versioned procedures, path rules, packs + PDF, hash-bound approval, manual submission, outcomes, reopen (#16) | Operator review queue for claims sent to review (B9); reminders on due dates (B9) |
 | Legacy | FL-11, FL-31, FL-34 | Estate tab with AI will draft | Legacy record, trusted contacts (intent), snapshot, export; relabel will drafting |
 | AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks; grounded Q&A with retrieval and citations (§13.5); retrieval evaluation set; synthetic data only | Case-manager coordinator; full AI evaluation set (AI_EVALUATION); fixture provider at runtime; approved provider terms before real data (FL-46) |
 | Voice | FL-20, FL-41 | — | **Not started** |
