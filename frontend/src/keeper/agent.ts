@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/client";
-import type { AgentAction } from "@/server/ai/agent";
+import type { AgentAction } from "@shared/contracts";
 import { dispatch, getBackendStatus, peekState } from "./store";
 import { nextWork, plainCopy } from "./presentation";
 import type { Choice, Message } from "./types";

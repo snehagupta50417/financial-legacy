@@ -1,0 +1,9 @@
+node_modules
+.env*
+!.env.example
+# local SQLite databases and the throwaway test database
+prisma/db/*.db*
+prisma/db/*.bak
+test/.tmp
+*.log
+*.tsbuildinfo

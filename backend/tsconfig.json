@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["esnext", "dom"],
+    "types": ["node"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@server/*": ["./src/server/*"],
+      "@api/*": ["./src/api/*"],
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["src", "test", "vitest.config.ts", "../shared"],
+  "exclude": ["node_modules"]
+}

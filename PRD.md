@@ -624,7 +624,7 @@ Inclusion also means: plain language throughout (§10.4), patient pacing for gri
 | **Snapshot** | A frozen, dated copy of a reviewed legacy record | Kamala's record, 17 Oct 2026 |
 | **Audit event** | A record of who did what, when and why | Rohit exported the case brief |
 
-Exact fields and formats are defined in the Prisma schema (`frontend/prisma/schema.prisma`) and the Zod types used by the API ([LLD §5](LLD.md#5-data-model)).
+Exact fields and formats are defined in the Prisma schema (`backend/prisma/schema.prisma`) and the Zod types used by the API ([LLD §5](LLD.md#5-data-model)).
 
 ### 12.2 How we treat data
 
@@ -845,6 +845,6 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - [BRD.md](BRD.md) — business case, customers and economics
 - [DESIGN.md](DESIGN.md) — screens and interaction
 - [LLD.md](LLD.md) — architecture, implementation and tests
-- `frontend/prisma/schema.prisma` and Zod types — exact data formats
+- `backend/prisma/schema.prisma` and Zod types — exact data formats
 - Official sources: see the research table in §8.2 and the source-by-source matrix in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md)
 - Pre-Pilot documents: [threat model](docs/THREAT_MODEL.md) · [privacy assessment](docs/PRIVACY_ASSESSMENT.md) · [AI evaluation plan](docs/AI_EVALUATION.md)

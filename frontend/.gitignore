@@ -60,3 +60,6 @@ test/.tmp
 
 # Local refinement screenshots and test artifacts
 /artifacts/refinement/
+
+# local test database
+/test/.tmp

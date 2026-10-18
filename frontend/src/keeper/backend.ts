@@ -1,6 +1,6 @@
 import { api, ApiError } from "@/lib/client";
-import type { CaseWorkspace } from "@/lib/types";
-import type { ClaimView } from "@/server/domain/claim-service";
+import type { CaseWorkspace } from "@shared/types";
+import type { ClaimView } from "@shared/contracts";
 import { emptyCase, freshState, reduce, type Action } from "./engine";
 import type { AppState, Case, Category, Claim, Message } from "./types";
 import { iso, uid } from "./util";

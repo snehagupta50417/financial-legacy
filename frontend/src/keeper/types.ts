@@ -1,5 +1,5 @@
-import type { CaseWorkspace } from "@/lib/types";
-import type { ClaimView } from "@/server/domain/claim-service";
+import type { CaseWorkspace } from "@shared/types";
+import type { ClaimView } from "@shared/contracts";
 /**
  * Keeper prototype data model. Everything the UI shows — conversation, facts, assets,
  * documents, family record, claims, tasks, approvals, activity — lives in one case record,

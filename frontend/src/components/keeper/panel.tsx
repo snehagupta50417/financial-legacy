@@ -10,7 +10,7 @@ import { dispatch } from "@/keeper/store";
 import type { Asset, Case, Claim, Doc, Outcome, PlanSource } from "@/keeper/types";
 import { documentTitle } from "@/keeper/presentation";
 import { cap, formatDay, money } from "@/keeper/util";
-import { QUESTION_TEXT } from "@/server/rules/claim-path";
+import { QUESTION_TEXT } from "@shared/claim-path";
 import { cn } from "@/lib/utils";
 import { Btn, Card, EvidenceBadge, FactBadge, Hint, Pill } from "./ui";
 import { BackendAccess, BackendPackDownload } from "./backend-access";

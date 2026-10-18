@@ -7,7 +7,7 @@
 | **Version** | 0.6 (draft for review) |
 | **Date** | 17 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
-| **Describes** | The real codebase in [`frontend/`](frontend/): Next.js + TypeScript + Prisma + Gemini, targeting Google Cloud Run (deployment is milestone M7, not yet done). **Free tier only** — every service must be free or within existing free credits ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)). |
+| **Describes** | The real codebase: [`frontend/`](frontend/) (Next.js UI), [`backend/`](backend/) (the API: Hono + TypeScript + Prisma + Gemini) and [`shared/`](shared/) (types and pure claim rules), targeting two Google Cloud Run services (deployment is milestone M7, not yet done). **Free tier only** — every service must be free or within existing free credits ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)). |
 | **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. The separate hackathon plan (`BACKEND_PLAN.md`) was folded into §21 and removed; it remains in git history. |
 | **Status** | Built: M0–M3, the document pipeline with OCR, grounded Q&A (RAG), evidence statuses and field review (B4), claims (B6), tests and CI (B1). Not built: real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see §20. |
 
@@ -43,7 +43,7 @@
 
 - **New engineers:** read §1–§5, then the section for the area you are working on.
 - **Every task, PR and test** names the PRD requirement IDs (FL-xx) it implements. Section headings below list the IDs they cover.
-- **"Built"** means present in `frontend/` today. **"To build"** means designed here but not yet implemented.
+- **"Built"** means present in `frontend/`, `backend/` or `shared/` today. **"To build"** means designed here but not yet implemented.
 
 ---
 
@@ -59,51 +59,57 @@ These turn the PRD's product principles into engineering rules.
 | Sensitive data has a lifetime | Read, extract, forget: store extracted fields and short snippets, not raw documents or message bodies. Mask by default. Delete on request. |
 | Sharing can be irreversible | Anything leaving the product needs an exact preview and the user's approval, recorded in the audit trail. |
 | Requests repeat and things fail | Retries must be safe; unknown outcomes are recorded as unknown, never guessed. |
-| We must learn cheaply | One web app, one database, one deployable service. Mocks behind interfaces, swapped for real providers without rewrites. |
+| We must learn cheaply | A web app and an API, each small and deployable alone, over one database. Mocks behind interfaces, swapped for real providers without rewrites. |
 
 ---
 
 ## 2. Architecture overview
 
-### 2.1 One deployable app
+### 2.1 Two services and a shared contract
 
 ```
  Browser (phone or laptop)
    │  React UI (Next.js App Router, client components)
    │  x-session-id header (v0) → real sign-in (MVP)
    ▼
- Next.js on Cloud Run ──────────────────────────────────────────────────
- │ app/api/**        thin route handlers: validate (Zod) → call server → respond
- │ src/server/
+ frontend/  Next.js on Cloud Run ─ pages only; rewrites /api/* to the backend (no CORS, header passes through)
+   │
+   ▼
+ backend/   Hono on Cloud Run ──────────────────────────────────────────
+ │ src/api/**        thin route handlers (Request → Response): validate (Zod) → call server → respond
+ │ src/app.ts        maps src/api/**/route.ts to URLs; src/index.ts listens on $PORT
+ │ backend/src/server/
  │   core/           session · access guards · gate engine · masking · crypto ·
  │                   rate limit · name matching · upload validation · http
- │   domain/         case service · journey engine · gates
- │   ai/             provider interface · Gemini adapter · fixture provider (tests)
+ │   domain/         case service · journey engine · gates · claim and evidence services
+ │   ai/             provider interface · Gemini adapter · fixture provider (tests) · voice-agent planner
  │   ocr/            Tesseract OCR · no-AI text rules
  │   knowledge/      procedure library · hybrid search · citations (RAG)
  │   providers/      identity · death proof · relationship · entitlement (mock now)
- │   rules/          evidence · observations · totals · duplicates · claim path · pack · lifecycle
+ │   rules/          evidence · observations · totals · duplicates
  │   connectors/     connector interface · mock connectors       (Later)
  │   pdf/            claim-pack PDF (pdf-lib)
- │   procedures/     versioned, cited claim procedures
  │   data/           official resources · demo data · synthetic registries
  ▼
  Prisma ─► SQLite (v0) ─► permanent free database (open decision — FREE_TIER_PLAN §3)
  Gemini API key, free tier (text, vision, embeddings; synthetic data only)
+
+ shared/   types.ts · contracts.ts (ClaimView, agent actions) · claim-path · claim-pack · claim-lifecycle ·
+           procedures · field-review · journey · starters   (imported by both; no runtime of its own)
 ```
 
 ### 2.2 The one-pager's six layers, mapped to code
 
 | Layer (one-pager §7) | Where it lives | Status |
 | --- | --- | --- |
-| User experience | `src/app/page.tsx` (public site), `src/app/signin`, `src/app/app/*`, `src/components/keeper/*`, `src/keeper/*` | **Original Keeper UI with backend adapter**: normal Continue calls the session-scoped APIs through `src/keeper/backend.ts`; Explore a sample retains the offline engine |
-| Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
-| AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
-| Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
-| Asset and document records | Prisma models, `api/documents`, `api/assets`, masking, `rules/`, `domain/evidence-service.ts` | Built: four evidence statuses, field review with history, dated amounts, totals, duplicates (§10) |
+| User experience | `frontend/src/app/page.tsx` (public site), `frontend/src/app/signin`, `frontend/src/app/app/*`, `frontend/src/components/keeper/*`, `frontend/src/keeper/*` | **Original Keeper UI with backend adapter**: normal Continue calls the session-scoped APIs through `src/keeper/backend.ts`; Explore a sample retains the offline engine |
+| Identity and authorisation | `backend/src/server/core/{session,access,gate-engine}.ts`, `backend/src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
+| AI orchestration | `backend/src/server/ai/*`, `backend/src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
+| Financial integration | `backend/src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
+| Asset and document records | Prisma models, `backend/src/api/documents`, `backend/src/api/assets`, masking, `backend/src/server/rules/`, `domain/evidence-service.ts` | Built: four evidence statuses, field review with history, dated amounts, totals, duplicates (§10) |
 | Claims and workflow | `JourneyTask`, journey engine; `Claim`, `ClaimPack`, `Approval`, `domain/claim-service.ts` | Built: tasks and claims to outcome (§11) |
 
-`src/server/` must never import from `src/app/` or React code, so it can later move into a standalone service with the same API (§21, M9).
+`backend/` and `frontend/` never import each other. What both need is in `shared/` (types and pure rules). The frontend talks to the API only over `/api/*`. (Done 18 Oct 2026 — see M9 and DECISIONS.md.)
 
 ---
 
@@ -120,7 +126,7 @@ These turn the PRD's product principles into engineering rules.
 | PDF text | `unpdf` | Text layer first; scanned pages are rendered to images (`@napi-rs/canvas`) for OCR |
 | OCR | `tesseract.js` (WASM, runs on the server) | English + Hindi by default (`OCR_LANGS`); used when there is no AI key or Gemini fails (§8.1) |
 | Claim pack PDF | `pdf-lib` (MIT) | Standard fonts; "₹" written "Rs." (§11.3) |
-| Tests | Vitest (unit and route); Playwright (end-to-end, to add) | 106 tests in `frontend/test/`; GitHub Actions CI on every PR (§19) |
+| Tests | Vitest (unit and route); Playwright (end-to-end, to add) | 159 tests: `backend/test/` (136) and `frontend/test/` (23); GitHub Actions CI on every PR (§19) |
 | Deploy | Google Cloud Run, **from source via buildpacks — no Docker** | `npm run build`, `npm start`, listens on `$PORT` |
 | Secrets | Google Secret Manager | Never in the repo |
 
@@ -131,43 +137,42 @@ These turn the PRD's product principles into engineering rules.
 ## 4. Code layout
 
 ```
-frontend/
+backend/                      the API service (own package.json, deploys alone)
   prisma/schema.prisma        data model (§5)
   src/
-    app/
-      page.tsx                landing
-      signin/ · app/          Keeper: conversation (`/app`) · assets · documents · claims · family · activity · settings
-                              (app/app/layout.tsx wraps every area in components/keeper/shell.tsx)
-      api/                    route handlers (§15)
-    server/                   all server-only logic (no React imports)
-      ai/                     provider.ts · gemini.ts · fixture.ts · index.ts
+    index.ts · app.ts         listen on $PORT · map src/api/**/route.ts to URLs (§15)
+    api/                      route handlers (Request → Response)
+    server/                   all server logic
+      ai/                     provider.ts · gemini.ts · fixture.ts · index.ts · agent.ts (voice-agent prompt, schema, vetting)
       knowledge/              library.ts (official procedure passages) · search.ts (BM25, vectors, fusion) · retrieve.ts · citations.ts (§13.5)
       ocr/                    ocr.ts (Tesseract, scanned-PDF pages) · rule-extract.ts (no-AI extraction) (§8.1)
       db.ts                   Prisma client
       core/                   access.ts · crypto.ts · gate-engine.ts · http.ts · masking.ts ·
                               name-match.ts · rate-limit.ts · session.ts · upload.ts
-      domain/                 case-service.ts · gates.ts · journey-engine.ts · intake-fallback.ts (rule-based intake)
+      domain/                 case-service.ts · gates.ts · journey-engine.ts · intake-fallback.ts · claim-service.ts · evidence-service.ts · keeper-ui.ts
       providers/              identity.ts · death-proof.ts · relationship.ts · entitlement.ts · types.ts
       data/                   resources.ts · demo-data.ts · death-registry.ts (synthetic)
         reference/            real public reference snapshot: fund schemes + NAVs, bank branches, pincodes, RBI rates (SOURCES.md)
         synthetic/            demo-case generator: real reference data + synthetic, masked people and identifiers
-      rules/                  evidence.ts · observations.ts · totals.ts · duplicates.ts · claim-path.ts · claim-pack.ts · claim-lifecycle.ts (pure, deterministic)
-      procedures/procedures.ts  versioned claim procedures (bank, mutual fund, LIC) with sources and check dates
-      domain/claim-service.ts   applies the claim rules to stored claims, packs, approvals and events
-      domain/evidence-service.ts  applies the rules to stored records (fields, review history, statuses, amounts, duplicates)
-      pdf/claim-pack.ts       the approved pack as a PDF the family submits themselves
+      rules/                  evidence.ts · observations.ts · totals.ts · duplicates.ts (pure, deterministic)
+      pdf/                    claim-pack.ts: the approved pack as a PDF the family submits themselves
       connectors/             (Later) base.ts · mock/* · real/*
-    lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts · starters.ts
-    components/
-      keeper/                 landing, signin, shell, conversation (+ voice agent screen), panel (what Keeper knows, asset, document review, claim, family, discovery plan), views, ui
-    keeper/                   client-side demo engine: types · engine (assistant + reducer) · claims · sample · store (localStorage) · voice · catalog · util
-      ui/                     stock shadcn components
   test/                       Vitest unit and route tests (test/.tmp holds the test database)
   scripts/                    fetch-reference-data.mjs (public reference snapshot) · make_test_pdf.py
-.github/workflows/ci.yml      type-check, lint, tests and build on every PR
+frontend/                     the Keeper web app (own package.json, deploys alone)
+  next.config.ts              rewrites /api/* to BACKEND_URL
+  src/
+    app/                      page.tsx landing · signin/ · app/ (conversation, assets, documents, claims, family, activity, settings)
+    components/keeper/        landing, signin, shell, conversation, agent-mode (voice agent screen), panel, views, ui
+    components/ui/            stock shadcn components
+    keeper/                   client-side engine: types · engine (assistant + reducer) · claims · sample · store (localStorage) · backend (API adapter) · agent (voice loop) · voice · catalog · util
+    lib/                      client.ts (fetch + session header) · utils.ts
+  test/                       Keeper engine tests · integration/ (adapter and refinement against the real route handlers)
+shared/                       imported by both: types.ts · contracts.ts · claim-path.ts · claim-pack.ts · claim-lifecycle.ts · procedures.ts · field-review.ts · journey.ts · start-message.ts · starters.ts
+.github/workflows/ci.yml      type-check, lint, tests and build for both services on every PR
 ```
 
-`ClaimView` (the claim page's data) is defined in `src/server/domain/claim-service.ts` and imported by the claim page as a type only — the one exception to keeping shared types in `src/lib/types.ts`.
+`ClaimView` and the voice-agent action types are defined in `shared/contracts.ts`; the backend returns them and the frontend reads them as types only. `shared/` has no runtime of its own and imports nothing from either service.
 
 Housekeeping done on 17 Oct 2026: the leftover "Hello, world" route was deleted, the package renamed to `financial-legacy`, and unused models and packages removed. `DECISIONS.md` is the decision log.
 
@@ -175,7 +180,7 @@ Housekeeping done on 17 Oct 2026: the leftover "Hello, world" route was deleted,
 
 ## 5. Data model
 
-The Prisma schema in `frontend/prisma/schema.prisma` is the **source of truth for data**. The tables below summarise it and map it to the PRD's concepts ([PRD §12.1](PRD.md#121-the-main-things-the-product-keeps-track-of)).
+The Prisma schema in `backend/prisma/schema.prisma` is the **source of truth for data**. The tables below summarise it and map it to the PRD's concepts ([PRD §12.1](PRD.md#121-the-main-things-the-product-keeps-track-of)).
 
 ### 5.1 Models
 
@@ -221,7 +226,7 @@ Until the permanent database is chosen, schema changes are applied with `prisma 
 
 ## 6. Case types and journeys
 
-The code has seven case types (plus `general`), each driven by the deterministic journey engine (`src/server/domain/journey-engine.ts`). They map onto the PRD's three journeys:
+The code has seven case types (plus `general`), each driven by the deterministic journey engine (`backend/src/server/domain/journey-engine.ts`). They map onto the PRD's three journeys:
 
 | Code `caseType` | Kind | PRD journey | Gates required (§7) |
 | --- | --- | --- | --- |
@@ -240,7 +245,7 @@ The code has seven case types (plus `general`), each driven by the deterministic
 
 ## 7. Trust gates and access control
 
-**PRD:** FL-03, FL-04, FL-22, FL-23, FL-47. **Built** in `src/server/core/gate-engine.ts`, `access.ts`, `masking.ts`.
+**PRD:** FL-03, FL-04, FL-22, FL-23, FL-47. **Built** in `backend/src/server/core/gate-engine.ts`, `access.ts`, `masking.ts`.
 
 ### 7.1 Gates
 
@@ -276,7 +281,7 @@ The PRD separates identity, relationship, authority and consent (FL-03, FL-04). 
 
 ### 7.5 Real providers (Pilot)
 
-Mock providers are replaced behind the same interface (`src/server/providers/types.ts`). What is legally open to us ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §3):
+Mock providers are replaced behind the same interface (`backend/src/server/providers/types.ts`). What is legally open to us ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §3):
 
 | Gate | Real route for the Pilot |
 | --- | --- |
@@ -301,7 +306,7 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
        ─► otherwise (or if that fails) text: PDF text layer → OCR of scanned pages (≤ OCR_MAX_PDF_PAGES) → OCR of photos
        ─► OCR clean-up of number-like tokens (O/D→0, I→1, Z→2) so redaction catches them
        ─► Gemini structured extraction → proposed fields; without AI, basic text rules
-          (src/server/ocr/rule-extract.ts) → quality "partial" at best, warning shown
+          (backend/src/server/ocr/rule-extract.ts) → quality "partial" at best, warning shown
        ─► redact identifiers BEFORE storage (6+ digit runs, 8+ digit groups, Aadhaar, PAN; dates kept)
        ─► store redacted text (≤20k chars) + proposed fields; original file NOT stored in v0
        ─► each value stored as a DocumentField (redacted, critical flag)
@@ -329,7 +334,7 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
 ### 9.1 MVP discovery
 
 1. **Documents** the user uploads (statements, CAS, policy bonds, passbooks) → extraction (§8) → holdings.
-2. **Guided official searches** from `src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build (B5)** — today only the resources directory exists; a search-visit model will be added. The product will:
+2. **Guided official searches** from `backend/src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build (B5)** — today only the resources directory exists; a search-visit model will be added. The product will:
    - proposes which searches fit this case (discovery plan, FL-10);
    - opens the official portal for the user (a visit is recorded);
    - asks the user to log the outcome — **found / not found / partial / blocked** (e.g. the portal needs an identifier the family doesn't have) **/ failed** (portal unavailable) — recorded on the visit;
@@ -426,7 +431,7 @@ DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR
 - **Approval** (FL-14) binds the pack's SHA-256 over canonical JSON, recipient, channel and purpose; it expires after 15 minutes. Any change to the pack — including a corrected document field it uses (FL-26) — saves a new version and invalidates the approval. Unapproved drafts are updated in place; approved versions are kept.
 - **MVP submission is manual:** the user downloads the approved pack and submits it; the product records the receipt or marks the submission unknown ("check before re-sending"). Repeating a submission never creates a second one (FL-36). The pack is frozen once submitted. The due date is the submission date plus the procedure's days; every open claim shows who it is waiting on.
 - Outcomes need evidence; a rejection is never counted as recovery; claims progress independently (FL-16, FL-37).
-- **PDF** (`src/server/pdf/claim-pack.ts`, pdf-lib): a checklist and summary — documents, checked values with sources, where to submit, timeline, declarations, procedure source, and the pack version and fingerprint on every page. Marked as prepared by the claimant, not an official form; the claimant writes full account numbers themselves (we never hold them). Downloadable only under a live approval.
+- **PDF** (`backend/src/server/pdf/claim-pack.ts`, pdf-lib): a checklist and summary — documents, checked values with sources, where to submit, timeline, declarations, procedure source, and the pack version and fingerprint on every page. Marked as prepared by the claimant, not an official form; the claimant writes full account numbers themselves (we never hold them). Downloadable only under a live approval.
 
 ---
 
@@ -444,7 +449,7 @@ To build:
 
 ## 13. AI layer
 
-**PRD:** FL-38, FL-39, FL-40, FL-53, §10.4 guardrails. **Built** in `src/server/ai/`.
+**PRD:** FL-38, FL-39, FL-40, FL-53, §10.4 guardrails. **Built** in `backend/src/server/ai/`.
 
 ### 13.1 Provider design
 
@@ -481,7 +486,7 @@ Today the "case manager" is the deterministic **journey engine** (next-best task
 
 ### 13.5 Retrieval for the case assistant (RAG)
 
-**PRD:** FL-38, FL-39, FL-06, FL-12. Code: `src/server/knowledge/`. Issue #43.
+**PRD:** FL-38, FL-39, FL-06, FL-12. Code: `backend/src/server/knowledge/`. Issue #43.
 
 ```
 question ─► sync procedure library (once per process; changed passages replaced by content hash)
@@ -509,7 +514,7 @@ question ─► sync procedure library (once per process; changed passages repla
 
 ### 14.1 Design
 
-- **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `src/server/voice/`, same pattern as the AI provider.
+- **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `backend/src/server/voice/`, same pattern as the AI provider.
 - **Provider (D-09, revised 17 Oct 2026 for the free-tier rule):** recognition with **Gemini audio understanding on the free API key** (synthetic data only) or the browser's built-in speech recognition; spoken replies with **Cloud Text-to-Speech** inside its free monthly quota (4M Standard / 1M Neural2 characters) or the browser's built-in voice. The earlier plan (Gemini on Vertex AI in Mumbai) is dropped because Vertex bills; Google Speech-to-Text is not offered in India and only 60 minutes a month are free. Choose at B8 after evaluating Hindi, Hinglish and Tamil. See [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7 and [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md).
 - **Launch languages:** **English (India), Hindi, Hinglish (mixed Hindi-English) and Tamil.** Each must pass its own evaluation ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) §3.4) before it is offered.
 - **Region:** the Gemini API key endpoint doesn't let us choose a region; any processing outside India is disclosed ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
@@ -608,7 +613,7 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 3. Malware scanning.
 4. AI terms that allow personal data — the free Gemini tier does not (FREE_TIER_PLAN §4) — or real cases run without AI.
 
-(`frontend/db/custom.db` was purged from git history on 17 Oct 2026.)
+(`custom.db` was purged from git history on 17 Oct 2026.)
 5. Threat model and DPDP privacy assessment reviewed — drafts in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) and [docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md).
 
 ---
@@ -619,8 +624,8 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 
 ### 17.1 Deployment
 
-- **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository). **No Dockerfile, docker-compose or Caddy.**
-- Scripts: `build` = `prisma generate && next build`; `start` = `prisma db push --skip-generate && next start` (v0 SQLite); `postinstall` = `prisma generate`.
+- **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository), as **two services**: `backend/` first, then `frontend/` built with `BACKEND_URL` set to the backend's URL. **No Dockerfile, docker-compose or Caddy.**
+- Backend scripts: `build` = `prisma generate`; `start` = `prisma db push --skip-generate && tsx src/index.ts` (v0 SQLite); `postinstall` = `prisma generate`. Frontend: `build` = `next build`; `start` = `next start`.
 - **Database:** on Cloud Run, SQLite in `/tmp` (`DATABASE_URL=file:/tmp/finlegacy.db`) is wiped on every restart — demos only. The permanent database is an open, free-only decision ([FREE_TIER_PLAN §3](docs/FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)); once chosen, use versioned Prisma migrations (`prisma migrate deploy`). Environments: development now; production only when real users are approved. Setup: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Cloud Run runs with minimum instances 0 so nothing bills while idle.
 
 ### 17.2 Operating
@@ -648,7 +653,7 @@ Demo cases are loaded fresh per session with `POST /api/demo`; a separate reset 
 
 ## 18. Configuration
 
-All variables are listed in `frontend/.env.example`. Secrets come from Secret Manager in deployed environments.
+Backend variables are listed in `backend/.env.example`; the frontend has one, `BACKEND_URL` (`frontend/.env.example`). Secrets come from Secret Manager in deployed environments.
 
 | Variable | Purpose | Used now |
 | --- | --- | --- |
@@ -672,7 +677,7 @@ Unused variables (connector modes, console key, demo mode, log level) were remov
 
 ## 19. Testing and evaluation
 
-**PRD:** FL-53, FL-55; PRD §15.1. **Current state:** 106 Vitest tests in 11 files under `frontend/test/` — route tests against a throwaway SQLite database, the fixture AI provider, and no network calls to a model. Covered: intake fallback, journey stages, synthetic demo data, document text access, OCR and no-AI extraction, RAG retrieval with an evaluation set, field review, evidence statuses, amounts and totals, duplicates, claim paths, packs, approval and the claim lifecycle. **Not yet covered by dedicated tests:** the gate engine, masking, name matching, redaction and upload validation on their own (they are exercised indirectly by route tests).
+**PRD:** FL-53, FL-55; PRD §15.1. **Current state:** 159 Vitest tests: 136 in `backend/test/` and 23 in `frontend/test/` — route tests against a throwaway SQLite database, the fixture AI provider, and no network calls to a model. Covered: intake fallback, journey stages, synthetic demo data, document text access, OCR and no-AI extraction, RAG retrieval with an evaluation set, field review, evidence statuses, amounts and totals, duplicates, claim paths, packs, approval and the claim lifecycle. **Not yet covered by dedicated tests:** the gate engine, masking, name matching, redaction and upload validation on their own (they are exercised indirectly by route tests).
 
 | Level | Tool | Must cover |
 | --- | --- | --- |
@@ -750,9 +755,9 @@ Ordered so that each step leaves a working product:
 
 Real providers where approved, a permanent database, malware scanning, AI terms that allow personal data (or AI off for real cases), threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when), within the free-tier rule ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)).
 
-### M9 — Optional service extraction
+### M9 — Service extraction (done 18 Oct 2026)
 
-If scale or team structure requires it, lift `src/server/**` into a standalone Node/TypeScript service with the same API, also deployed from source on Cloud Run. Not required for the MVP.
+The API now runs as its own service (`backend/`, Hono), separate from the web app (`frontend/`, Next.js), with shared types and pure claim rules in `shared/`. Both deploy from source on Cloud Run. Still to decide: service-to-service protection (the backend is currently public, like the API was) and a shared store for rate limits.
 
 ---
 
@@ -795,7 +800,7 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
 ### Keeper state adapter — 18 Oct 2026
 
-The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` into `LegacyCase.keeperUi` (`src/server/domain/keeper-ui.ts`) — **not** the `CaseEvent` audit table. Identifiers in the saved text are redacted before storage, verification states and document/sample sources are stripped, and the workspace `events` never include it; a copy left in `CaseEvent` by earlier code is moved and deleted on first read. This state cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
+The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` into `LegacyCase.keeperUi` (`backend/src/server/domain/keeper-ui.ts`) — **not** the `CaseEvent` audit table. Identifiers in the saved text are redacted before storage, verification states and document/sample sources are stripped, and the workspace `events` never include it; a copy left in `CaseEvent` by earlier code is moved and deleted on first read. This state cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
 
 `GET /api/cases/:id/messages` resumes historical intake/Q&A; fallback passage replies are saved. Case corrections use owner-scoped PATCH; asset owner/nomination edits use the existing discovery-gated PATCH. Original claim controls use the server path, pack and approval hash, and only record the family’s own submission. Verification forms are small cards inside the existing details panel. Failed chat retains its draft. Explore a sample is unchanged and uses no backend.
 
@@ -808,4 +813,4 @@ The existing landing, sign-in, shell, conversation, voice controls, views and pa
 
 ### Voice agent — 18 Oct 2026
 
-`src/keeper/agent.ts` (client loop), `src/components/keeper/agent-mode.tsx` (screen), `src/server/ai/agent.ts` (prompt, schema, vetting), `POST/GET /api/ai/agent`. Per turn: the browser sends the utterance and the last few turns (identifiers redacted again on the server) with the case id; the server checks ownership, the AI opt-in and the rate limit, builds a snapshot from what the person may see (nothing below the discovery gate; masked holdings), asks Gemini for one JSON object `{say, actions, listen, finish}`, and returns only vetted actions with a `confirm` flag. The browser runs automatic actions through the normal `dispatch` (same owner-gated APIs as the buttons), holds the rest until a yes, records the turn with `agent.turn`, speaks the reply with the browser voice and listens again. Errors map to codes (`ai_consent_required` 403, `ai_unavailable` 503, `ai_unusable` 502) and the client falls back to the built-in interviewer.
+`src/keeper/agent.ts` (client loop), `src/components/keeper/agent-mode.tsx` (screen), `backend/src/server/ai/agent.ts` (prompt, schema, vetting), `POST/GET /api/ai/agent`. Per turn: the browser sends the utterance and the last few turns (identifiers redacted again on the server) with the case id; the server checks ownership, the AI opt-in and the rate limit, builds a snapshot from what the person may see (nothing below the discovery gate; masked holdings), asks Gemini for one JSON object `{say, actions, listen, finish}`, and returns only vetted actions with a `confirm` flag. The browser runs automatic actions through the normal `dispatch` (same owner-gated APIs as the buttons), holds the rest until a yes, records the turn with `agent.turn`, speaks the reply with the browser voice and listens again. Errors map to codes (`ai_consent_required` 403, `ai_unavailable` 503, `ai_unusable` 502) and the client falls back to the built-in interviewer.

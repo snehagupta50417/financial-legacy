@@ -65,13 +65,23 @@ Never commit secret values. Give the Cloud Run service account the *Secret Manag
 
 ## 4. Deploy (milestone M7)
 
-From the `frontend/` folder:
+Two Cloud Run services: deploy the **backend** first, then the **frontend**, which needs the backend's URL when it is built.
+
+From the `backend/` folder:
 
 ```bash
-gcloud run deploy finlegacy --source . --region asia-south1 --allow-unauthenticated --min-instances 0 --max-instances 2 --set-env-vars DATABASE_URL=file:/tmp/finlegacy.db --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,PAN_HASH_SECRET=PAN_HASH_SECRET:latest
+gcloud run deploy keeper-api --source . --region asia-south1 --allow-unauthenticated --min-instances 0 --max-instances 2 --set-env-vars DATABASE_URL=file:/tmp/finlegacy.db --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,PAN_HASH_SECRET=PAN_HASH_SECRET:latest
 ```
 
-- The app reads `$PORT` and starts with `npm start`, which creates the SQLite tables (see [DECISIONS.md](../DECISIONS.md) M0).
+Note the service URL it prints, then, from the `frontend/` folder:
+
+```bash
+gcloud run deploy keeper-web --source . --region asia-south1 --allow-unauthenticated --min-instances 0 --max-instances 2 --set-build-env-vars BACKEND_URL=https://<keeper-api-url>
+```
+
+- The API reads `$PORT` and starts with `npm start`, which creates the SQLite tables (see [DECISIONS.md](../DECISIONS.md) M0). The web app proxies `/api/*` to `BACKEND_URL`, which is fixed at build time: if the API's URL changes, redeploy the frontend.
+- Each API call is a request to both services, so the free 2M requests a month is shared and is used up about twice as fast as with one service.
+- The API is public, as it was when it was part of the web app (the session key scopes data). Locking it to the web app alone is an open item.
 - **Data:** SQLite in `/tmp` is wiped whenever the instance restarts, and each instance has its own copy. That is acceptable for demos only; the permanent database is an open decision ([FREE_TIER_PLAN.md §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)).
 - **No key?** The app still runs: rule-based intake, local OCR and text rules for documents, keyword search with matching passages for questions.
 - Minimum instances 0 means the first request after idle is slower (cold start), but nothing runs — or bills — while idle.

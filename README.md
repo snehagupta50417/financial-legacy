@@ -47,7 +47,8 @@ Later: more asset types (shares, IEPF, EPF, NPS, PPF, lockers), approved live co
 
 | Part | State |
 | --- | --- |
-| `frontend/` — the product | **Keeper web app (new):** public site, mocked sign-in and a conversation-first app (voice and chat, assets, documents, family record, claims, activity) with its original landing, sign-in, chat, voice, sidebar and detail layouts. Normal Continue now uses the backend through the Keeper store adapter; Explore a sample retains the clearly labelled offline engine. **Backend, built and tested:** intake (AI or rules), case workspace, trust gates G0–G4 (simulated providers), document extraction (Gemini, local OCR, text rules), per-field review with history, four evidence statuses, dated amounts and honest totals, grounded Q&A with sources (RAG), claims for bank / mutual fund / LIC with packs, approval and tracking. 106 tests and CI. **Not built:** real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| `frontend/` — the Keeper web app | **Keeper web app:** public site, mocked sign-in and a conversation-first app (voice and chat, assets, documents, family record, claims, activity) with its original landing, sign-in, chat, voice, sidebar and detail layouts. Normal Continue now uses the backend through the Keeper store adapter; Explore a sample retains the clearly labelled offline engine. Calls the API through a same-origin `/api/*` proxy. |
+| `backend/` — the API service | **Built and tested, runs on its own:** intake (AI or rules), case workspace, trust gates G0–G4 (simulated providers), document extraction (Gemini, local OCR, text rules), per-field review with history, four evidence statuses, dated amounts and honest totals, grounded Q&A with sources (RAG), claims for bank / mutual fund / LIC with packs, approval and tracking. 159 tests across both services and CI. **Not built:** real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 | Hosting and cost | **Free tier only** — Google Cloud free tier, a free Gemini API key (synthetic data only), GitHub Actions free minutes. See [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md). |
 
 ## Documents
@@ -66,7 +67,15 @@ Read in this order. Each document follows the one above it; if they disagree, th
 
 ## Running it
 
-**Product app** (`frontend/`, Node ≥ 22). From the `frontend/` folder:
+Two small services and one shared folder (Node ≥ 22):
+
+| Folder | What it is | Local address |
+| --- | --- | --- |
+| [`backend/`](backend/) | The API: trust gates, masking, OCR, RAG, claims, the AI agent (Hono + Prisma + SQLite) | http://localhost:4000 |
+| [`frontend/`](frontend/) | The Keeper web app (Next.js). Forwards `/api/*` to the backend | http://localhost:3000 |
+| [`shared/`](shared/) | Types and pure claim rules both sides use. No runtime of its own | — |
+
+**1. Backend.** From `backend/`:
 
 ```bash
 npm install
@@ -84,31 +93,35 @@ npm run db:push
 npm run dev
 ```
 
-Opens on http://localhost:3000 (health check: `/api/health`). Use `.env` rather than `.env.local` so both Next.js and Prisma read it. `npm run db:push` creates the local SQLite database in `frontend/prisma/db/`.
+Health check: http://localhost:4000/api/health. `npm run db:push` creates the local SQLite database in `backend/prisma/db/`.
 
-**AI key (optional):** put a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) in `GEMINI_API_KEY`. Use synthetic data only — the free tier's terms let Google use prompts to improve its products. Without a key the app still works: rule-based intake, local OCR and text rules for documents, keyword search with matching passages for questions; only drafting is off. Every setting is explained in [`frontend/.env.example`](frontend/.env.example).
+**2. Frontend.** In a second terminal, from `frontend/`:
 
-**Checks** (the same ones CI runs on every PR):
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+Open http://localhost:3000. The frontend expects the backend at `http://localhost:4000`; set `BACKEND_URL` (see `frontend/.env.example`) to point elsewhere.
+
+**AI key (optional):** put a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) in `backend/.env` as `GEMINI_API_KEY`. Use synthetic data only — the free tier's terms let Google use prompts to improve its products. Without a key the app still works: rule-based intake, local OCR and text rules for documents, keyword search with matching passages for questions; drafting and the AI voice agent are off. Every setting is explained in [`backend/.env.example`](backend/.env.example).
+
+**Checks** (the same ones CI runs on every PR). In each of `backend/` and `frontend/`:
 
 ```bash
 npm run typecheck
 ```
 
 ```bash
-npm run lint
-```
-
-```bash
 npm test
 ```
 
-```bash
-npm run build
-```
+In `frontend/` also `npm run lint` and `npm run build`. Tests use a throwaway SQLite database and never call a real model (set `LIVE_AI=1` in `backend/` to allow it). The OCR tests download Tesseract's English and Hindi data once. `frontend/test/integration` runs the Keeper adapter against the real backend route handlers.
 
-Tests use a throwaway SQLite database and never call a real model (set `LIVE_AI=1` to allow it). The OCR tests download Tesseract's English and Hindi data once.
-
-**Deploying:** Google Cloud Run from source, no Docker, free tier only — [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Not deployed yet.
+**Deploying:** two Google Cloud Run services (backend, then frontend) from source, no Docker, free tier only — [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Not deployed yet.
 
 
 **Connected Keeper:** Open `/` for the original landing page, then Continue to Keeper. Cases and original screen controls connect through `src/keeper/backend.ts`; there is no replacement workspace layout. Use synthetic data only. Family records and contact-view drafts are saved, but no real contact invitations or sharing happen. Identity and institutional providers remain prototypes.

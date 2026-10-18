@@ -6,7 +6,7 @@
 | **Date** | 17 October 2026 |
 | **Owner** | Privacy / security lead (PRD decision D-05) |
 | **Required by** | [PRD §11.1](../PRD.md#111-security) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
-| **Scope** | The product in `frontend/` as designed in [LLD.md](../LLD.md): web app, API routes, database, AI provider, file handling, operators. Later capabilities (connectors, Verify console, sharing) are covered briefly in §7. |
+| **Scope** | The product in `frontend/` (web app) and `backend/` (API) as designed in [LLD.md](../LLD.md): web app, API routes, database, AI provider, file handling, operators. Later capabilities (connectors, Verify console, sharing) are covered briefly in §7. |
 | **Status** | First draft. Must be reviewed by someone independent of the build team, and repeated before each Later capability is switched on. |
 
 ---
