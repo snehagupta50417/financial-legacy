@@ -5,7 +5,7 @@ import type { AgentAction } from "@shared/contracts";
 import { dispatch, getBackendStatus, peekState } from "./store";
 import { nextWork, plainCopy } from "./presentation";
 import type { Choice, Message } from "./types";
-import { speak, stopSpeaking, useSpeech } from "./voice";
+import { resetKeeperVoice, speak, speakKeeper, stopSpeaking, useSpeech } from "./voice";
 
 /**
  * Keeper's voice-first agent loop, in the browser:
@@ -18,12 +18,15 @@ import { speak, stopSpeaking, useSpeech } from "./voice";
 
 export type Phase = "idle" | "listening" | "thinking" | "acting" | "confirming" | "speaking" | "ended";
 export interface Step { id: number; kind: "heard" | "act" | "info"; text: string; state: "running" | "done" | "failed" | "skipped" }
-type Turn = { say: string; actions: AgentAction[]; listen: boolean; finish: boolean };
+type Turn = { say: string; actions: AgentAction[]; listen: boolean; finish: boolean; handoff?: boolean };
+export type HandoffWhy = "person_asked" | "keeper_unsure" | "sensitive";
+export interface HandoffResult { id: string; simulated: boolean }
 type AskReply = { answer: string; sources: { n: number; title: string; url: string | null; excerpt: string }[] };
 
 const YES = /^\s*(yes|yeah|yep|yup|sure|ok|okay|confirm|go ahead|do it|please do|haan|ha|theek hai)\b/i;
 const NO = /^\s*(no|nope|nah|don'?t|skip|cancel|not now|stop that|nahi|nahin)\b/i;
 const DONE = /\b(that'?s (all|it)|i'?m done|we'?re done|all done|goodbye|bye|that will be all)\b/i;
+const HUMAN = /\b(human|real person|actual person|talk to (a |an )?(person|someone|agent|advisor|adviser)|speak (to|with) (a |an )?(person|someone|agent|advisor|adviser)|connect me to (a |an )?(person|someone|agent))\b/i;
 const GREETING = "Hi, I'm Keeper. Tell me what you'd like to sort out, or ask me anything about your family's financial records.";
 
 const withoutSources = (t: string) => { const i = t.indexOf("\n\nSources\n"); return plainCopy(i < 0 ? t : t.slice(0, i)); };
@@ -40,7 +43,8 @@ function opening() {
   };
 }
 
-export function useAgent(speakAloud: boolean) {
+export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?: number; startWith?: string } = {}) {
+  const { micOn = true, delayMs = 0, startWith } = opts;
   const sp = useSpeech();
   const [phase, setPhaseState] = useState<Phase>("idle");
   const [steps, setSteps] = useState<Step[]>([]);
@@ -51,6 +55,9 @@ export function useAgent(speakAloud: boolean) {
   const [summary, setSummary] = useState<{ headline: string; did: string[]; next: string | null } | null>(null);
   const [mode, setMode] = useState<"ai" | "basic">(start.mode);
   const [notice, setNotice] = useState<string | null>(null);
+  const [consentNeeded, setConsentNeeded] = useState(false);
+  const [handoffOffer, setHandoffOffer] = useState<HandoffWhy | null>(null);
+  const [handoffSent, setHandoffSent] = useState<HandoffResult | null>(null);
 
   const phaseRef = useRef<Phase>("idle");
   const pendingRef = useRef<{ actions: AgentAction[]; user: string; voice: boolean; say: string } | null>(null);
@@ -59,6 +66,10 @@ export function useAgent(speakAloud: boolean) {
   const stepId = useRef(0);
   const stepsRef = useRef<Step[]>([]);
   const busy = useRef(false);
+  const micRef = useRef(micOn);
+  const confused = useRef(0);
+  const aiVoice = useRef(false);
+  useEffect(() => { micRef.current = micOn; }, [micOn]);
   const speakRef = useRef(speakAloud);
   useEffect(() => { speakRef.current = speakAloud; }, [speakAloud]);
 
@@ -77,7 +88,7 @@ export function useAgent(speakAloud: boolean) {
 
   const listenAgain = useCallback(() => {
     if (phaseRef.current === "ended") return;
-    if (!sp.supported) return setPhase("idle");
+    if (!sp.supported || !micRef.current) return setPhase("idle");
     sp.clear(); sp.start(); setPhase("listening");
   }, [sp, setPhase]);
 
@@ -88,7 +99,7 @@ export function useAgent(speakAloud: boolean) {
     const next = () => { if (live()) { if (after === "listen") listenAgain(); else if (phaseRef.current === "speaking") setPhase("idle"); } };
     if (phaseRef.current !== "confirming") setPhase("speaking");
     if (!speakRef.current) { setTimeout(next, 0); return; }
-    speak(withoutSources(text).slice(0, 700), next);
+    speakKeeper(withoutSources(text).slice(0, 700), next, { gemini: aiVoice.current });
   }, [listenAgain, setPhase]);
 
   const run = async (a: AgentAction, caseId: string): Promise<{ ok: boolean; answer?: AskReply }> => {
@@ -131,6 +142,8 @@ export function useAgent(speakAloud: boolean) {
     const ok = await Promise.resolve(dispatch({ t: "send", text, voice }));
     const added = (th()?.messages.slice(before) ?? []).filter((m: Message) => m.role !== "user");
     markStep(stepRef, ok === false ? "failed" : "done", ok === false ? getBackendStatus().error || "Could not reply" : "Built-in guide replied");
+    if (added.length) confused.current = 0; else confused.current++;
+    if (confused.current >= 2) setHandoffOffer("keeper_unsure");
     const last = added.at(-1);
     setChoices(last?.choices?.filter((c) => c.id !== "m:sample") ?? []);
     say(added.length ? added.map((m) => m.text).join(" ") : getBackendStatus().error || "Sorry, that didn't go through. Please try again.");
@@ -167,6 +180,12 @@ export function useAgent(speakAloud: boolean) {
       const s = peekState(); const c = s?.cases[s.activeCase];
       const caseId = c?.backendId;
       const queued = pendingRef.current;
+      if (HUMAN.test(text)) {
+        if (queued) { setPending(null); queued.actions.forEach((a) => addStep("act", a.label, "skipped")); }
+        setHandoffOffer("person_asked");
+        say("Of course. I can ask a person to look at this. Check the request on your screen, and add anything you want them to know.", "stay");
+        return;
+      }
       if (queued) {
         if (YES.test(text) && caseId) {
           setPending(null); setPhase("acting");
@@ -192,13 +211,15 @@ export function useAgent(speakAloud: boolean) {
         try {
           const turn = await api.post<Turn>("/api/ai/agent", { caseId, utterance: text, history: history.current });
           markStep(stepRef, "done", "Understood"); setMode("ai");
+          confused.current = 0;
           await applyTurn(text, voice, turn, caseId, closing);
+          if (turn.handoff) setHandoffOffer("keeper_unsure");
           return;
         } catch (e) {
           const code = e instanceof ApiError ? e.code : undefined;
           if (code === "ai_consent_required") { aiBlocked.current = true; setNotice("AI help is off. Keeper is using its built-in guide. You can turn AI help on in Settings."); }
           else if (code === "ai_unavailable") { aiBlocked.current = true; setNotice("The AI assistant isn't available right now, so Keeper is using its built-in guide."); }
-          else setNotice("That one didn't reach the assistant, so the built-in guide answered.");
+          else { confused.current++; setNotice("That one didn't reach the assistant, so the built-in guide answered."); }
           markStep(stepRef, "skipped", "Using the built-in guide");
           setMode("basic");
         }
@@ -219,18 +240,52 @@ export function useAgent(speakAloud: boolean) {
 
   // Greet on mount, then listen. Cleanup releases the mic and the voice.
   useEffect(() => {
-    const greet = setTimeout(() => say(start.hello), 0);
+    resetKeeperVoice();
+    const greet = setTimeout(() => { if (startWith) void handle(startWith, false); else say(start.hello); }, delayMs);
     // Say honestly, before the first turn, whether the AI planner is on.
     if (peekState()?.session?.mode === "signin") {
       api.get<{ available: boolean; reason?: string }>("/api/ai/agent").then((r) => {
         aiBlocked.current = !r.available;
+        aiVoice.current = r.available;
         setMode(r.available ? "ai" : "basic");
+        setConsentNeeded(!r.available && r.reason === "consent");
         if (!r.available) setNotice(r.reason === "consent" ? "AI help is off, so Keeper is using its built-in guide. Turn it on in Settings to talk freely." : "The AI assistant isn't set up here, so Keeper is using its built-in guide.");
       }).catch(() => {});
     }
     return () => { clearTimeout(greet); sp.clear(); stopSpeaking(); };
   }, []);
 
+  /** One tap to allow AI help, so a first call is not sent to Settings. */
+  const allowAi = async () => {
+    try {
+      await api.post("/api/consent", { purpose: "ai_processing", status: "granted" });
+      const r = await api.get<{ available: boolean }>("/api/ai/agent");
+      aiBlocked.current = !r.available; aiVoice.current = r.available;
+      setMode(r.available ? "ai" : "basic"); setConsentNeeded(false);
+      setNotice(r.available ? null : "The AI assistant isn't set up here, so Keeper is using its built-in guide.");
+    } catch { setNotice("Could not save your permission. Try again."); }
+  };
+
+  /** Ask for a person. Real accounts save a request with a redacted transcript; the example only pretends. */
+  const requestHuman = async (why: HandoffWhy, note: string): Promise<HandoffResult | null> => {
+    const s = peekState(); const c = s?.cases[s.activeCase];
+    const th = c?.threads.find((t) => t.id === c.activeThread) ?? c?.threads[0];
+    const transcript = (th?.messages ?? []).filter((m) => m.role !== "note").slice(-12).map((m) => ({ role: m.role === "user" ? "user" : "keeper", text: m.text.slice(0, 600) }));
+    if (s?.session?.mode === "signin") {
+      if (!c?.backendId) { setNotice("Tell Keeper a little about the situation first, then ask for a person."); return null; }
+      try {
+        const r = await api.post<{ handoff: { id: string } }>("/api/cases/" + c.backendId + "/handoff", { why, note, transcript });
+        const out = { id: r.handoff.id, simulated: false };
+        setHandoffSent(out); setHandoffOffer(null);
+        return out;
+      } catch (e) { setNotice(e instanceof Error ? e.message : "Could not save the request."); return null; }
+    }
+    const out = { id: "example", simulated: true };
+    setHandoffSent(out); setHandoffOffer(null);
+    return out;
+  };
+
+  const pauseMic = () => { sp.clear(); if (phaseRef.current === "listening") setPhase("idle"); };
   const onChoice = (ch: Choice) => handle(ch.label, false);
   const tapMic = () => {
     if (sp.listening) { sp.stop(); return; }
@@ -240,5 +295,5 @@ export function useAgent(speakAloud: boolean) {
 
   // A listening turn that heard nothing (the browser ended it) reads as idle, not as a stuck mic.
   const shown: Phase = phase === "listening" && !sp.listening && !sp.text.trim() ? "idle" : phase;
-  return { sp, phase: shown, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
+  return { sp, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
 }

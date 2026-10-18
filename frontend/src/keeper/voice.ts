@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { getSessionId } from "@/lib/client";
 
 /**
  * Voice uses the BROWSER's own speech recognition (Web Speech API). It starts only when the user taps
@@ -91,4 +92,44 @@ export function speak(text: string, onEnd?: () => void) {
   watchdog = setTimeout(finish, 4000);
   window.speechSynthesis.speak(u);
 }
-export const stopSpeaking = () => typeof window !== "undefined" && window.speechSynthesis?.cancel();
+let audio: HTMLAudioElement | null = null;
+let voiceAbort: AbortController | null = null;
+let geminiVoiceWorks = true;
+
+/** Stops whatever Keeper is saying, in either voice. */
+export function stopSpeaking() {
+  voiceAbort?.abort(); voiceAbort = null;
+  if (audio) { audio.pause(); audio = null; }
+  if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+}
+
+/** A new call tries Gemini's voice again, even if an earlier one was unavailable. */
+export const resetKeeperVoice = () => { geminiVoiceWorks = true; };
+
+/**
+ * Keeper's voice. With `gemini` it asks the backend for Gemini's natural voice (free key, same opt-in as
+ * every other model call) and plays it; if that is unavailable, over quota, or slow to fail, it falls back
+ * to the browser's own voice, so a call never goes silent. `onEnd` fires once, when speech finishes.
+ */
+export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean } = { gemini: false }) {
+  if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd);
+  stopSpeaking();
+  let done = false;
+  const finish = () => { if (!done) { done = true; onEnd?.(); } };
+  const ctrl = new AbortController();
+  voiceAbort = ctrl;
+  void (async () => {
+    try {
+      const res = await fetch("/api/ai/speak", { method: "POST", headers: { "content-type": "application/json", "x-session-id": getSessionId() }, body: JSON.stringify({ text: text.slice(0, 600) }), signal: ctrl.signal });
+      if (!res.ok) { geminiVoiceWorks = false; throw new Error("voice unavailable"); }
+      const url = URL.createObjectURL(await res.blob());
+      const a = new Audio(url);
+      audio = a;
+      a.onended = () => { URL.revokeObjectURL(url); audio = null; finish(); };
+      a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(text, finish); };
+      await a.play();
+    } catch {
+      if (!ctrl.signal.aborted) speak(text, finish);
+    }
+  })();
+}

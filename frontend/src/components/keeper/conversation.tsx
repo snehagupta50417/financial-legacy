@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, FileText, Info, Mic, Paperclip, Send } from "lucide-react";
+import { ArrowRight, FileText, Info, MessageSquare, Mic, Paperclip, Phone, Send } from "lucide-react";
 import { STARTERS } from "@/keeper/catalog";
 import type { DocVariant } from "@/keeper/engine";
 import { dispatch, setPrefs, useKeeper, useBackendStatus, saveConversationDraft, attachDocument, retryAttachment, removeAttachment } from "@/keeper/store";
@@ -63,6 +63,11 @@ export default function Conversation() {
   const text = th ? state?.drafts?.[th.id] || "" : "";
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
+  // Keeper is a voice assistant first: the call is the front door and the written chat is one small icon away.
+  const [view, setView] = useState<"call" | "chat">(() => { try { return localStorage.getItem("keeper.view") === "chat" ? "chat" : "call"; } catch { return "call"; } });
+  const [callTopic, setCallTopic] = useState<string | undefined>();
+  const showView = (v: "call" | "chat") => { setView(v); try { localStorage.setItem("keeper.view", v); } catch { /* not remembered */ } };
+  const startCall = (topic?: string) => { setCallTopic(topic); setVoiceOpen(true); };
   // The details panel is there when asked for, not by default: the conversation leads.
   const [asideOpen, setAsideOpen] = useState(() => { try { return localStorage.getItem("keeper.details") === "open"; } catch { return false; } });
   const toggleDetails = () => {
@@ -128,9 +133,28 @@ export default function Conversation() {
       <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation with Keeper">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-8">
           <div className="min-w-0"><p className="truncate font-semibold">{th.title}</p><p className="truncate text-[0.85rem] text-muted-foreground">Whose information: <b className="text-ink">{c.name}</b></p></div>
-          <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn></div>
+          <div className="flex items-center gap-2">{view === "chat" && <Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn>}<button onClick={() => showView(view === "call" ? "chat" : "call")} aria-label={view === "call" ? "Show the written chat" : "Back to the call screen"} title={view === "call" ? "Chat" : "Call"} className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-paper hover:bg-secondary">{view === "call" ? <MessageSquare className="h-4 w-4" aria-hidden /> : <Phone className="h-4 w-4" aria-hidden />}</button></div>
         </header>
 
+        {view === "call" ? (
+          <section className="scroll-soft flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-6 py-8 text-center" aria-label="Call Keeper">
+            <div className="settle flex flex-col items-center gap-6">
+              <Orb phase="idle" onClick={() => startCall()} />
+              <div>
+                <h2 className="display text-[1.9rem] leading-tight sm:text-[2.4rem]">{greeting}</h2>
+                <p className="mx-auto mt-2 max-w-md text-ink/75">Call Keeper and say what’s going on. It works through it with you, one step at a time, asks before it changes anything, and tells you what it did.</p>
+              </div>
+              <Btn onClick={() => startCall()} className="min-h-14 px-8 text-[1.05rem]"><Phone className="h-5 w-5" aria-hidden />Call Keeper</Btn>
+              {work && !fresh && <p className="max-w-md text-[0.93rem] text-muted-foreground">Next up: {work.text.replace(/^Next:\s*/, "")}</p>}
+              <div className="w-full max-w-md">
+                <p className="mb-2 text-[0.85rem] font-medium text-muted-foreground">Or call about</p>
+                <div className="flex flex-col gap-2">{STARTERS.map((s) => <button key={s.journey} onClick={() => startCall(s.text)} className="min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{s.label}</button>)}</div>
+              </div>
+              <p className="text-[0.85rem] text-muted-foreground">Prefer to type? <button className="underline underline-offset-4" onClick={() => showView("chat")}>Open the chat</button></p>
+              {fresh && <DemoInline />}
+            </div>
+          </section>
+        ) : (<>
         <div ref={scrollRef} onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; sessionStorage.setItem("keeper.scroll." + th.id, String(el.scrollTop)); }} className="scroll-soft flex-1 overflow-y-auto px-4 py-6 sm:px-8" role="log" aria-live="polite" aria-label="Messages">
           <div className="mx-auto flex max-w-[44rem] flex-col gap-3">
             {!fresh && msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} onOpen={open} />)}
@@ -170,6 +194,7 @@ export default function Conversation() {
           </div>
           <p className="mx-auto mt-2 max-w-[44rem] text-center text-[0.78rem] text-muted-foreground">Keeper never asks for passwords, PINs or OTPs.</p>
         </form>
+        </>)}
       </section>
 
       <aside className={cn("scroll-soft hidden w-[26rem] shrink-0 overflow-y-auto border-l border-line bg-card/60 p-5", asideOpen && "xl:block")} aria-label="Details panel"><Panel c={c} onContinue={() => dispatch({ t: "choose", id: "m:resume", label: "Continue" })} /></aside>
@@ -179,7 +204,7 @@ export default function Conversation() {
           <div className="mt-3"><Panel c={c} onContinue={() => { dispatch({ t: "choose", id: "m:resume", label: "Continue" }); setSheet(false); }} /></div>
         </SheetContent>
       </Sheet>
-      <AgentMode open={voiceOpen} onClose={() => setVoiceOpen(false)} onTyping={() => {}} />
+      <AgentMode open={voiceOpen} startWith={callTopic} onClose={() => { setVoiceOpen(false); setCallTopic(undefined); }} onTyping={() => showView("chat")} />
     </div>
   );
 }

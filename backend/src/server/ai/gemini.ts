@@ -78,6 +78,22 @@ export class GeminiProvider implements AiProvider {
     throw lastError;
   }
 
+  /** Gemini text to speech. Returns raw 24 kHz mono PCM wrapped as WAV so any browser can play it. */
+  async speak(text: string, signal: AbortSignal): Promise<Buffer> {
+    const res = await this.client.models.generateContent({
+      model: process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts",
+      contents: [{ role: "user", parts: [{ text }] }],
+      config: {
+        responseModalities: ["AUDIO"],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.GEMINI_TTS_VOICE || "Kore" } } },
+        abortSignal: signal,
+      },
+    });
+    const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);
+    if (!part?.inlineData?.data) throw new Error("No audio returned");
+    return pcmToWav(Buffer.from(part.inlineData.data, "base64"), 24000);
+  }
+
   /** Batches of 100; vectors are normalised (needed below the model's full 3072 dimensions). */
   async embed(texts: string[], kind: EmbedKind, signal: AbortSignal): Promise<number[][]> {
     const model = this.embeddingModel.split("@")[0];
@@ -108,6 +124,16 @@ export class GeminiProvider implements AiProvider {
     }
     return out;
   }
+}
+
+/** 16-bit little-endian mono PCM to a playable WAV. */
+export function pcmToWav(pcm: Buffer, sampleRate: number): Buffer {
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0); header.writeUInt32LE(36 + pcm.length, 4); header.write("WAVE", 8);
+  header.write("fmt ", 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24); header.writeUInt32LE(sampleRate * 2, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34);
+  header.write("data", 36); header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
 }
 
 function normalise(v: number[]): number[] {
