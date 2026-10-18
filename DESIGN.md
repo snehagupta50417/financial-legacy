@@ -339,3 +339,9 @@ The original Keeper landing, sign-in composition, desktop sidebar, mobile naviga
 ### In-place refinement — 18 Oct 2026
 
 Keep the existing composition and visual identity. Quieter copy, fewer repeated badges, a single primary task action, collapsed supporting sources and secondary replies. The original paperclip, microphone, composer, dialogs, drawers and navigation remain. Small provenance, claim-stage, comparison and contact-access visuals use existing tokens and icons. No estimated progress or decorative charts. Voice retains explicit start/stop and transcript review; normal account flows never load fictional holdings. Example scope appears in the existing case selector.
+
+### First run and the guided example — 18 Oct 2026
+
+- **One thing at a time.** The first screens show one idea each. A new conversation is a single welcome: the microphone, a short greeting, three situations to start from. The details panel stays closed until the person opens it (Details button, remembered).
+- **Explore an example = "See how Keeper works" (`/welcome`).** Pick a situation, then watch one turn of the loop, one screen per beat (listen, understand, act, ask first, close the loop), with fictional people and a visible "Example · fictional people" label. Skip is always available. It ends in the example workspace, another story, or the person's own start.
+- The progress rail is the same five stages as the voice agent screen, so the example teaches the real behaviour.

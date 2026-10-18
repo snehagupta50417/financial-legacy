@@ -38,8 +38,8 @@ export default function SignIn() {
           </form>
           <p className="mt-3 text-[0.88rem] text-muted-foreground">Your progress is saved to this browser session. Secure account sign-in is not available yet.</p>
           <div className="my-6 flex items-center gap-3 text-[0.85rem] text-muted-foreground"><hr className="flex-1 border-line" />or<hr className="flex-1 border-line" /></div>
-          <Btn variant="quiet" className="w-full" onClick={() => go("sample")}>Explore an example</Btn>
-          <p className="mt-3 text-[0.88rem] text-muted-foreground">An example workspace with fictional records, separate from your own.</p>
+          <Btn variant="quiet" className="w-full" onClick={() => router.push("/welcome")}>Explore an example</Btn>
+          <p className="mt-3 text-[0.88rem] text-muted-foreground">A one-minute walk-through with fictional people, separate from your own records.</p>
         </div>
         <p className="text-[0.85rem] text-muted-foreground"><Link href="/" className="underline underline-offset-4">Back to the website</Link></p>
       </main>

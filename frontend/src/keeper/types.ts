@@ -162,6 +162,8 @@ export interface PlanSource {
 }
 
 export interface Case {
+  /** A demo case seeded for this account (synthetic people, real public reference data). */
+  demo?: boolean;
   uiTasks?: Task[];
   backendId?: string;
   gate?: CaseWorkspace["gate"];
@@ -191,6 +193,8 @@ export interface Session {
 }
 
 export interface AppState {
+  /** Version of the built-in example data. A saved example from an older version is rebuilt, never shown. */
+  sampleV?: number;
   attachments?: Record<string, { id: string; name: string; threadId: string; state: "ready" | "uploading" | "failed"; error?: string }>;
   drafts?: Record<string, string>;
   v: 1;
