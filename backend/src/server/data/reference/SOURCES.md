@@ -1,5 +1,7 @@
 # Reference data — sources
 
+> Documentation review — 18 October 2026. These are provenance notes for public reference data in synthetic fixtures. This review does not refresh rates, NAVs or branch/procedure data, or certify current financial advice. Revalidate original sources before real-data use.
+
 Real **public** reference data used to make demo and test data realistic. It contains institutions, branches, fund schemes, prices, pincodes and rates — **no personal data**. People and identifiers in demos are synthetic and always masked (`../synthetic/`).
 
 Refresh with `node scripts/fetch-reference-data.mjs` (from `frontend/`). Each file records its `fetchedOn` date.

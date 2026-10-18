@@ -1,15 +1,47 @@
 # Local Supabase validation
 
-Local app: http://localhost:3001, API: http://localhost:4001. Authentication remains local synthetic-session mode by request; this is not production sign-in.
+Reconciled 18 October 2026. Web: http://localhost:3001; API: http://localhost:4001. The local runtime uses synthetic-session authentication, not production Google sign-in. See [CURRENT_STATE](CURRENT_STATE.md) for the audit.
 
-The ignored backend/.env.supabase-local merges existing AI configuration with the private Supabase connection and strict certificate verification. It does not replace backend/.env or SQLite. PostgreSQL Prisma client is generated separately under prisma/.generated/client with the Node PostgreSQL adapter, preserving the SQLite test client. Generate it with the existing database helper using the hosted environment before starting the PostgreSQL runtime.
+## Configuration and storage
 
-The frontend must build with BACKEND_URL=http://localhost:4001. Existing SQLite records are preserved in the original database; they are not silently migrated. Browser case IDs from an empty or different database are discarded during hydration. Google OAuth and hosting are intentionally unchanged.
+Private `backend/.env.supabase-local` merges the existing AI configuration with Supabase PostgreSQL. It does not replace `backend/.env` or migrate the SQLite file. Frontend private `.env.supabase-local` selects API port 4001 at build time. No passwords/keys belong in this document or Git.
 
-Verified against Supabase: synthetic LIC demo, confirmed holding, simulated nominee entitlement, pack checklist/declarations, content-hash approval, recorded self-submission, simulated institution review, simulated settlement. No external submission or payment occurs. Also verified: five accepted source fields, saved two-message conversation, saved follow-up preference, isolation from a different synthetic session (404), and recovery of conversation/follow-up/settled claim after API restart.
+Canonical schema: `backend/prisma/schema.prisma`. The database helper derives PostgreSQL under ignored `prisma/.generated/` and generates a separate client using the Node PostgreSQL adapter. The private `keeper` schema is selected explicitly. The dashboard's public root CA is bundled in `backend/certs/supabase-root.crt`; CA and hostname validation remain enabled. A public certificate is not a credential.
 
-Voice: server recording retries are explicit after browser recognition failure. Microphone permission remains controlled by the browser/OS and cannot be bypassed. Actual spoken microphone accuracy requires a user/device check.
+## Start the existing configured runtime
 
-Start API from backend with `npm run dev:supabase`; rebuild/start frontend from frontend with `npm run build:supabase` then `npm run start:supabase`. The restricted agent runtime used a workspace-only TypeScript loader because tsx could not access OS user information; normal local terminals use the npm scripts.
-The public Supabase root CA from the project dashboard is bundled under backend/certs/supabase-root.crt (not a credential). PostgreSQL uses CA and hostname verification; it does not disable certificate checking.
-Final validation: 197 backend tests (OCR download tests excluded), 72 frontend tests, backend typecheck, frontend lint and production build pass. Live Supabase validation also records a scoped simulated official-search result and checks request-ID idempotency. Browser conversation survives reload. Actual microphone permission/acoustic accuracy remains a device-level acceptance check.
+From `backend/`:
+
+```powershell
+node --env-file=.env.supabase-local scripts/database.mjs generate
+npm run dev:supabase
+```
+
+In a second terminal, from `frontend/`:
+
+```powershell
+npm run build:supabase
+npm run start:supabase
+```
+
+A new database requires a separate, reviewed setup step; generation/start alone does not initialise tables. Existing hosted data requires reviewed additive migrations, including the case-agent change under `prisma/changes/`. Preserve the original SQLite file. Do not use reset/data-loss flags or regenerate a native client while a Windows process locks its DLL.
+
+The restricted agent environment needed a workspace-only TypeScript loader when tsx could not access OS user information. That helper is not a repository prerequisite; normal terminals use the scripts above.
+
+## Windows connection helper
+
+For an existing private `backend/.env.hosted` draft, from the repository root in CMD or PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File backend/scripts/setup-supabase.ps1 -PrepareOnly
+```
+
+This process-scoped execution-policy flag avoids changing system-wide policy. The hidden prompt expects the database password, not the dashboard-login password. The helper's default project/pooler is specific to the existing setup; a different project must supply its own verified project/pooler arguments. Never print/share the password.
+
+**PrepareOnly saves connection configuration; it does not apply the schema or switch the running app.** Generate/setup against the intended private env explicitly. Do not infer successful connection or schema creation from a saved-file message.
+
+## Validation and limits
+
+Supabase checks covered saved conversation/follow-up, restart persistence, foreign-session denial, reviewed source fields, claim draft/pack, simulated entitlement, approval, recorded submission, synthetic outcomes and agent pause/resume. Document-to-claim continuity passed eight live checks. Latest automated audit: 213 backend tests including six OCR, 75 frontend tests.
+
+Latest voice audit: synthetic English STT passed; Gemini TTS exhausted quota. Physical microphone and audible playback still need device acceptance. OAuth and public hosting are unchanged and unverified here. No institution submission or payment occurred.

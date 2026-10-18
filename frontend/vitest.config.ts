@@ -22,6 +22,8 @@ export default defineConfig({
       GEMINI_API_KEY: "",
       GOOGLE_CLOUD_PROJECT: "",
       SARVAM_API_KEY: "",
+      SARVAM_FALLBACK_API_KEY: "",
+      GEMINI_FALLBACK_API_KEY: "",
     },
     fileParallelism: false,
   },

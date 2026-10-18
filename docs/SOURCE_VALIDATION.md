@@ -1,5 +1,7 @@
 # Financial Legacy — Source-by-Source Validation Matrix
 
+> Documentation review — 18 October 2026. Dated source/procedure research, not a fresh portal/legal audit or proof of integration. Keeper supports handoff links and saved scoped self-reported outcomes; it does not automatically search these portals or verify ownership. Original source dates remain unchanged. See [CURRENT_STATE](CURRENT_STATE.md).
+
 | | |
 | --- | --- |
 | **Version** | 0.1 (draft for review) |

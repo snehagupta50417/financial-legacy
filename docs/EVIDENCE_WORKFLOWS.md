@@ -19,3 +19,11 @@ The local API advances one checkpoint every two seconds. The review screen can a
 All endpoints enforce case ownership and discovery/freeze gates. Protected field values and amounts stay hidden until authority checks pass. Identifiers are redacted again on output. Edges come from recorded references, not similarity scores or model guesses. Official searches are self-reported, not ownership verification. Limits on rows/fields/review history make this a bounded preview and are explicitly flagged; a truncated graph must not be treated as complete evidence.
 
 The current worker prepares a claim review. Upload OCR itself is still synchronous; this is not a claim that all document extraction now runs in a durable queue. Browser-only examples show a labelled simulated evidence map and cannot run database workflows.
+
+## Document-to-claim continuity — 18 October 2026
+
+`GET /api/documents/:id/progress` returns extraction, critical-field review, holding match, authority, package and institution stages plus a concrete next record. POST retries preparation. Upload exposes this progress; successful review/confirmation may create the claim automatically once canonical reviewed evidence and explicit holding confirmation support it. Multiple source-linked confirmed holdings receive separate drafts; deterministic draft IDs prevent creation races.
+
+Only the eligible reviewed source policy can fill its exact requirement after entitlement. Identity/death/relationship or inheritance authority is not inferred from a policy upload. Fields, holdings, declarations, approval, submission and outcomes are never accepted automatically. Preparation failure preserves the saved review/confirmation and exposes retry.
+
+The document panel and saved conversation receipts explain missing work. Institution verification remains external unless an actual recorded institution status exists. Existing post-submission claims retain their stage; source recheck must not restart them. Eight live synthetic continuity checks passed; see [CURRENT_STATE](CURRENT_STATE.md).

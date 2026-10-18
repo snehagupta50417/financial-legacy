@@ -1,5 +1,8 @@
 # Financial Legacy — Business Requirements Document (BRD)
 
+> Implementation reconciliation — 18 October 2026. Business hypotheses, market figures and external research below retain their original dates. This update does not revalidate market size, pricing, law or commercial traction. The implemented synthetic MVP and remaining release limits are recorded separately. See [CURRENT_STATE](docs/CURRENT_STATE.md).
+
+
 **An AI-native financial asset discovery, legacy planning and recovery platform.**
 *Find what’s yours. Make sure nothing gets left behind.*
 

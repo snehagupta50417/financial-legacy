@@ -9,4 +9,8 @@ An existing waiting run also reconciles its evidence fingerprint after records c
 There is no always-on scheduler: the open conversation advances the run, and returning resumes active saved runs. Completion means preparation finished, never claim resolution. Users must review findings; fields, ownership, authority, approvals, submissions and outcomes are never automatically changed.
 
 Schema: run the existing database preparation helper for your database provider. PostgreSQL uses the additive reviewed SQL under prisma/changes/20261018_case_agent.sql, inside the private keeper schema; it was applied locally to the configured Supabase project. SQLite tests initialize from the canonical schema. Regenerate both clients after schema changes; stop Windows processes using a client before regenerating its locked native DLL.
-Validation: full backend regression suite passed (202 tests before the additional pause-while-waiting test); all six case-agent safety/recovery tests pass on final code. Frontend suite: 75 passed. Lint, typechecks and production build passed. Live Supabase run saved checkpoint 1, paused, resumed at checkpoint 1, and completed four persisted receipts. Actual microphone permissions and acoustic accuracy remain device acceptance checks.
+Validation is dated in [CURRENT_STATE](CURRENT_STATE.md): 213 backend checks including OCR and 75 frontend checks. Live checkpoints/pause/resume passed. This is not acceptance of all devices, real financial providers or always-on operation.
+
+## Document-to-claim continuation
+
+The coordinator above refreshes existing drafts. A separate canonical document workflow now creates a draft after reviewed supporting evidence and explicit holding confirmation for a death case; it can link the exact reviewed policy requirement after authority checks. This does not expand the coordinator into auto-confirmation, approval or submission. See [EVIDENCE_WORKFLOWS](EVIDENCE_WORKFLOWS.md).

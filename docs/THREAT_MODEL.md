@@ -7,7 +7,7 @@
 | **Owner** | Privacy / security lead (PRD decision D-05) |
 | **Required by** | [PRD §11.1](../PRD.md#111-security) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
 | **Scope** | The product in `frontend/` (web app) and `backend/` (API) as designed in [LLD.md](../LLD.md): web app, API routes, database, AI provider, file handling, operators. Later capabilities (connectors, Verify console, sharing) are covered briefly in §7. |
-| **Status** | First draft. Must be reviewed by someone independent of the build team, and repeated before each Later capability is switched on. |
+| **Status** | Implementation reconciled 18 October 2026; still a draft. Must be reviewed by someone independent of the build team, and repeated before each Later capability is switched on. |
 
 ---
 
@@ -42,11 +42,11 @@
 ## 3. How data flows (trust boundaries)
 
 ```
- [Browser] ──HTTPS──► [Next.js API on Cloud Run] ──► [Database: SQLite in v0 / free option to choose]
+ [Browser] ──HTTPS──► [Next.js web proxy → Hono API] ──► [Supabase PostgreSQL / local test SQLite]
      │                     │        │
-     │ uploads             │        └──► [AI provider: Gemini / Vertex]   ← boundary: data leaves us
+     │ uploads             │        └──► [Gemini key API / Sarvam speech]   ← boundary: data leaves us
      │                     │
-     │                     └──► [Object storage for originals — to build]
+     │                     └──► [No retained upload originals; local OCR/extraction]
      ▼
  [User downloads claim pack] ──► [User submits to institution]          ← boundary: we lose control
 ```
@@ -72,7 +72,7 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 
 | # | Threat | Mitigation | Status | Ref |
 | --- | --- | --- | --- | --- |
-| T7 | Session ID stolen or guessed (v0 uses a browser UUID) | **v0 is for synthetic data only.** Real sign-in, HttpOnly secure cookies, expiry and re-authentication for sensitive actions before any real data | 🔧 | LLD §16.1, FL-45 |
+| T7 | Session ID stolen or guessed | Browser UUID mode is synthetic-only. Supabase OAuth/PKCE/cookie and verified-user checks are implemented; provider activation, hosted tests and broader sensitive-action re-authentication remain open | ✅ code / ⏳ acceptance | LLD §16.1, FL-45 |
 | T8 | Accessing another case by changing an ID in the URL or API | Every case-scoped route checks ownership; foreign IDs return 404 (not 403) so existence isn't revealed | ✅ | LLD §7.2 |
 | T9 | Account takeover through recovery or contact change | Safe recovery; old access removed; user notified; change audited | 🔧 | FL-48 |
 | T10 | Helper (e.g. a son) acting beyond a living parent's consent | Consent recorded with scope and expiry; revocation stops future and queued work | ✅ basic / 🔧 scope enforcement | FL-04 |
@@ -123,10 +123,10 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 
 ## 5. Highest risks before the Pilot
 
-1. **T7 — no real authentication.** Blocks any real data.
+1. **T7 — hosted authentication not accepted.** Supabase OAuth code exists; Google setup, hosted two-account checks and production session/re-auth policy remain open.
 2. **T1/T2 — mock identity and death providers.** Real providers or trained operator review must exist before real claims.
 3. **T17 — free AI terms.** The unpaid Gemini tier may use prompts; no real document may reach it.
-4. **No permanent database.** SQLite on Cloud Run is wiped on restart; choose a free option before any data must persist ([FREE_TIER_PLAN.md §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)).
+4. **Production recovery not accepted.** Supabase PostgreSQL is selected and local restart persistence passed; hosted backup/restore, retention and incident recovery remain open.
 5. **T20 — no malware scanning.** Synthetic uploads only until a free scanner is chosen.
 
 ## 6. Security testing plan
@@ -149,3 +149,9 @@ Each arrow that crosses into or out of our system is a trust boundary. The riski
 ## 8. Review
 
 Review this document when: a Later capability is designed; an incident occurs; the authentication or AI provider changes; and at least every six months.
+
+## Implementation findings — 18 October 2026
+
+The live HTTP adapter exposed Response constructor differences. Shared access-denial detection now recognises response objects across those realms, with a regression and live foreign-document check. Case/claim workflows use leases, revisions, bounded retries and explicit human boundaries. These checks are not an independent security audit.
+
+Gemini TTS exhausted quota (429, app 503). Browser fallback varies by device. Provider keys/credits and per-instance limits do not establish a hard zero-cost cap or distributed abuse protection. Keep synthetic data only. Current test scope: [CURRENT_STATE](CURRENT_STATE.md).

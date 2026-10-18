@@ -13,3 +13,7 @@ Read before changing code. The documents win over this file if they ever disagre
 7. **Never commit** secrets, `.env` files or database files.
 8. **Record implementation decisions** in [`DECISIONS.md`](DECISIONS.md), newest last.
 9. **Free tier only.** Use only free tiers and existing free credits — no service that bills (no Cloud SQL, Vertex AI, Memorystore, SMS). AI through the free Gemini API key, synthetic data only. Check [`docs/FREE_TIER_PLAN.md`](docs/FREE_TIER_PLAN.md) before adding any service or dependency.
+
+## Implementation reference
+
+The dated implementation/audit baseline is [CURRENT_STATE](docs/CURRENT_STATE.md). It distinguishes synthetic local acceptance from planned/pilot capabilities and does not override product-document authority. Reconcile documentation when behaviour changes.

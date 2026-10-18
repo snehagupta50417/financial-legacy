@@ -1,16 +1,16 @@
 # Keeper synthetic hosted MVP: Supabase Free + Cloud Run
 
-Code is prepared; provisioning is not complete. Do not call the hosted MVP ready until the final checks pass. Keep using made-up financial data.
+Reconciled 18 October 2026: the existing Supabase database is connected and locally validated. The local runtime remains synthetic-session mode. Google provider setup and public deployment are not verified; use the checks below before calling hosted ready. See [CURRENT_STATE](CURRENT_STATE.md).
 
 ## 1. Create a Supabase Free project
 
-Use https://supabase.com/dashboard . Choose the Free plan and a region appropriate for the intended pilot. Supabase Free currently provides 500 MB database storage; projects may pause after inactivity, and automated backups are not included. Export synthetic records periodically; a free tier is not an availability guarantee.
+Use https://supabase.com/dashboard . For a new environment, select the intended Free plan/region and review current storage, inactivity and backup terms. The existing local project is already configured; do not recreate it for these instructions. A free tier is not a recovery or availability guarantee.
 
 In the project, collect the project URL and publishable key (or legacy anon key). No service-role key is used by Keeper. Keep the database password and OAuth client secret out of chat and Git. Enter them only in local configuration or the provider console.
 
 ## 2. Configure the backend locally
 
-Keep the existing local SQLite file as a development backup. Copy backend/.env.example into a separate private configuration file, or edit backend/.env locally. Set:
+For the existing local setup, use [LOCAL_SUPABASE_VALIDATION](LOCAL_SUPABASE_VALIDATION.md); do not switch its auth mode merely to read this guide. The following config describes a separate hosted-auth environment. Keep the existing local SQLite file intact. Copy backend/.env.example into a separate private configuration file, or edit backend/.env locally. Set:
 
 ```dotenv
 AUTH_MODE="supabase"
@@ -31,7 +31,7 @@ npm run db:setup
 npm run dev
 ```
 
-The production Prisma schema is derived from the canonical SQLite schema into git-ignored prisma/.generated/. `db:setup` is an explicit schema initialisation command with no data-loss flag. Startup no longer runs db push. For changes after hosted data exists, review and create a versioned migration before applying it. Existing SQLite records are not automatically migrated; leave them intact and create new synthetic hosted fixtures, or plan an explicit migration.
+The production Prisma schema is derived from canonical SQLite into ignored prisma/.generated/ with a separate PostgreSQL client and Node pg adapter. The private keeper schema and CA/hostname verification are explicit; the public project root CA is bundled under backend/certs/. `db:setup` is an explicit schema initialisation command with no data-loss flag. Startup no longer runs db push. For changes after hosted data exists, review and create a versioned migration before applying it. Existing SQLite records are not automatically migrated; leave them intact and create new synthetic hosted fixtures, or plan an explicit migration.
 
 To return to SQLite development, restore the original file DATABASE_URL, use AUTH_MODE=demo, remove KEEPER_DB_PROVIDER=postgres, run npm run db:prepare and restart. Local SQLite survives ordinary restarts but must not be the Cloud Run database.
 
@@ -61,7 +61,7 @@ For the web service, use the generated frontend source root and set BACKEND_URL 
 
 If neither URL exists yet, first deploy the web service with an intentionally unavailable placeholder BACKEND_URL, obtain its URL, deploy the API with that PUBLIC_APP_URL, then rebuild the web service with the real API URL. Do not begin sign-ins during this bootstrap. Set the final Supabase Site URL and callback allow-list before testing login.
 
-Hosted startup deliberately refuses local SQLite, a public database schema, missing auth config or a non-HTTPS frontend URL. `/api/health` is a liveness probe, not proof that database/auth setup is complete.
+Hosted startup deliberately refuses local SQLite, a public database schema, missing auth config or a non-HTTPS frontend URL. `/api/health` is liveness; `/api/ready` checks database reachability. Neither proves OAuth provider configuration, financial authority, microphone reliability or the full hosted journey.
 
 ## 5. Acceptance checks before calling the MVP ready
 
@@ -74,3 +74,7 @@ Hosted startup deliberately refuses local SQLite, a public database schema, miss
 - Exercise voice input and interruptions on actual Chrome/Edge devices in the pilot languages. Text tests do not establish microphone accuracy.
 
 References: https://supabase.com/pricing , https://supabase.com/docs/guides/auth/social-login/auth-google , https://supabase.com/docs/guides/auth/sessions/pkce-flow , https://supabase.com/docs/guides/database/prisma .
+
+## 6. Current verification boundary
+
+Local Supabase persistence, synthetic session isolation, conversation reload, claim preparation and agent pause/resume passed. The latest voice output failed due to Gemini quota; see [VOICE](VOICE.md). Local demo-session checks do not substitute for two real Supabase test accounts. No public URL, Google provider activation, production backup recovery or billing cap is certified by this guide.
