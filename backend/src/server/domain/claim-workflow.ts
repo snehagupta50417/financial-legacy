@@ -14,7 +14,7 @@ export function workflowView(job: ClaimWorkflow): WorkflowView {
 export async function ensureWorkflow(caseId: string, claimId: string) {
   const claim = await db.claim.findFirst({ where: { id: claimId, caseId } });
   if (!claim) throw new Error("Claim not found");
-  try { return await db.claimWorkflow.upsert({ where: { claimId }, create: { caseId, claimId }, update: {} }); }
+  try { return await db.claimWorkflow.upsert({ where: { claimId }, create: { caseId, claimId, nextRunAt: new Date(0) }, update: {} }); }
   catch (error) { const existing = await db.claimWorkflow.findUnique({ where: { claimId } }); if (existing?.caseId === caseId) return existing; throw error; }
 }
 export async function restartWorkflow(id: string, revision: number) {
@@ -50,9 +50,9 @@ export async function advanceWorkflow(id?: string, now = new Date()) {
       const view = await refreshClaim(job.claimId);
       map = await evidenceMap(job.caseId);
       const assetNode = "asset:" + claim.assetId;
-      const connected = new Set([assetNode]);
+      const connected = new Set([assetNode, "claim:" + claim.id]);
       for (let i = 0; i < 4; i++) for (const e of map.edges) {
-        if (["source_document", "merged_into"].includes(e.relation) && connected.has(e.to)) connected.add(e.from);
+        if (["source_document", "merged_into", "claim_requirement"].includes(e.relation) && connected.has(e.to)) connected.add(e.from);
         if (["extracted_field", "dated_observation", "review_history"].includes(e.relation) && connected.has(e.from)) connected.add(e.to);
       }
       const relevant = map.warnings.filter(w => w.nodeIds.some(n => connected.has(n)));
