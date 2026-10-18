@@ -13,7 +13,7 @@ export async function evidenceMap(caseId: string): Promise<EvidenceMap> {
   const [assets, docs, claims, events] = await Promise.all([
     db.assetRecord.findMany({ where: { caseId }, include: { observations: { orderBy: { createdAt: "asc" }, take: 100 } }, orderBy: { id: "asc" }, take: 100 }),
     db.documentRecord.findMany({ where: { caseId }, include: { fields: { orderBy: { ordinal: "asc" }, take: 100, include: { history: { orderBy: { createdAt: "asc" }, take: 10 } } } }, orderBy: { id: "asc" }, take: 100 }),
-    db.claim.findMany({ where: { caseId }, include: { packs: { orderBy: { version: "desc" }, take: 1 } }, orderBy: { id: "asc" }, take: 100 }),
+    db.claim.findMany({ where: { caseId }, include: { packs: { orderBy: { version: "desc" }, take: 10 } }, orderBy: { id: "asc" }, take: 100 }),
     db.caseEvent.findMany({ where: { caseId, eventType: "discovery" }, orderBy: { createdAt: "asc" }, take: 200 }),
   ]);
   const nodes: EvidenceNode[] = [{ id: "case:" + c.id, kind: "case", label: "Case evidence", status: c.gateReached }];
@@ -75,6 +75,7 @@ export async function evidenceMap(caseId: string): Promise<EvidenceMap> {
     edge("case:" + c.id, "search:" + result.id, "recorded_search");
   }
   for (const claim of claims) {
+    truncated ||= claim.packs.length === 10;
     const id = "claim:" + claim.id;
     add({ id, kind: "claim", label: "Claim", status: claim.status, at: claim.updatedAt.toISOString(), target: { type: "claim", id: claim.id } });
     if (assets.some(a => a.id === claim.assetId)) edge("asset:" + claim.assetId, id, "claim_for");

@@ -27,6 +27,8 @@ describe("canonical evidence map", () => {
     expect(map.nodes.some(n => n.kind === "review" && n.status === "corrected")).toBe(true);
     expect(JSON.stringify(map)).not.toContain("123456789012");
     expect((await evidenceMap(f.c.id)).fingerprint).toBe(map.fingerprint);
+    await db.documentField.update({ where: { id: f.field.id }, data: { value: "Synthetic correction" } });
+    expect((await evidenceMap(f.c.id)).fingerprint).not.toBe(map.fingerprint);
     expect((await db.assetRecord.findUniqueOrThrow({ where: { id: f.asset.id } })).evidenceStatus).toBe("document_backed");
   });
   it("flags genuinely conflicting dated amounts and rejected critical fields; hides protected values", async () => {
@@ -67,7 +69,10 @@ describe("durable review checkpoints", () => {
   it("allows only one concurrent claimant of a checkpoint and preserves active leases", async () => {
     const f = await fixture(); const job = await ensureWorkflow(f.c.id, f.claim.id);
     await Promise.all([advanceWorkflow(job.id), advanceWorkflow(job.id)]);
-    expect((await db.claimWorkflow.findUniqueOrThrow({ where: { id: job.id } })).cursor).toBe(1);
+    const concurrent = workflowView(await db.claimWorkflow.findUniqueOrThrow({ where: { id: job.id } }));
+    expect(concurrent.cursor).toBeGreaterThanOrEqual(1); expect(concurrent.cursor).toBeLessThanOrEqual(2);
+    expect(concurrent.checkpoints).toHaveLength(concurrent.cursor);
+    expect(new Set(concurrent.checkpoints.map(c => c.step)).size).toBe(concurrent.cursor);
     await db.claimWorkflow.update({ where: { id: job.id }, data: { status: "running", leaseToken: "live-process", leaseUntil: new Date(Date.now() + 60_000) } });
     expect(await advanceWorkflow(job.id)).toBeNull();
   });

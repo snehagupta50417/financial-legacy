@@ -46,6 +46,7 @@ export function DurableClaimReview({ c, claimId }: { c: Case; claimId: string })
 function ReviewContent({ c, claimId }: { c: Case; claimId: string }) {
   const [job, setJob] = useState<WorkflowView | null>(null), [error, setError] = useState("");
   const [busy, setBusy] = useState(false), [refresh, setRefresh] = useState(0);
+  const [stale, setStale] = useState<boolean | null>(null);
   useEffect(() => {
     if (!c.backendId) return;
     let active = true, timer: ReturnType<typeof setTimeout>;
@@ -54,7 +55,12 @@ function ReviewContent({ c, claimId }: { c: Case; claimId: string }) {
         const result = await api.get<{ workflow: WorkflowView | null }>("/api/claims/" + claimId + "/workflow");
         if (!active) return;
         setJob(result.workflow); setError("");
-        if (result.workflow?.result && ["waiting_user", "succeeded"].includes(result.workflow.status)) refreshBackend();
+        if (result.workflow?.result && ["waiting_user", "succeeded"].includes(result.workflow.status)) {
+          const current = await api.get<{ map: EvidenceMap }>("/api/cases/" + c.backendId + "/evidence");
+          if (!active) return;
+          setStale(current.map.fingerprint !== result.workflow.result.fingerprint);
+          refreshBackend();
+        }
         if (result.workflow && ["queued", "running"].includes(result.workflow.status)) {
           await api.post("/api/workflows/" + result.workflow.id + "/advance");
           if (active) timer = setTimeout(poll, 1600);
@@ -67,15 +73,15 @@ function ReviewContent({ c, claimId }: { c: Case; claimId: string }) {
     if (busy) return; setBusy(true); setError("");
     try {
       const result = job ? await api.post<{ workflow: WorkflowView }>("/api/workflows/" + job.id + "/restart", { revision: job.revision }) : await api.post<{ workflow: WorkflowView }>("/api/claims/" + claimId + "/workflow");
-      setJob(result.workflow); setRefresh(n => n + 1);
+      setJob(result.workflow); setStale(null); setRefresh(n => n + 1);
     } catch (e) { setError(e instanceof Error ? e.message : "Could not start review."); }
     finally { setBusy(false); }
   };
   return <section className="keeper-durable-review" aria-label="Durable claim review"><p className="keeper-overline">SAVED CHECKPOINTS · HUMAN APPROVAL</p><h3 className="mt-1 flex items-center gap-2 font-semibold"><FileSearch className="h-4 w-4 text-moss" aria-hidden />Prepare a reliable claim review</h3><p className="mt-2 text-xs text-muted-foreground">Collect evidence, flag inconsistencies, and refresh the existing claim package. Nothing is approved or submitted automatically.</p>
     {!c.backendId ? <p className="mt-3 text-sm">This is a browser-only example. Durable reviews run on saved account cases.</p> : <><ol className="mt-4 space-y-2" aria-label="Review checkpoints">{CLAIM_REVIEW_STEPS.map((step, i) => <li key={step} className="flex items-center gap-3 text-xs"><span className="keeper-checkpoint" data-done={!!job && i < job.cursor}>{job && i < job.cursor ? "✓" : i + 1}</span>{step}<span className="ml-auto text-muted-foreground">{job && i < job.cursor ? "Saved" : job && i === job.cursor && ["queued", "running"].includes(job.status) ? "In progress" : ""}</span></li>)}</ol>
       {job && <p role="status" className="mt-3 text-xs font-medium text-moss">{label(job.status)} · revision {job.revision} · {job.attempts} failed attempts</p>}
-      {job?.result && <div className="mt-3 rounded-xl border border-line bg-paper p-3"><p className="text-sm font-medium">{job.result.next}</p>{job.result.gaps.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted-foreground">{job.result.gaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul>}<p className="mt-2 break-all text-[10px] text-muted-foreground">Evidence snapshot: {job.result.fingerprint.slice(0, 16)}…{job.result.packHash ? " · Package " + job.result.packHash.slice(0, 12) + "…" : ""}</p></div>}
-      {job?.error && <p role="alert" className="mt-3 text-sm">{job.error}</p>}{error && <p role="alert" className="mt-3 text-sm">{error}</p>}
+      {job?.result && <div className="mt-3 rounded-xl border border-line bg-paper p-3"><p className="text-sm font-medium">{stale === true ? "Evidence changed since this review. Recheck before relying on the old result." : stale === null ? "Checking this saved review against the latest evidence…" : job.result.next}</p>{job.result.gaps.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted-foreground">{job.result.gaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul>}<p className="mt-2 break-all text-[10px] text-muted-foreground">Evidence snapshot: {job.result.fingerprint.slice(0, 16)}…{job.result.packHash ? " · Package " + job.result.packHash.slice(0, 12) + "…" : ""}</p></div>}
+      {job?.error && <p role="alert" className="mt-3 text-sm">{job.error}</p>}{error && <div role="alert" className="mt-3 text-sm"><p>{error}</p><button className="min-h-11 font-semibold text-moss underline" onClick={() => setRefresh(n => n + 1)}>Reconnect saved review</button></div>}
       <Btn className="mt-4" variant="quiet" disabled={busy || (!!job && ["queued", "running"].includes(job.status))} onClick={() => void start()}>{busy ? "Saving…" : !job ? "Start saved review" : ["queued", "running"].includes(job.status) ? "Review running…" : "Recheck with latest evidence"}</Btn>
       <p className="mt-2 text-[10px] text-muted-foreground">Progress survives a restart. On hosts that suspend idle work, returning here resumes the saved review. New evidence needs a fresh review.</p></>}
   </section>;
