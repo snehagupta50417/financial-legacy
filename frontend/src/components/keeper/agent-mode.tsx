@@ -75,7 +75,7 @@ export function AgentMode({ open, onClose, onTyping, startWith }: { open: boolea
       <div role="dialog" aria-modal="true" aria-label="Before you call Keeper" className="fixed inset-0 z-50 flex items-center justify-center bg-ivory p-4">
         <div className="w-full max-w-md rounded-2xl border border-apricot/60 bg-[#fbf1e8] p-5">
           <p className="display text-[1.5rem]">Before you call Keeper</p>
-          <p className="mt-2 text-[0.93rem]">Your browser turns your speech into text. In Chrome and Edge, your audio goes to the browser company’s speech service. Keeper stores no audio and listens only while the call is open. Keeper’s voice comes from Google Gemini when AI help is on, or from your browser’s own voice. Nothing here needs a paid service.</p>
+          <p className="mt-2 text-[0.93rem]">Your browser turns your speech into text. In Chrome and Edge, your audio goes to the browser company’s speech service. Keeper stores no audio and listens only while the call is open. Use made-up details for now: the free AI services behind Keeper may keep what you say. Keeper’s voice comes from Google Gemini when AI help is on, or from your browser’s own voice. Nothing here needs a paid service.</p>
           <div className="mt-4 flex flex-wrap gap-2"><Btn onClick={() => setPrefs({ voiceDisclosed: true })}>Start the call</Btn><Btn variant="quiet" onClick={() => { onTyping(); onClose(); }}>Chat instead</Btn></div>
         </div>
       </div>
@@ -227,7 +227,7 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
             <CallButton icon={Headset} label="Person" onClick={() => setHandoffOpen(true)} badge={handoffOffer === "keeper_unsure" && !handoffSent} />
             <CallButton icon={PhoneOff} label="End" onClick={agent.finish} danger />
           </div>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[0.75rem] text-muted-foreground">Keeper never asks for passwords, PINs or OTPs, and never sends a claim for you.</p>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[0.75rem] text-muted-foreground">Made-up details only for now. Keeper never asks for passwords, PINs or OTPs, and never sends a claim for you.</p>
         </div>
       )}
 

@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { Sparkles, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { DEMO_SCENARIOS } from "@/keeper/demo";
 import { addDemoCase, removeDemoCases, useBackendStatus, useKeeper } from "@/keeper/store";
 import { PersonaSummary } from "./persona-card";
@@ -31,20 +30,4 @@ export function DemoScenarios() {
       <p className="text-[0.85rem] text-muted-foreground">Demo people and identifiers are made up. Banks, schemes and NAVs are real public data. Your own cases are never changed.</p>
     </div>
   );
-}
-
-/** A one-line way to see the product with data, for pages that would otherwise be empty. */
-export function DemoInline() {
-  const { state } = useKeeper();
-  const { busy } = useBackendStatus();
-  const [adding, setAdding] = useState(false);
-  if (state?.session?.mode === "signin") {
-    return (
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Btn variant="quiet" className="min-h-10" disabled={busy} onClick={async () => { setAdding(true); await addDemoCase("demo-a"); setAdding(false); }}><Sparkles className="h-4 w-4 text-moss" aria-hidden />{adding ? "Adding demo…" : "Fill with demo data"}</Btn>
-        <span className="text-[0.85rem] text-muted-foreground">Made-up people. Easy to remove in Settings.</span>
-      </div>
-    );
-  }
-  return <p className="mt-3 text-[0.88rem] text-muted-foreground"><Link href="/welcome" className="underline underline-offset-4">Take the guided tour</Link></p>;
 }

@@ -12,7 +12,7 @@ import { formatDay, money } from "@/keeper/util";
 import { useSpeechOutSupport, useRecognitionSupport } from "@/keeper/voice";
 import { cn } from "@/lib/utils";
 import { AiPermission } from "./backend-access";
-import { DemoInline, DemoScenarios } from "./demo-data";
+import { DemoScenarios } from "./demo-data";
 import { AssetDetail, ClaimDetail, DocDetail, FamilyView, PlanView } from "./panel";
 import { Btn, Card, EvidenceBadge, Hint, Pill } from "./ui";
 
@@ -60,7 +60,7 @@ export function AssetsView() {
               <p className="mt-2 text-[0.85rem] text-ink/70">Next: {x.next}</p>
             </button>
           ))}
-          {!c.assets.length && <Empty title="No assets yet" hint="Each bank account, fund, policy or provident fund goes here, with the evidence behind it. Tell Keeper what you know, or add one yourself."><DemoInline /></Empty>}
+          {!c.assets.length && <Empty title="No assets yet" hint="As you tell Keeper about a bank account, fund, policy or provident fund, it appears here with the evidence behind it. You can also add one yourself below."><TalkButton label="Call Keeper" /></Empty>}
           <form className="space-y-2 rounded-2xl border border-dashed border-line p-4" onSubmit={(e) => { e.preventDefault(); if (f.institution.trim()) { const result = dispatch({ t: "asset.add", institution: f.institution, category: f.category, ref: f.ref }); if (result) void result.then(ok => { if (ok) setF({ institution: "", category: "bank", ref: "" }); }); else setF({ institution: "", category: "bank", ref: "" }); } }}>
             <p className="font-semibold">Add a record</p>
             {c.gate && !c.gate.discoveryUnlocked && <Hint>Saving holdings requires identity checks. This source is not connected.</Hint>}
@@ -93,7 +93,7 @@ export function DocumentsView() {
               <div className="mt-2"><Pill tone={x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "ok" : "warn") : x.state === "processing" ? "plain" : "warn"}>{x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "Reviewed" : `${x.fields.filter((f) => !f.reviewed).length} to check`) : x.state === "processing" ? "Reading…" : x.state === "unreadable" ? "Couldn’t read" : x.state === "password" ? "Password-protected" : "Duplicate"}</Pill></div>
             </button></li>
           ))}
-          {!c.docs.length && <Empty title="No documents yet" hint="Add a statement or policy. Keeper reads it, shows each detail it found next to the original, and you check them one by one."><DemoInline /></Empty>}
+          {!c.docs.length && <Empty title="No documents yet" hint="Add a statement or policy. Keeper reads it, shows each detail it found next to the original, and you check them one by one." />}
         </ul>
         <div>{d ? <Card><DocDetail key={d.id} d={d} c={c} /></Card> : null}</div>
       </div>
@@ -108,7 +108,7 @@ export function ClaimsView() {
   if (c.kind === "self") {
     return (
       <Page c={c} title="Claims" sub="Claims are for assets after someone has died. Each institution gets its own claim.">
-        <Empty title="This is your own record" hint="Claims are for after a death, and each one lives in its own record so nothing is mixed. Switch to an estate record, or tell Keeper about someone who has died."><TalkButton label="Get help after a death" id="j:claim" />{state?.session?.mode === "sample" && state.order.find((id) => state.cases[id].kind === "estate") && <Btn variant="quiet" onClick={() => dispatch({ t: "switchCase", id: state.order.find((id) => state.cases[id].kind === "estate")! })}>See the estate example</Btn>}{state?.session?.mode === "signin" && <DemoInline />}</Empty>
+        <Empty title="This is your own record" hint="Claims are for after a death, and each one lives in its own record so nothing is mixed. Switch to an estate record, or tell Keeper about someone who has died."><TalkButton label="Get help after a death" id="j:claim" />{state?.session?.mode === "sample" && state.order.find((id) => state.cases[id].kind === "estate") && <Btn variant="quiet" onClick={() => dispatch({ t: "switchCase", id: state.order.find((id) => state.cases[id].kind === "estate")! })}>See the estate example</Btn>}</Empty>
       </Page>
     );
   }
@@ -127,7 +127,7 @@ export function ClaimsView() {
           {unstarted.map((a) => (
             <div key={a.id} className="rounded-2xl border border-dashed border-line p-4"><p className="font-semibold">{a.institution}</p><p className="text-[0.85rem] text-muted-foreground">No claim started</p><Btn variant="ink" className="mt-2 min-h-10" onClick={() => dispatch({ t: "claim.start", assetId: a.id })}>Start a claim</Btn></div>
           ))}
-          {!c.claims.length && !unstarted.length && <Empty title="No claims yet" hint="A claim is one institution's process, tracked from papers to outcome. Confirm an asset first, or tell Keeper about one you already know."><TalkButton label="Talk to Keeper" /><DemoInline /></Empty>}
+          {!c.claims.length && !unstarted.length && <Empty title="No claims yet" hint="A claim is one institution's process, tracked from papers to outcome. Confirm an asset first, or tell Keeper about one you already know."><TalkButton label="Call Keeper" /></Empty>}
         </div>
         <div>{cl ? <Card><ClaimDetail key={cl.id} cl={cl} c={c} /></Card> : null}</div>
       </div>
@@ -156,7 +156,7 @@ export function ActivityView() {
             <li key={a.id} className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-card p-3"><Pill tone={a.kind === "approved" ? "ok" : a.kind === "sent" ? "warn" : "plain"} className="shrink-0">{KIND[a.kind]}</Pill><span className="flex-1">{a.text}</span><time className="text-[0.82rem] text-muted-foreground" dateTime={a.at}>{formatDay(a.at)}</time></li>
           ))}
         </ol>
-      ) : <Empty title="Nothing yet" hint="Every step you and Keeper take is saved here, so you can always see what happened and when."><DemoInline /></Empty>}
+      ) : <Empty title="Nothing yet" hint="Every step you and Keeper take is saved here as you talk, so you can always see what happened and when." />}
     </Page>
   );
 }

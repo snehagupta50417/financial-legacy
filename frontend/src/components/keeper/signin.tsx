@@ -36,7 +36,7 @@ export default function SignIn() {
             </label>
             <Btn type="submit" className="w-full">Continue to Keeper</Btn>
           </form>
-          <p className="mt-3 text-[0.88rem] text-muted-foreground">Your progress is saved to this browser session. Secure account sign-in is not available yet.</p>
+          <p className="mt-3 text-[0.88rem] text-muted-foreground">Your progress is saved to this browser session. Secure account sign-in is not available yet. Please use made-up details for now.</p>
           <div className="my-6 flex items-center gap-3 text-[0.85rem] text-muted-foreground"><hr className="flex-1 border-line" />or<hr className="flex-1 border-line" /></div>
           <Btn variant="quiet" className="w-full" onClick={() => router.push("/welcome")}>Explore an example</Btn>
           <p className="mt-3 text-[0.88rem] text-muted-foreground">A one-minute walk-through with fictional people, separate from your own records.</p>
