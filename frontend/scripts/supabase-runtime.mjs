@@ -1,0 +1,10 @@
+import { loadEnvFile } from "node:process";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+loadEnvFile(path.join(root, ".env.supabase-local"));
+const mode = process.argv[2];
+if (!["build", "start"].includes(mode)) throw new Error("Use build or start");
+const child = spawn(process.execPath, [path.join(root, "node_modules/next/dist/bin/next"), mode, ...(mode === "start" ? ["-p", "3001"] : [])], { cwd: root, env: process.env, stdio: "inherit" });
+child.on("exit", code => process.exit(code ?? 1));

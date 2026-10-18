@@ -4,6 +4,7 @@ import { SPEECH_LANGUAGES, localConfirmation } from "@shared/languages";
 import { api, ApiError } from "@/lib/client";
 import type { AgentAction } from "@shared/contracts";
 import { dispatch, getBackendStatus, peekState } from "./store";
+import { caseBriefing } from "./case-briefing";
 import { captureScope, matchesScope, executionReply } from "./turn-scope";
 import { nextWork, plainCopy } from "./presentation";
 import type { Choice, Message } from "./types";
@@ -42,7 +43,7 @@ function opening() {
   return {
     mode: "basic" as "ai" | "basic",
     reason: null as "not_configured" | "consent" | "example" | null,
-    hello: last && last.pending ? withoutSources(last.text).slice(0, 280) : GREETING,
+    hello: last && last.pending ? withoutSources(last.text).slice(0, 280) : c && th?.messages.some(m => m.role === "user") ? caseBriefing(c).greeting : GREETING,
     choices: last?.pending ? (last.choices ?? []).filter((x) => x.id !== "m:sample") : [],
   };
 }
@@ -93,6 +94,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const aiBlocked = useRef(false);
   const stepId = useRef(0);
   const stepsRef = useRef<Step[]>([]);
+  const completedActions = useRef<string[]>([]);
   const busy = useRef(false);
   const micRef = useRef(micOn);
   const confused = useRef(0);
@@ -177,6 +179,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
         case "complete_task": await send({ t: "task.toggle", id: a.taskId }); break;
       }
       markStep(id, "done");
+      completedActions.current.push(a.label);
       return { ok: true, answer };
     } catch (e) {
       markStep(id, "failed", a.label + ": " + (e instanceof Error ? e.message : "did not complete"));
@@ -188,7 +191,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const finish = useCallback((headline?: string, keepSpeech = false) => {
     spRef.current.clear(); if (!keepSpeech) stopSpeaking();
     const c = peekState()?.cases[peekState()!.activeCase];
-    const did = stepsRef.current.filter((s) => s.kind === "act" && s.state === "done").map((s) => s.text);
+    const did = completedActions.current;
     const next = c ? nextWork(c)?.text.replace(/^Next:\s*/, "") ?? null : null;
     const text = headline || (did.length ? "Here is what we did together." : "We didn't change anything this time.");
     setSummary({ headline: text, did, next });
@@ -245,6 +248,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     try {
       spRef.current.clear(); stopSpeaking(); setNotice(null); setChoices([]);
       noHear.current = 0;
+      stepsRef.current = []; setSteps([]);
       addStep("heard", "“" + text + "”");
       const s = peekState(); const c = s?.cases[s.activeCase];
       let caseId = c?.backendId;
@@ -416,7 +420,15 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const onChoice = (ch: Choice) => handle(ch.label, false);
   const tapMic = () => {
     if (spRef.current.listening) { spRef.current.stop(); return; }
-    stopSpeaking(); setPhase("idle"); listenAgain();
+    stopSpeaking(); setPhase("idle");
+    // An explicit retry must escape a failed browser recognizer when server recording is available.
+    if (engine === "browser" && web.error && sarvamAvailable.current && sarvam.supported) {
+      web.clear(); setEngine("sarvam"); spRef.current = sarvam;
+      sarvam.clear(); sarvam.start(preferenceRef.current || langRef.current || undefined);
+      setNotice("Trying your microphone through Keeper's transcription service. Speak, then tap the microphone to send.");
+      setPhase("listening"); return;
+    }
+    listenAgain();
   };
   const resume = () => { setSummary(null); setPhase("idle"); listenAgain(); };
 

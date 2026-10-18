@@ -454,3 +454,12 @@ Microphone capture no longer discards nonempty recordings based on analyser loud
 
 
 `npm run dev` now checks local setup before starting anything: a missing `backend/.env`, an ungenerated Prisma client or a missing local SQLite file stops it with the exact fix, instead of the API crashing with "@prisma/client did not initialize yet" and the web app timing out after 60 seconds. It only reads files; it never creates the database itself.
+
+PostgreSQL now uses a separately generated Prisma client so local Supabase validation does not overwrite the SQLite client or database. Local synthetic runtime uses its own ignored env and API port, retaining existing auth policy. Explicit microphone retry can return from a failed browser recognizer to server recording.
+Supabase PostgreSQL uses the Prisma 6 Node driver adapter with a separately generated client and the dashboard-provided public root CA. This avoids the restricted Windows native TLS failure while retaining strict CA/hostname verification and explicitly selecting the private keeper schema.
+
+
+Conversation continuity now derives a return briefing and call greeting from the active saved case, counts only open claims/nonduplicate holdings and pending field reviews, and links to the actual next record. Live activity shows execution steps and completed counts rather than generic thinking; no autonomous monitoring or submission is implied.
+
+
+Bounded case preparation uses a persisted CaseAgentRun with leased checkpoints, bounded retries, explicit pause/recheck and request-driven recovery. Only existing claim drafts are refreshed. Human evidence review, financial authority, approval, external submission and outcomes remain outside autonomous execution.

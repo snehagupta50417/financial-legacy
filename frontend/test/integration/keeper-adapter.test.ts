@@ -115,3 +115,13 @@ describe("FL-06 / FL-07 / FL-27 existing Keeper UI backend bridge", () => {
   });
 
 });
+
+
+it("clears stale server case IDs when the connected database has no cases", async () => {
+  const state = freshState("Synthetic tester", "signin");
+  state.cases[state.activeCase].backendId = "previous-database-case";
+  vi.stubGlobal("fetch", async () => Response.json({ cases: [] }));
+  const resumed = await hydrateBackend(state);
+  expect(Object.values(resumed.cases).some(c => c.backendId)).toBe(false);
+  expect(resumed.session).toEqual(state.session);
+});

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, FileText, Info, Mic, Paperclip, Phone, Send, Sparkles, Search, Heart, ShieldCheck } from "lucide-react";
+import { caseBriefing } from "@/keeper/case-briefing";
 import { useAgent } from "@/keeper/agent";
 import { STARTERS } from "@/keeper/catalog";
 import type { DocVariant } from "@/keeper/engine";
@@ -13,6 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { cn } from "@/lib/utils";
 import { Panel } from "./panel";
 import { FollowUpQueue } from "./follow-up";
+import { CaseAgent } from "./case-agent";
 import { CaseMemory, WorkCard } from "./workspace-context";
 import { AgentMode } from "./agent-mode";
 import { Btn, ChatBubble } from "./ui";
@@ -89,6 +91,7 @@ function ConversationWorkspace() {
   const started = useRef(false);
   const spoken = useRef<string | null>(null);
   const msgs = th?.messages ?? [];
+  const [returning] = useState(() => msgs.some(m => m.role === "user"));
   const [initialMessageIds] = useState(() => new Set(msgs.map(m => m.id)));
   const fresh = msgs.length <= 1 && !th?.journey;
 
@@ -126,6 +129,7 @@ function ConversationWorkspace() {
 
   if (!c || !th) return null;
   const work = nextWork(c);
+  const briefing = caseBriefing(c);
   const updateText = (value: string) => { saveConversationDraft(th.id, value); };
   const open = (type: NonNullable<Message["card"]>["type"], id?: string) => {
     dispatch({ t: "focus", focus: { type, id } });
@@ -133,7 +137,7 @@ function ConversationWorkspace() {
     else setSheet(true);
   };
   const submit = () => { const t = text.trim(); if (!t || backend.busy) return; followLatest.current = true; if (chatBlocked) return;
-    if (state?.session?.mode === "signin") { updateText(""); void chat.handle(t, false); }
+    if (state?.session?.mode === "signin" || chat.mode === "ai") { updateText(""); void chat.handle(t, false); }
     else { const result = dispatch({ t: "send", text: t }); if (result) void result.then(ok => { if (ok) updateText(""); }); else updateText(""); } };
   const pick = (ch: Choice) => { if (chatBlocked || backend.busy) return; followLatest.current = true; if (ch.id.startsWith("a:sampleDoc:") || ch.id.startsWith("a:linkStatement:")) { router.push("/app/documents"); return; } if (state?.session?.mode === "signin") void chat.handle(ch.label, false); else dispatch({ t: "choose", id: ch.id, label: ch.label }); };
   const lastMsg = msgs.at(-1);
@@ -148,13 +152,20 @@ function ConversationWorkspace() {
           <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn><button disabled={chatBlocked || backend.busy} onClick={() => startCall()} aria-label="Call Keeper" title="Call Keeper" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-paper hover:bg-secondary disabled:opacity-40"><Phone className="h-4 w-4" aria-hidden /></button></div>
         </header>
 
+        {returning && !fresh && <section aria-label="Pick up where you left off" className="shrink-0 border-b border-moss/20 bg-moss-soft/40 px-4 py-3 sm:px-8">
+          <div className="mx-auto flex max-w-[44rem] items-center gap-3">
+            <div className="min-w-0 flex-1"><p className="flex items-center gap-2 text-sm font-semibold text-moss"><Sparkles className="h-4 w-4" aria-hidden />Pick up where you left off</p><p className="mt-1 text-xs text-muted-foreground">{briefing.summary}</p>{briefing.next && <p className="mt-1 text-sm">{briefing.next.text}</p>}</div>
+            {briefing.next && <button disabled={backend.busy || chatBlocked} onClick={() => open(briefing.next!.card.type, briefing.next!.card.id)} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-moss px-4 text-sm font-semibold text-white disabled:opacity-40">Continue<ArrowRight className="h-4 w-4" aria-hidden /></button>}
+          </div>
+        </section>}
+
 
         <div ref={scrollRef} onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; sessionStorage.setItem("keeper.scroll." + th.id, String(el.scrollTop)); }} className="keeper-message-scroll scroll-soft min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8" role="log" aria-live="polite" aria-label="Messages">
           <div className="keeper-message-column mx-auto flex max-w-[44rem] flex-col gap-3">
             <FollowUpQueue c={c} onOpen={open} />
             {!fresh && <CaseMemory c={c} busy={backend.busy || chatBusy} />}
             {!fresh && msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} animate={!initialMessageIds.has(m.id)} onOpen={open} />)}
-            {(backend.busy || chatBusy) && <div role="status" className="keeper-thinking"><Sparkles className="h-4 w-4" aria-hidden /><span>{chatBusy ? "Keeper is thinking" : "Updating your case"}</span><span className="keeper-thinking-dots" aria-hidden><i /><i /><i /></span></div>}
+            {(backend.busy || chatBusy) && <div role="status" className="keeper-thinking"><Sparkles className="h-4 w-4" aria-hidden /><span>{chatBusy ? chat.steps.findLast(s => s.state === "running")?.text || "Working through your question" : "Saving your case"}</span><span className="keeper-thinking-dots" aria-hidden><i /><i /><i /></span></div>}
             {fresh ? (
               <div className="keeper-welcome settle flex flex-col items-center gap-6 pt-4 text-center sm:pt-10">
                 <div className="keeper-welcome-symbol" aria-hidden><Sparkles strokeWidth={1.3} /></div>
@@ -169,7 +180,8 @@ function ConversationWorkspace() {
               </div>
             ) : work && work.card.type !== "know" && !lastMsg?.pending ? <WorkCard c={c} work={work} onOpen={open} /> : lastMsg && lastMsg.role !== "user" ? <Chips choices={lastMsg.card ? lastMsg.choices?.filter(c => c.id !== "m:resume") : lastMsg.choices} pending={lastMsg.pending} onPick={pick} /> : null}
             {fresh && <CaseMemory c={c} busy={backend.busy || chatBusy} />}
-            {chat.steps.some(s => s.kind === "act") && <details className="rounded-xl border border-line bg-paper p-3" open={chat.steps.some(s => s.state === "failed" || s.state === "running")}><summary className="cursor-pointer text-sm font-medium">What Keeper did this turn</summary><ul className="mt-2 space-y-2 text-sm">{chat.steps.filter(s => s.kind === "act").map(s => <li key={s.id + s.state} data-step-state={s.state} className={s.state === "failed" ? "text-red-800" : "text-muted-foreground"}><b>{s.state === "done" ? "Completed" : s.state === "running" ? "In progress" : s.state === "failed" ? "Failed" : "Skipped"}:</b> {s.text}</li>)}</ul></details>}
+            {!fresh && <CaseAgent c={c} onOpen={open} />}
+            {chat.steps.some(s => s.kind === "act") && <details className="rounded-xl border border-line bg-paper p-3" open><summary className="cursor-pointer text-sm font-medium">{chat.steps.filter(s => s.kind === "act" && s.state === "done").length} completed · What Keeper did this turn</summary><ul className="mt-2 space-y-2 text-sm">{chat.steps.filter(s => s.kind === "act").map(s => <li key={s.id + s.state} data-step-state={s.state} className={s.state === "failed" ? "text-red-800" : "text-muted-foreground"}><b>{s.state === "done" ? "Completed" : s.state === "running" ? "In progress" : s.state === "failed" ? "Failed" : "Skipped"}:</b> {s.text}</li>)}</ul></details>}
             <div ref={endRef} />
           </div>
         </div>
