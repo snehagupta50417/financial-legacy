@@ -13,6 +13,19 @@ export async function GET(
   return Response.json(ws);
 }
 
+/** Remove a demo case. Real cases are never deleted through the API. */
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const session = await requireSession(req);
+  if (!session) return unauthorized();
+  const { db } = await import("@server/db");
+  const c = await db.legacyCase.findFirst({ where: { id, sessionId: session.id } });
+  if (!c) return Response.json({ error: "Case not found" }, { status: 404 });
+  if (!c.isDemo) return Response.json({ error: "Only demo cases can be removed here." }, { status: 403 });
+  await db.legacyCase.delete({ where: { id } });
+  return Response.json({ removed: true });
+}
+
 /** Correct self-reported intake facts; never changes gates or entitlement. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

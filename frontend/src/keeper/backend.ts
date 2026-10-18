@@ -19,7 +19,8 @@ export async function saveUi(c: Case) { if (c.backendId) await api.put("/api/cas
 export function projectWorkspace(ws: CaseWorkspace, name: string, previous?: Case, stored?: Ui | null, claimViews: ClaimView[] = [], texts: Record<string, string> = {}): Case {
   const w = ws.case;
   const self = ["living_individual", "estate_planning"].includes(w.caseType);
-  const c = emptyCase(w.id, self ? "My financial record" : "Estate of " + (w.assetHolderName || "your family member"), self ? "self" : "estate", w.assetHolderName || (self ? name : "your family member"));
+  const c = emptyCase(w.id, (self ? "My financial record" : "Estate of " + (w.assetHolderName || "your family member")) + (w.isDemo ? " (demo)" : ""), self ? "self" : "estate", w.assetHolderName || (self ? name : "your family member"));
+  if (w.isDemo) c.demo = true;
   const ui = stored || (previous ? uiOf(previous) : null);
   if (ui) Object.assign(c, ui);
   c.backendId = w.id; c.gate = ws.gate; c.proofs = ws.proofs;

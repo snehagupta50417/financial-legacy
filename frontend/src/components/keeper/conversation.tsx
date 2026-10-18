@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { cn } from "@/lib/utils";
 import { Panel } from "./panel";
 import { AgentMode, Orb } from "./agent-mode";
+import { DemoInline } from "./demo-data";
 import { Btn, ChatBubble } from "./ui";
 import { nextWork, plainCopy } from "@/keeper/presentation";
 
@@ -144,6 +145,7 @@ export default function Conversation() {
                 <div className="w-full max-w-md">
                   <p className="mb-2 text-[0.85rem] font-medium text-muted-foreground">Or start with a situation</p>
                   <div className="flex flex-col gap-2">{STARTERS.map((s) => <button key={s.journey} onClick={() => dispatch({ t: "send", text: s.text })} className="min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{s.label}</button>)}</div>
+                  <div className="mt-4 flex flex-col items-center"><p className="text-[0.85rem] text-muted-foreground">Not ready to share anything yet?</p><DemoInline /></div>
                 </div>
               </div>
             ) : work && lastMsg?.card === undefined && !lastMsg?.pending ? <div className="flex flex-wrap items-center gap-2 text-sm"><span className="mr-1 text-muted-foreground">{work.text}</span><Btn variant="quiet" onClick={() => open(work.card.type, work.card.id)}>Continue</Btn><button className="min-h-11 px-3 text-moss" onClick={() => dispatch({ t: "choose", id: "m:something", label: "Something else" })}>Something else</button></div> : lastMsg && lastMsg.role !== "user" ? <Chips choices={lastMsg.card ? lastMsg.choices?.filter(c => c.id !== "m:resume") : lastMsg.choices} pending={lastMsg.pending} onPick={pick} /> : null}
