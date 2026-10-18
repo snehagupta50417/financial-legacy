@@ -39,6 +39,7 @@ function opening() {
   const last = th?.messages.filter((m) => m.role !== "user").at(-1);
   return {
     mode: "basic" as "ai" | "basic",
+    reason: (s?.session?.mode === "signin" ? null : "example") as "not_configured" | "consent" | "example" | null,
     hello: last && last.pending ? withoutSources(last.text).slice(0, 280) : GREETING,
     choices: last?.pending ? (last.choices ?? []).filter((x) => x.id !== "m:sample") : [],
   };
@@ -55,6 +56,8 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const [summary, setSummary] = useState<{ headline: string; did: string[]; next: string | null } | null>(null);
   const [mode, setMode] = useState<"ai" | "basic">(start.mode);
   const [notice, setNotice] = useState<string | null>(null);
+  // Why Keeper is in basic mode, so the call can say so plainly instead of quietly following a script.
+  const [aiReason, setAiReason] = useState<"not_configured" | "consent" | "example" | null>(start.reason);
   const [consentNeeded, setConsentNeeded] = useState(false);
   const [handoffOffer, setHandoffOffer] = useState<HandoffWhy | null>(null);
   const [handoffSent, setHandoffSent] = useState<HandoffResult | null>(null);
@@ -262,7 +265,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
         aiVoice.current = r.available;
         setMode(r.available ? "ai" : "basic");
         setConsentNeeded(!r.available && r.reason === "consent");
-        if (!r.available) setNotice(r.reason === "consent" ? "AI help is off, so Keeper is using its built-in guide. Turn it on in Settings to talk freely." : "The AI assistant isn't set up here, so Keeper is using its built-in guide.");
+        setAiReason(r.available ? null : r.reason === "consent" ? "consent" : "not_configured");
       }).catch(() => {});
     }
     return () => { clearTimeout(greet); sp.clear(); stopSpeaking(); };
@@ -275,7 +278,8 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
       const r = await api.get<{ available: boolean }>("/api/ai/agent");
       aiBlocked.current = !r.available; aiVoice.current = r.available;
       setMode(r.available ? "ai" : "basic"); setConsentNeeded(false);
-      setNotice(r.available ? null : "The AI assistant isn't set up here, so Keeper is using its built-in guide.");
+      setAiReason(r.available ? null : "not_configured");
+      setNotice(null);
     } catch { setNotice("Could not save your permission. Try again."); }
   };
 
@@ -308,5 +312,5 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
 
   // A listening turn that heard nothing (the browser ended it) reads as idle, not as a stuck mic.
   const shown: Phase = phase === "listening" && !sp.listening && !sp.text.trim() ? "idle" : phase;
-  return { sp, engine: engine === "sarvam" && sarvam.supported ? "sarvam" as const : "browser" as const, language, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
+  return { aiReason, sp, engine: engine === "sarvam" && sarvam.supported ? "sarvam" as const : "browser" as const, language, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
 }

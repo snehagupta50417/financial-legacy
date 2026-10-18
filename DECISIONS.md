@@ -347,3 +347,10 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **A gap closed on the way:** digits written in Indian scripts (for example १२३४५६७८९०१२) are converted to 0-9 before redaction, so a spoken account number that arrives as Devanagari or Tamil digits is masked like any other. Words ("one two three") are not caught, and are noted as a known limit.
 - **Key handling:** `npm run set-sarvam-key` (and `npm run set-key` for Gemini) store a key from a hidden prompt in the git-ignored `backend/.env` and never print it. A key pasted into chat should be rotated.
 - Tests: `backend/test/sarvam.test.ts` (13) with a stubbed Sarvam; `frontend/test/endpointer.test.ts`. Not testable here, and not tested: a real Sarvam call, real microphone recording and the model name (`saarika:v2.5`) still being current.
+
+## Say when Keeper is only following a script — 18 Oct 2026
+
+- **Problem:** a call with no Gemini key silently ran the built-in scripted guide (fixed questions, buttons), which is not a conversation. Nothing on screen said why, so it looked like a broken assistant.
+- **In the call:** a card says plainly that Keeper is in basic mode and why (no key set up: run `npm run set-key`; the example workspace: it follows a script by design; AI help not yet allowed: one-tap card as before).
+- **At startup:** `npm run dev` now prints whether the Gemini and Sarvam keys are set (never the keys), with the exact command to fix it (`scripts/check-keys.mjs`).
+- **Style of the AI's replies:** the planner is told to sound like a person on a phone call: react to what was said first, contractions and everyday words, turns under 35 words, exactly one question at a time, use the person's situation back to them, answer small utterances briefly, acknowledge worry before practical steps, never greet twice, at most two options in a sentence. Covered by a prompt test; the sound and feel of a live conversation can only be judged with a key and a microphone.
