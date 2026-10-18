@@ -64,6 +64,12 @@ describe("Keeper's voice", () => {
     expect(seen).not.toContain(NUMBER);
   });
 
+  it("allows a lively call: many small voice requests a minute are fine", async () => {
+    const { sid } = await makeCase();
+    setProvider(Object.assign(new FixtureProvider(() => "{}"), { speak: async () => Buffer.alloc(4) }));
+    for (let i = 0; i < 40; i++) expect((await speak(req(sid, { text: `Line number ${i}.` }))).status).toBe(200);
+  });
+
   it("validates input", async () => {
     const { sid } = await makeCase();
     setProvider(Object.assign(new FixtureProvider(() => "{}"), { speak: async () => Buffer.alloc(4) }));

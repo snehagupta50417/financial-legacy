@@ -158,7 +158,8 @@ export function readModelTurn(raw: unknown, ctx: AgentContext): { say: string; a
   if (!parsed.success) return null;
   const { actions, unavailable } = vetActions(parsed.data.actions, ctx);
   let say = redactIdentifiers(parsed.data.say).replace(/\s*—\s*/g, ", ").replace(/[*_`#]/g, "").trim();
-  if (unavailable) say += " I can't add or confirm holdings until identity checks are complete.";
+  // The model promised something the gates do not allow yet. Replace the promise, rather than tacking a contradiction onto it.
+  if (unavailable) say = "Thanks, I'll keep that in mind. I can't add or confirm holdings until identity checks are complete, but we can carry on talking.";
   // Honesty guard: the agent cannot have submitted, filed or approved anything.
   if (/\b(i|we)('ve| have)?\s+(submitted|filed|approved|sent)\b/i.test(say)) say = "I can prepare your claim, but you approve and send it yourself on the claim screen.";
   return { say, actions, listen: parsed.data.finish ? false : parsed.data.listen, finish: parsed.data.finish, handoff: parsed.data.handoff };

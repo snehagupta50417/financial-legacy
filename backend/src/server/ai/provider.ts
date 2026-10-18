@@ -26,6 +26,8 @@ export interface GenerateRequest {
   /** Ask the model for a single JSON object. */
   json?: boolean;
   temperature?: number;
+  /** A live conversation turn: answer fast. No extended thinking, and a short reply. */
+  fast?: boolean;
 }
 
 /** "query" for the user's question, "document" for passages being indexed. */

@@ -52,6 +52,28 @@ describe("makeEndpointer", () => {
   });
 });
 
+describe("makeEndpointer in real rooms", () => {
+  it("hears a quiet laptop microphone (speech around 0.015)", () => {
+    const r = run([...Array(6).fill(0.002), ...Array(20).fill(0.015), ...Array(30).fill(0.002)]);
+    expect(r.v).toBe("stop");
+    expect(r.spoke).toBe(true);
+  });
+
+  it("does not mistake a steady noisy room for speech, but still hears speech over it", () => {
+    const noise = Array(120).fill(0.03);
+    expect(run(noise).v).toBe("no-speech");
+    const r = run([...Array(6).fill(0.03), ...Array(20).fill(0.2), ...Array(30).fill(0.03)]);
+    expect(r.v).toBe("stop");
+    expect(r.spoke).toBe(true);
+  });
+
+  it("copes with someone who starts talking straight away", () => {
+    const r = run([...Array(20).fill(0.12), ...Array(30).fill(0.002)]);
+    expect(r.spoke).toBe(true);
+    expect(r.v).toBe("stop");
+  });
+});
+
 describe("languages", () => {
   it("names every language the backend recognises, in English", () => {
     expect(LANGUAGE_NAMES["hi-IN"]).toBe("Hindi");

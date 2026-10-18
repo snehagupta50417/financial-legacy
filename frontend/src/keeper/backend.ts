@@ -87,15 +87,17 @@ export async function backendAction(prev: AppState, action: Action): Promise<App
   const name = s.session?.name || "You";
   if (action.t === "doc.upload" && action.threadId && !c.threads.some(t => t.id === action.threadId)) throw new Error("Open the original conversation to upload this document.");
   const refresh = async () => { c = await loadCase(c.backendId!, name, c); s.cases[c.id] = c; };
-  const ensure = async () => {
+  const ensure = async (opening?: string) => {
     if (c.backendId) return;
-    const text = c.kind === "estate" ? "My father passed away. Help me organise his financial assets." : "I want to organise my own financial assets.";
-    const r = await api.post<{ caseId: string }>("/api/intake", { message: text });
+    const text = opening ?? (c.kind === "estate" ? "My father passed away. Help me organise his financial assets." : "I want to organise my own financial assets.");
+    const r = await api.post<{ caseId: string }>("/api/intake", { message: text, ...(opening ? { fast: true } : {}) });
     const oldId = c.id; c.backendId = r.caseId;
     c = await loadCase(r.caseId, name, c);
     delete s.cases[oldId]; s.cases[c.id] = c; s.order = s.order.map(i => i === oldId ? c.id : i); s.activeCase = c.id;
   };
   const addReply = (text: string, extra: Partial<Message> = {}) => active(c).messages.push(message("keeper", text, extra));
+  // The voice agent needs a saved case before its first turn; it is opened from the person's own first words.
+  if (action.t === "case.ensure") { await ensure(action.text); await saveUi(c); return s; }
   if (action.t === "switchCase") { if (s.cases[action.id]) { s.activeCase = action.id; c = s.cases[action.id]; if (c.backendId) await refresh(); } return s; }
   if (action.t === "reset") { const draft = freshState(name, "signin").cases.self; draft.id = uid(); return { ...s, activeCase: draft.id, cases: { ...s.cases, [draft.id]: draft }, order: [draft.id, ...s.order] }; }
   if (action.t === "send" || action.t === "choose") {

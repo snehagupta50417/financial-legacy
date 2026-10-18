@@ -99,6 +99,8 @@ function CallButton({ icon: Icon, label, onClick, pressed, danger, badge }: { ic
 function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: string }) {
   const { c } = useKeeper();
   const [speaker, setSpeaker] = useState(true);
+  // Gemini's voice sounds better but takes a few seconds to start; the browser voice answers at once.
+  const [natural, setNatural] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [typing, setTyping] = useState(false);
   const [typed, setTyped] = useState("");
@@ -107,9 +109,11 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
   const [note, setNote] = useState("");
   const [ringing, setRinging] = useState(true);
   const [seconds, setSeconds] = useState(0);
-  const agent = useAgent(speaker, { micOn, delayMs: pace(RING_MS), startWith });
+  const agent = useAgent(speaker, { micOn, delayMs: pace(RING_MS), startWith, natural });
   const { sp, phase, steps, reply, choices, pending, summary, mode, notice, handoffOffer, handoffSent } = agent;
   const live = (sp.text + " " + sp.interim).trim();
+  // Is the microphone picking up sound right now? Shown as small bars while listening, so "it can't hear me" is visible.
+  const heard = (agent.micLevel ?? 0) > 0;
   const messages = c?.threads.find((t) => t.id === c.activeThread)?.messages ?? [];
 
   useEffect(() => { const id = setTimeout(() => setRinging(false), pace(RING_MS)); return () => clearTimeout(id); }, []);
@@ -142,7 +146,10 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
           <span className={cn("hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex", mode === "ai" ? "border-moss/40 bg-moss-soft" : "border-line bg-secondary")}><Sparkles className="h-3.5 w-3.5 text-moss" aria-hidden />{mode === "ai" ? "Gemini" : "Built-in guide"}</span>
           {agent.engine === "sarvam" && <span className="hidden items-center rounded-full border border-line bg-paper px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex" title="Keeper understands Indian languages">{agent.language && agent.language !== "en-IN" ? LANGUAGE_NAMES[agent.language] ?? "Your language" : "Any Indian language"}</span>}
         </div>
+        <div className="flex items-center gap-1">
+        {mode === "ai" && <button onClick={() => { setNatural((n) => !n); stopSpeaking(); }} aria-pressed={natural} title="Gemini's voice sounds more natural, but takes a few seconds to start" className={cn("hidden min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.78rem] font-medium sm:inline-flex", natural ? "border-ink bg-ink text-ivory" : "border-line bg-paper hover:bg-secondary")}><Volume2 className="h-3.5 w-3.5" aria-hidden />{natural ? "Natural voice" : "Fast voice"}</button>}
         <button onClick={() => setTranscript(true)} aria-label="Show the written conversation" className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary"><MessageSquare className="h-5 w-5" aria-hidden /></button>
+        </div>
       </header>
 
       <div className="scroll-soft flex-1 overflow-y-auto px-4 pb-4 sm:px-8">
@@ -173,12 +180,13 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
               </div>
             )}
             {!sp.supported && <p role="status" className="w-full rounded-xl border border-line bg-secondary p-3 text-[0.93rem]">{VOICE_ERROR_TEXT.unsupported} You can type from the keyboard button, and Keeper will answer out loud.</p>}
-            {sp.error && sp.error !== "no-speech" && <p role="alert" className="flex w-full gap-2 rounded-xl border border-apricot/60 bg-[#fbf1e8] p-3 text-[0.93rem]"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{VOICE_ERROR_TEXT[sp.error]}</p>}
+            {sp.error && <p role="alert" className="flex w-full gap-2 rounded-xl border border-apricot/60 bg-[#fbf1e8] p-3 text-[0.93rem]"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{VOICE_ERROR_TEXT[sp.error]}</p>}
             {notice && !agent.consentNeeded && <p role="status" className="w-full rounded-xl border border-line bg-secondary p-3 text-[0.88rem]">{notice}</p>}
 
             <div className="mt-2 flex flex-col items-center gap-3">
               <Orb phase={ringing ? "idle" : phase} onClick={ringing ? undefined : agent.tapMic} supported={sp.supported} />
-              <p role="status" aria-live="polite" className="text-[0.9rem] font-medium text-ink/80">{ringing ? "Ringing…" : !micOn && phase === "idle" ? "Your mic is muted" : CAPTION[phase]}</p>
+              <p role="status" aria-live="polite" className="text-[0.9rem] font-medium text-ink/80">{ringing ? "Ringing…" : !micOn && phase === "idle" ? "Your mic is muted" : phase === "listening" && heard ? "I can hear you. Pause when you’re done" : phase === "listening" && agent.micLevel !== null ? "Listening. Speak when you’re ready" : CAPTION[phase]}</p>
+              {phase === "listening" && agent.micLevel !== null && <span aria-hidden className="flex h-6 items-end gap-1">{[1, 2, 3, 4].map((n) => <i key={n} className={cn("w-1.5 rounded-full transition-all", heard && (agent.micLevel ?? 0) >= n ? "bg-apricot" : "bg-line")} style={{ height: 6 + n * 4 }} />)}</span>}
             </div>
 
             <div className="min-h-[7rem] w-full text-center" aria-live="polite">

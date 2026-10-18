@@ -45,8 +45,8 @@ function opening() {
   };
 }
 
-export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?: number; startWith?: string } = {}) {
-  const { micOn = true, delayMs = 0, startWith } = opts;
+export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?: number; startWith?: string; natural?: boolean } = {}) {
+  const { micOn = true, delayMs = 0, startWith, natural = false } = opts;
   const [phase, setPhaseState] = useState<Phase>("idle");
   const [steps, setSteps] = useState<Step[]>([]);
   const [reply, setReply] = useState("");
@@ -71,19 +71,27 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const busy = useRef(false);
   const micRef = useRef(micOn);
   const confused = useRef(0);
-  const aiVoice = useRef(false);
+  const aiVoice = useRef(false); // Gemini's voice can be used (the AI is on)
+  const naturalRef = useRef(natural); // and the person chose it
+  useEffect(() => { naturalRef.current = natural; }, [natural]);
   useEffect(() => { micRef.current = micOn; }, [micOn]);
   // Two recognisers: Sarvam's (Indian languages, detected per turn) when the backend has it, else the browser's.
   const [engine, setEngine] = useState<"browser" | "sarvam">("browser");
   const [language, setLanguage] = useState<string | null>(null);
+  const langRef = useRef<string | null>(null);
   const web = useSpeech();
   const sarvam = useSarvamSpeech({ onFail: (reason) => {
     setEngine("browser");
     setNotice(reason === "quota" ? "Speech in your language is busy, so Keeper is using your browser's speech recognition for now." : "Speech in your language isn't available right now, so Keeper is using your browser's speech recognition.");
-    phaseRef.current = "idle"; setPhaseState("idle");
+    web.start(langRef.current ?? undefined);
+    phaseRef.current = "listening"; setPhaseState("listening");
   } });
   const sp = engine === "sarvam" && sarvam.supported ? sarvam : web;
-  const langRef = useRef<string | null>(null);
+  // Timers and callbacks outlive renders. The greeting's timer is set before we know whether Sarvam is available,
+  // so it must look up the recogniser when it fires, or the first turn is heard by one and watched on the other.
+  const spRef = useRef(sp);
+  useEffect(() => { spRef.current = sp; });
+  const noHear = useRef(0);
   const speakRef = useRef(speakAloud);
   useEffect(() => { speakRef.current = speakAloud; }, [speakAloud]);
 
@@ -102,9 +110,10 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
 
   const listenAgain = useCallback(() => {
     if (phaseRef.current === "ended") return;
-    if (!sp.supported || !micRef.current) return setPhase("idle");
-    sp.clear(); sp.start(langRef.current ?? undefined); setPhase("listening");
-  }, [sp, setPhase, langRef]);
+    const cur = spRef.current;
+    if (!cur.supported || !micRef.current) return setPhase("idle");
+    cur.clear(); cur.start(langRef.current ?? undefined); setPhase("listening");
+  }, [setPhase]);
 
   const say = useCallback((text: string, after: "listen" | "stay" = "listen") => {
     setReply(text);
@@ -113,8 +122,8 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     const next = () => { if (live()) { if (after === "listen") listenAgain(); else if (phaseRef.current === "speaking") setPhase("idle"); } };
     if (phaseRef.current !== "confirming") setPhase("speaking");
     if (!speakRef.current) { setTimeout(next, 0); return; }
-    speakKeeper(withoutSources(text).slice(0, 700), next, { gemini: aiVoice.current, lang: langRef.current ?? undefined });
-  }, [listenAgain, setPhase, langRef]);
+    speakKeeper(withoutSources(text).slice(0, 700), next, { gemini: aiVoice.current && naturalRef.current, lang: langRef.current ?? undefined });
+  }, [listenAgain, setPhase]);
 
   const run = async (a: AgentAction, caseId: string): Promise<{ ok: boolean; answer?: AskReply }> => {
     const id = addStep("act", a.label, "running");
@@ -140,14 +149,14 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
 
   /** Close the loop: what changed, and the one next thing. */
   const finish = useCallback((headline?: string, keepSpeech = false) => {
-    sp.clear(); if (!keepSpeech) stopSpeaking();
+    spRef.current.clear(); if (!keepSpeech) stopSpeaking();
     const c = peekState()?.cases[peekState()!.activeCase];
     const did = stepsRef.current.filter((s) => s.kind === "act" && s.state === "done").map((s) => s.text);
     const next = c ? nextWork(c)?.text.replace(/^Next:\s*/, "") ?? null : null;
     const text = headline || (did.length ? "Here is what we did together." : "We didn't change anything this time.");
     setSummary({ headline: text, did, next });
     setPending(null); setChoices([]); setPhase("ended");
-  }, [sp, setPhase]);
+  }, [setPhase]);
 
   const basicTurn = async (text: string, voice: boolean) => {
     const th = () => { const s = peekState(); const c = s?.cases[s.activeCase]; return c?.threads.find((t) => t.id === c.activeThread) ?? c?.threads[0]; };
@@ -173,7 +182,8 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     const card = auto.find((a) => a.type === "open") as Extract<AgentAction, { type: "open" }> | undefined;
     const threadText = turn.say + (answer ? "\n\n" + plainCopy(answer.answer) + sourcesBlock(answer) : "");
     const spokenText = turn.say + (answer ? " " + plainCopy(answer.answer) : "");
-    await Promise.resolve(dispatch({ t: "agent.turn", user: text, reply: threadText, voice, card: card ? { type: card.card, id: card.id } : undefined }));
+    // Saving the turn to the record runs alongside Keeper speaking, not before it: the person hears the reply first.
+    void Promise.resolve(dispatch({ t: "agent.turn", user: text, reply: threadText, voice, card: card ? { type: card.card, id: card.id } : undefined })).catch(() => false);
     if (closing || turn.finish) { say(spokenText, "stay"); finish(turn.say, true); return; }
     if (needYes.length) {
       setPending({ actions: needYes, user: text, voice, say: turn.say });
@@ -190,10 +200,19 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     busy.current = true;
     if (heard) { langRef.current = heard; setLanguage(heard); }
     try {
-      sp.clear(); stopSpeaking(); setNotice(null); setChoices([]);
+      spRef.current.clear(); stopSpeaking(); setNotice(null); setChoices([]);
+      noHear.current = 0;
       addStep("heard", "“" + text + "”");
       const s = peekState(); const c = s?.cases[s.activeCase];
-      const caseId = c?.backendId;
+      let caseId = c?.backendId;
+      // A new person has no saved case yet. Open one from their first words so the AI, not the script, answers turn one.
+      if (!caseId && !aiBlocked.current && s?.session?.mode === "signin") {
+        const stepRef = addStep("info", "Opening your private record", "running");
+        const ok = await Promise.resolve(dispatch({ t: "case.ensure", text }));
+        const s2 = peekState();
+        caseId = s2?.cases[s2.activeCase]?.backendId;
+        markStep(stepRef, ok === false || !caseId ? "failed" : "done", ok === false || !caseId ? "Could not open a record" : "Opened your private record");
+      }
       const queued = pendingRef.current;
       if (HUMAN.test(text)) {
         if (queued) { setPending(null); queued.actions.forEach((a) => addStep("act", a.label, "skipped")); }
@@ -242,7 +261,14 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
       if (closing) { say("Alright, that's all for now.", "stay"); finish(undefined, true); return; }
       await basicTurn(text, voice);
     } finally { busy.current = false; }
-  }, [sp, say, finish, setPhase]);
+  }, [say, finish, setPhase]);
+
+  // Nothing heard: listen again on its own a couple of times (the screen says what is happening).
+  useEffect(() => {
+    if (phase !== "listening" || sp.listening || sp.text.trim() || sp.error !== "no-speech" || noHear.current >= 2) return;
+    const id = setTimeout(() => { noHear.current++; listenAgain(); }, 700);
+    return () => clearTimeout(id);
+  }, [phase, sp.listening, sp.text, sp.error, listenAgain]);
 
   // Hands-free turn taking: when the person pauses after speaking, send what they said.
   useEffect(() => {
@@ -268,7 +294,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
         setAiReason(r.available ? null : r.reason === "consent" ? "consent" : "not_configured");
       }).catch(() => {});
     }
-    return () => { clearTimeout(greet); sp.clear(); stopSpeaking(); };
+    return () => { clearTimeout(greet); spRef.current.clear(); stopSpeaking(); };
   }, []);
 
   /** One tap to allow AI help, so a first call is not sent to Settings. */
@@ -302,15 +328,15 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     return out;
   };
 
-  const pauseMic = () => { sp.clear(); if (phaseRef.current === "listening") setPhase("idle"); };
+  const pauseMic = () => { spRef.current.clear(); if (phaseRef.current === "listening") setPhase("idle"); };
   const onChoice = (ch: Choice) => handle(ch.label, false);
   const tapMic = () => {
-    if (sp.listening) { sp.stop(); return; }
+    if (spRef.current.listening) { spRef.current.stop(); return; }
     stopSpeaking(); setPhase("idle"); listenAgain();
   };
   const resume = () => { setSummary(null); setPhase("idle"); listenAgain(); };
 
   // A listening turn that heard nothing (the browser ended it) reads as idle, not as a stuck mic.
   const shown: Phase = phase === "listening" && !sp.listening && !sp.text.trim() ? "idle" : phase;
-  return { aiReason, sp, engine: engine === "sarvam" && sarvam.supported ? "sarvam" as const : "browser" as const, language, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
+  return { aiReason, micLevel: engine === "sarvam" && sarvam.supported ? sarvam.level : null, sp, engine: engine === "sarvam" && sarvam.supported ? "sarvam" as const : "browser" as const, language, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
 }
