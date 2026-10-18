@@ -43,7 +43,7 @@ export function FactBadge({ s }: { s: FactState }) {
   return <Pill tone={tone}>{FACT_STATE_LABEL[s]}</Pill>;
 }
 
-export function Btn({ variant = "primary", className, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "quiet" | "ink" | "danger" }) {
+export function Btn({ variant = "primary", className, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "quiet" | "ink" | "danger"; ref?: React.Ref<HTMLButtonElement> }) {
   const v = {
     primary: "bg-apricot text-ink hover:bg-[#dd9566] font-semibold",
     ink: "bg-ink text-ivory hover:bg-[#3a403a] font-semibold",
