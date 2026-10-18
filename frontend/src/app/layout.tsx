@@ -1,56 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const serif = Fraunces({ variable: "--font-serif-display", subsets: ["latin"], axes: ["SOFT", "WONK", "opsz"] });
+const sans = Instrument_Sans({ variable: "--font-sans-body", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Financial Legacy — Find what’s yours. Make sure nothing gets left behind.",
+  title: "keeper — know what you own, help your family know what comes next",
   description:
-    "An AI assistant that helps Indian families find forgotten financial assets, organise their records, and claim what a loved one left behind — step by step, with every finding backed by evidence.",
-  keywords: [
-    "Financial Legacy",
-    "unclaimed assets India",
-    "UDGAM",
-    "Bima Bharosa",
-    "IEPF",
-    "MITRA",
-    "estate planning",
-    "deceased claim",
-    "AI agent BFSI",
-  ],
-  openGraph: {
-    title: "Financial Legacy",
-    description: "Find what’s yours. Make sure nothing gets left behind.",
-    type: "website",
-  },
+    "Talk to Keeper to discover financial assets, prepare your financial affairs for the end of life, or navigate asset claims after a loved one dies. Prototype with synthetic data.",
+  openGraph: { title: "keeper", description: "Know what you own. Help your family know what comes next.", type: "website" },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: "#0a2540",
-};
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#F5F1E9" };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
+      <body className={`${serif.variable} ${sans.variable}`}>
         {children}
         <Toaster />
       </body>
