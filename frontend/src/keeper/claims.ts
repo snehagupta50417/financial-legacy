@@ -1,5 +1,5 @@
-import { choosePath, parseBand, type PathDecision, type Situation } from "@/server/rules/claim-path";
-import { procedureFor, type PackItem, type Procedure } from "@/server/procedures/procedures";
+import { choosePath, parseBand, type PathDecision, type Situation } from "@shared/claim-path";
+import { procedureFor, type PackItem, type Procedure } from "@shared/procedures";
 import type { Asset, Case, Claim, Outcome } from "./types";
 import { fnv, iso, logActivity, uid } from "./util";
 

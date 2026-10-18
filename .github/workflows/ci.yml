@@ -1,6 +1,6 @@
-# Checks every pull request and every push to main: types, lint, tests, production build.
+# Checks every pull request and every push to main, for both services: types, lint, tests, production build.
 # Free: GitHub Actions includes 2,000 minutes a month for private repositories.
-# No secrets are needed — tests never call a real model (frontend/vitest.config.ts).
+# No secrets are needed — tests never call a real model (backend/vitest.config.ts).
 name: CI
 
 on:
@@ -16,12 +16,39 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  # The API. Also runs everything that needs a database.
+  backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: frontend
+        working-directory: backend
+    env:
+      DATABASE_URL: file:./db/ci.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Tesseract language data (English + Hindi) is downloaded once and reused.
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/finlegacy-ocr
+          key: ocr-langs-eng-hin-v1
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm test
+
+  # The web app, plus the integration tests that run it against the real backend route handlers.
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DATABASE_URL: file:./db/ci.db
       NEXT_TELEMETRY_DISABLED: "1"
@@ -32,16 +59,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
-      # Tesseract language data (English + Hindi) is downloaded once and reused.
-      - uses: actions/cache@v4
-        with:
-          path: /tmp/finlegacy-ocr
-          key: ocr-langs-eng-hin-v1
-
+      # The integration tests import the backend's code and its generated Prisma client.
+      - run: npm ci && npx prisma generate
+        working-directory: backend
       - run: npm ci
+        working-directory: frontend
       - run: npm run typecheck
+        working-directory: frontend
       - run: npm run lint
+        working-directory: frontend
       - run: npm test
+        working-directory: frontend
       - run: npm run build
+        working-directory: frontend

@@ -1,19 +1,26 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
+// Most tests here are pure (the Keeper engine). `test/integration` also runs the real backend route
+// handlers against a throwaway database to prove the adapter and the API still agree.
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+      "@server": path.resolve(__dirname, "../backend/src/server"),
+      "@api": path.resolve(__dirname, "../backend/src/api"),
+    },
+  },
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
-    globalSetup: ["test/global-setup.ts"],
+    globalSetup: ["test/integration/global-setup.ts"],
     env: {
       DATABASE_URL: `file:${path.resolve(__dirname, "test/.tmp/test.db")}`,
-      // Tests never call a real model unless LIVE_AI=1 is set explicitly.
-      GEMINI_API_KEY: process.env.LIVE_AI ? (process.env.GEMINI_API_KEY ?? "") : "",
-      GOOGLE_CLOUD_PROJECT: process.env.LIVE_AI ? (process.env.GOOGLE_CLOUD_PROJECT ?? "") : "",
+      GEMINI_API_KEY: "",
+      GOOGLE_CLOUD_PROJECT: "",
     },
-    // Route tests share one SQLite file; run files serially.
     fileParallelism: false,
   },
 });

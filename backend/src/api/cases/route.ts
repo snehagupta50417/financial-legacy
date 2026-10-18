@@ -1,0 +1,27 @@
+import { db } from "@server/db";
+import { requireSession, unauthorized } from "@server/core/session";
+
+export async function GET(req: Request) {
+  const session = await requireSession(req);
+  if (!session) return unauthorized();
+  const cases = await db.legacyCase.findMany({
+    where: { sessionId: session.id },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      caseType: true,
+      scenarioLabel: true,
+      assetHolderName: true,
+      summary: true,
+      stage: true,
+      progress: true,
+      nextBestAction: true,
+      isDemo: true,
+      demoKey: true,
+      gateReached: true,
+      frozenReason: true,
+      updatedAt: true,
+    },
+  });
+  return Response.json({ cases });
+}

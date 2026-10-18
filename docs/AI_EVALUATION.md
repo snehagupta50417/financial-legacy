@@ -22,7 +22,7 @@ The AI reads documents that decide who can claim what. A misread account number 
 
 ## 2. The evaluation set
 
-Stored in the repository under `frontend/test/eval/` (to create), each item with an expected answer ("golden" file) written by a person.
+Stored in the repository under `backend/test/eval/` (to create), each item with an expected answer ("golden" file) written by a person.
 
 | Group | Items (minimum) | Variations to include |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ Total: about 250 items before the Pilot. Grow the set whenever a real-world erro
 
 | Metric | Definition |
 | --- | --- |
-| Retrieval hit rate | The passage that answers a question is in the top 3 retrieved (keyword-only and hybrid measured separately). Built: `frontend/test/rag.test.ts`, top-1 ≥ 75% enforced |
+| Retrieval hit rate | The passage that answers a question is in the top 3 retrieved (keyword-only and hybrid measured separately). Built: `backend/test/rag.test.ts`, top-1 ≥ 75% enforced |
 | Citation validity | Every [n] in an answer points at a source that was retrieved; invalid ones are removed by code and counted |
 | Groundedness | Every factual statement is supported by the case evidence it cites |
 | "I don't know" rate on unanswerable questions | Should be high; inventing an answer is a failure |
@@ -113,11 +113,11 @@ These are starting points to confirm under D-09 / D-07. Thresholds apply per doc
 | Before changing model, prompt or provider | Full evaluation; compare with the previous run; no regression on any critical-field group without a written decision |
 | Before the Pilot | Full evaluation plus a human review of 10% of passing items |
 
-**Report format:** one table per document group with accuracy per critical field, a list of every zero-tolerance hit (expected: none), the worst 10 errors with examples, and the comparison with the previous run. Saved under `frontend/test/eval/results/` and linked from the release notes.
+**Report format:** one table per document group with accuracy per critical field, a list of every zero-tolerance hit (expected: none), the worst 10 errors with examples, and the comparison with the previous run. Saved under `backend/test/eval/results/` and linked from the release notes.
 
 ## 7. Building the set — practical steps
 
-1. Extend the synthetic data generator in `frontend/src/server/data/synthetic/` (built 17 Oct 2026). It already combines **real public reference data** — real banks, branches and IFSCs, real fund schemes with real NAVs on real dates, LIC plans, RBI rates — with synthetic people and **always-masked** identifiers, and labels every document "SYNTHETIC SAMPLE". Add more families, document types and controlled scan noise (`frontend/scripts/make_test_pdf.py` can render PDFs). Reference data sources: `frontend/src/server/data/reference/SOURCES.md`.
+1. Extend the synthetic data generator in `backend/src/server/data/synthetic/` (built 17 Oct 2026). It already combines **real public reference data** — real banks, branches and IFSCs, real fund schemes with real NAVs on real dates, LIC plans, RBI rates — with synthetic people and **always-masked** identifiers, and labels every document "SYNTHETIC SAMPLE". Add more families, document types and controlled scan noise (`frontend/scripts/make_test_pdf.py` can render PDFs). Reference data sources: `backend/src/server/data/reference/SOURCES.md`.
 2. A second person writes or checks every golden answer.
 3. Version the set; never edit a golden answer without a recorded reason.
 4. Keep adversarial items in their own folder so they can't be "fixed" by tuning prompts to specific strings.

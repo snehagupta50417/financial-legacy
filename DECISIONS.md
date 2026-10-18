@@ -286,3 +286,15 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Works without AI.** Not signed in, no AI opt-in, no key or a model outage: the same loop runs on the built-in interviewer, and `GET /api/ai/agent` lets the screen say honestly which mode it is in ("Gemini agent" or "Built-in guide"). The thread records each turn through the new `agent.turn` action (messages only; saved redacted via `keeperUi`).
 - **Robustness:** speech output has a watchdog so a browser without a voice cannot stall the loop; a silent room returns to "tap to talk" instead of looping; the turn is sent after 1.4 s of silence; tapping the orb interrupts Keeper.
 - Tests: `test/agent.test.ts` (21) covers vetting, consent, gates, redaction before the model, honesty guard, fallbacks, availability and the engine action. Not covered by automated tests: the microphone and spoken output (browser APIs).
+
+## Backend split into its own service — 18 Oct 2026
+
+- **Why:** the API lived inside the Next.js app (`src/app/api` + `src/server`), so the repository looked frontend-only and the two could not be built, scaled or deployed apart. LLD §21 M9 had reserved this move; it is now done.
+- **Layout:** `backend/` (API: Hono, Prisma, Gemini, OCR; own `package.json`, tests and Prisma schema), `frontend/` (Next.js pages only), `shared/` (types and pure claim rules both use). Files were moved with `git mv`, so history follows them.
+- **No rewrite of the handlers.** Route files are still standard `Request → Response` functions under `backend/src/api/**/route.ts`; `backend/src/app.ts` maps them to URLs (`[id]` → `:id`) and `src/index.ts` listens on `$PORT` (default 4000). The only change inside them was replacing `NextRequest` with the standard `Request`.
+- **Frontend → backend:** the browser still calls same-origin `/api/*`; `frontend/next.config.ts` rewrites it to `BACKEND_URL` (default `http://localhost:4000`). No CORS, and `x-session-id` passes through. `BACKEND_URL` is fixed at build time.
+- **Shared contract:** `shared/contracts.ts` holds `ClaimView` and the voice-agent action types, so the frontend no longer imports backend source (it used to reach into `@/server/...`). `shared/` imports nothing from either service. Path aliases: `@server`, `@api`, `@shared` (backend), `@`, `@shared` (frontend).
+- **Tests:** 136 in `backend/test`, 23 in `frontend/test`. The Keeper adapter and refinement tests stay in `frontend/test/integration` because they exercise both sides; their config aliases the backend's route handlers and use a throwaway database.
+- **Deploy:** two Cloud Run services from source (backend first, then the frontend built with `BACKEND_URL`). Both fit the free tier, but each API call is a request to both services, so the 2M monthly requests last about half as long (docs/CLOUD_SETUP.md).
+- **Open:** the backend is public (as the API was); restricting it to the web app, and a shared store for rate limits, are still to decide. The backend has no ESLint yet; `tsc` covers it.
+- Also: ESLint now ignores the git-ignored `frontend/artifacts/`.
