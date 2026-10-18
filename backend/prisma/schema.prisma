@@ -221,20 +221,20 @@ model Proof {
 
 // One claim per holding (PRD FL-12–FL-16, FL-36, FL-37; LLD §11). The family submits it themselves.
 model Claim {
-  id                 String       @id @default(cuid())
+  id                 String         @id @default(cuid())
   caseId             String
-  case               LegacyCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case               LegacyCase     @relation(fields: [caseId], references: [id], onDelete: Cascade)
   assetId            String
-  asset              AssetRecord  @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  status             String       @default("draft") // see rules/claim-lifecycle.ts
+  asset              AssetRecord    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  status             String         @default("draft") // see rules/claim-lifecycle.ts
   path               String? // nominee | joint | quick | simplified | succession | no_nominee — chosen by rules/claim-path.ts
   reviewReason       String? // why a person must look at it instead of a path being chosen
-  situation          String       @default("{}") // JSON answers: nominee, claimant relationship, amount band, bank type, dispute
+  situation          String         @default("{}") // JSON answers: nominee, claimant relationship, amount band, bank type, dispute
   procedureId        String?
   procedureVersion   String?
   procedureCheckedOn String?
-  checklist          String       @default("{}") // JSON: item id → { state: missing | have | linked, documentId? }
-  declarations       String       @default("[]") // JSON array of accepted declaration ids
+  checklist          String         @default("{}") // JSON: item id → { state: missing | have | linked, documentId? }
+  declarations       String         @default("[]") // JSON array of accepted declaration ids
   waitingOn          String? // family | institution | financial_legacy
   dueDate            String? // YYYY-MM-DD for the open item
   institutionRef     String?
@@ -246,12 +246,12 @@ model Claim {
   outcomeDate        String?
   outcomeNote        String?
   outcomeDocumentId  String?
-  remainderTracked   Boolean      @default(false)
+  remainderTracked   Boolean        @default(false)
   workflow           ClaimWorkflow?
   packs              ClaimPack[]
   events             ClaimEvent[]
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   @@index([caseId])
 }
@@ -411,45 +411,129 @@ model HandoffRequest {
   @@index([caseId])
 }
 
-
 // Durable review preparation only: never authority, approval, submission or settlement.
 model ClaimWorkflow {
-  id           String     @id @default(cuid())
-  caseId       String
-  case         LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  claimId      String     @unique
-  claim        Claim      @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  status       String     @default("queued")
-  cursor       Int        @default(0)
-  revision     Int        @default(1)
-  attempts     Int        @default(0)
-  checkpoints  String     @default("[]")
-  result       String?
-  error        String?
-  leaseToken   String?
-  leaseUntil   DateTime?
-  nextRunAt    DateTime   @default(now())
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  caseId      String
+  case        LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  claimId     String     @unique
+  claim       Claim      @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  status      String     @default("queued")
+  cursor      Int        @default(0)
+  revision    Int        @default(1)
+  attempts    Int        @default(0)
+  checkpoints String     @default("[]")
+  result      String?
+  error       String?
+  leaseToken  String?
+  leaseUntil  DateTime?
+  nextRunAt   DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([status, nextRunAt])
   @@index([caseId])
 }
 
 model CaseAgentRun {
-  id           String     @id @default(cuid())
-  caseId       String     @unique
-  case         LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  status       String     @default("queued")
-  cursor       Int        @default(0)
-  revision     Int        @default(1)
-  attempts     Int        @default(0)
-  plan         String     @default("[]")
-  receipts     String     @default("[]")
-  result       String?
-  error        String?
-  leaseToken   String?
-  leaseUntil   DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  caseId     String     @unique
+  case       LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  status     String     @default("queued")
+  cursor     Int        @default(0)
+  revision   Int        @default(1)
+  attempts   Int        @default(0)
+  plan       String     @default("[]")
+  receipts   String     @default("[]")
+  result     String?
+  error      String?
+  leaseToken String?
+  leaseUntil DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+// ---- Verify console (institution side, demo only, synthetic data) -------------------------------------------
+// Isolated from heir data on purpose: an institution console never reads a family's private case.
+
+// A demo sign-in. The id is chosen by the browser, like a session id; there is no password.
+model VerifyConsole {
+  id          String        @id
+  institution String // lic | sbi
+  reviewer    String
+  createdAt   DateTime      @default(now())
+  claims      VerifyClaim[]
+  events      VerifyEvent[]
+}
+
+model VerifyClaim {
+  id            String           @id @default(cuid())
+  consoleId     String
+  console       VerifyConsole    @relation(fields: [consoleId], references: [id], onDelete: Cascade)
+  key           String // fixture key: A | B | C | D
+  code          String // claim id shown to reviewers
+  institution   String // the product's institution, e.g. LIC of India
+  deceasedName  String
+  claimantName  String
+  relationship  String
+  contactMasked String
+  productLabel  String
+  productLast4  String
+  amountMin     Int // rupees
+  amountMax     Int // rupees
+  route         String // nominee | succession | joint_survivor | deceased_deposit
+  source        String // FinLegacy | Branch
+  receivedAt    DateTime
+  status        String           @default("awaiting_review") // awaiting_review | documents_requested | escalated | approved
+  decidedAt     DateTime?
+  documents     VerifyDocument[]
+  runs          VerifyCheckRun[]
+  events        VerifyEvent[]
+
+  @@unique([consoleId, key])
+  @@index([consoleId])
+}
+
+// A synthetic document: its extracted fields and any planted authenticity signals (see backend/src/server/data/verify/README.md).
+model VerifyDocument {
+  id       String      @id @default(cuid())
+  claimId  String
+  claim    VerifyClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  kind     String // death_certificate | claimant_id | relationship_proof | claim_form | indemnity_form | policy_document
+  title    String
+  issuer   String
+  fields   String // JSON [{ key, label, value }]
+  signals  String      @default("[]") // JSON [{ fieldKey, kind, note }]
+  readable Boolean     @default(true)
+}
+
+// One run of the four checks and the rating they produced. Rating comes from fixed rules, never a model.
+model VerifyCheckRun {
+  id          String      @id @default(cuid())
+  claimId     String
+  claim       VerifyClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  riskLevel   String // low | medium | high | not_checked
+  riskRule    String
+  explanation String
+  results     String // JSON: the four check results with findings and evidence
+  createdAt   DateTime    @default(now())
+
+  @@index([claimId])
+}
+
+// Append-only audit trail: receipt, checks, decisions, simulated messages, with who and when.
+model VerifyEvent {
+  id        String        @id @default(cuid())
+  consoleId String
+  console   VerifyConsole @relation(fields: [consoleId], references: [id], onDelete: Cascade)
+  claimId   String
+  claim     VerifyClaim   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  kind      String // received | checks_run | checks_incomplete | approved | documents_requested | escalated
+  actor     String // system, or the reviewer's name
+  note      String        @default("")
+  meta      String        @default("{}")
+  createdAt DateTime      @default(now())
+
+  @@index([claimId])
+  @@index([consoleId])
 }
