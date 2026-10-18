@@ -897,3 +897,14 @@ Spoken reply availability (FL-01, FL-02): calls must select server speech when n
 
 
 Microphone reliability: the browser loudness meter must not discard a captured recording solely because it failed to detect speech. Send bounded, nonempty recordings for transcription, including manual stop; show pending microphone permission and transcription separately. Permission requests must time out visibly and release any stream that arrives after cancellation.
+
+
+Local Supabase persistence validation: synthetic local sessions may use the private PostgreSQL keeper schema without changing Google authentication or production auth requirements. Preserve the SQLite database and generate PostgreSQL separately. Browser speech-service failure must offer explicit retry through server transcription, without pretending microphone permissions can be bypassed.
+
+
+### Contextual conversation continuity (FL-01, FL-02, FL-27)
+Returning conversations show a concise case-derived briefing, open-claim and unreviewed-field counts, and a direct next-step action. Calls greet returning users from saved case context. Counts exclude closed claims, duplicate holdings and paused/closed follow-ups. Action activity remains visible during execution and distinguishes completion/failure/skipping; no model intention is displayed as completed work.
+
+
+### Bounded case agent (FL-01, FL-02, FL-12, FL-27)
+A user may delegate case preparation once. Keeper checkpoints source inspection, identifies unresolved evidence, and refreshes existing claim drafts without repeated prompting. Progress persists across restarts and resumes when the conversation returns. Each checkpoint rechecks case access and frozen state; leases fence concurrent execution. Users can pause or recheck a completed run. The agent never confirms holdings, accepts document fields, changes entitlement, approves, submits or records financial outcomes. It pauses with a specific review target when human input is needed; a prepared run is not a resolved case.

@@ -58,6 +58,7 @@ model LegacyCase {
   keeperUi         String?
   handoffs         HandoffRequest[]
   workflows        ClaimWorkflow[]
+  caseAgent        CaseAgentRun?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }
@@ -433,4 +434,22 @@ model ClaimWorkflow {
 
   @@index([status, nextRunAt])
   @@index([caseId])
+}
+
+model CaseAgentRun {
+  id           String     @id @default(cuid())
+  caseId       String     @unique
+  case         LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  status       String     @default("queued")
+  cursor       Int        @default(0)
+  revision     Int        @default(1)
+  attempts     Int        @default(0)
+  plan         String     @default("[]")
+  receipts     String     @default("[]")
+  result       String?
+  error        String?
+  leaseToken   String?
+  leaseUntil   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:supabase": "node scripts/supabase-runtime.mjs build",
+    "start:supabase": "node scripts/supabase-runtime.mjs start"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

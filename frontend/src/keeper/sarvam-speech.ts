@@ -98,7 +98,10 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
     }
     if (mine !== token.current) { stream.getTracks().forEach((t) => t.stop()); return; }
 
+    release.current = () => stream.getTracks().forEach(t => t.stop());
+    try {
     const ctx = new AudioContext();
+    release.current = () => { stream.getTracks().forEach(t => t.stop()); void ctx.close().catch(() => {}); };
     // A context made outside a click can start suspended, which reads as silence. Wake it.
     void ctx.resume().catch(() => {});
     const analyser = ctx.createAnalyser();
@@ -147,9 +150,17 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
         onFail.current?.(e instanceof ApiError && e.code === "stt_quota" ? "quota" : "unavailable");
       }
     };
+    mr.onerror = () => {
+      if (mine !== token.current) return;
+      token.current++; cleanup(); setListening(false); setLevel(0); setInterim(""); setError("other");
+    };
     recorder.current = mr;
     mr.start(250);
     setInterim(""); setListening(true);
+    } catch {
+      if (mine !== token.current) return;
+      cleanup(); setListening(false); setLevel(0); setInterim(""); setError("other");
+    }
   }, [cleanup]);
 
   /** Finish now: whatever was said so far is sent. */

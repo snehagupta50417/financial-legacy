@@ -15,15 +15,18 @@
     "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate",
     "db:prepare": "node --env-file-if-exists=.env scripts/database.mjs generate",
-    "db:setup": "node --env-file-if-exists=.env scripts/database.mjs push"
+    "db:setup": "node --env-file-if-exists=.env scripts/database.mjs push",
+    "dev:supabase": "tsx --env-file=.env.supabase-local src/index.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
     "@hono/node-server": "^1.14.0",
     "@napi-rs/canvas": "^0.1.100",
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.11.1",
     "hono": "^4.7.0",
     "pdf-lib": "1.17.1",
+    "pg": "^8.23.1",
     "prisma": "^6.11.1",
     "tesseract.js": "^6.0.1",
     "tsx": "^4.19.0",

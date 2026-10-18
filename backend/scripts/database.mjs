@@ -10,7 +10,7 @@ let schema = path.join(root, "prisma/schema.prisma");
 if (postgres) {
   const dir = path.join(root, "prisma/.generated"); mkdirSync(dir, { recursive: true });
   schema = path.join(dir, "schema.prisma");
-  writeFileSync(schema, readFileSync(path.join(root, "prisma/schema.prisma"), "utf8").replace('provider = "sqlite"', 'provider = "postgresql"'));
+  writeFileSync(schema, readFileSync(path.join(root, "prisma/schema.prisma"), "utf8").replace('provider = "sqlite"', 'provider = "postgresql"').replace('provider = "prisma-client-js"', 'provider = "prisma-client-js"\n  output = "./client"\n  engineType = "client"'));
 }
 const prisma = path.join(root, "node_modules/prisma/build/index.js");
 function run(args, env = process.env) {

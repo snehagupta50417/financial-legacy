@@ -83,7 +83,11 @@ export async function loadCase(id: string, name: string, previous?: Case): Promi
 
 export async function hydrateBackend(s: AppState): Promise<AppState> {
   const rows = await api.get<{ cases: { id: string }[] }>("/api/cases");
-  if (!rows.cases.length) return s;
+  if (!rows.cases.length) {
+    // A different database/account must not retain IDs from a browser's old server cache.
+    if (!Object.values(s.cases).some(c => c.backendId)) return s;
+    return { ...freshState(s.session?.name || "You", "signin"), session: s.session, drafts: s.drafts, attachments: s.attachments };
+  }
   const cases = await Promise.all(rows.cases.map(r => loadCase(r.id, s.session?.name || "You")));
   const keepDraft = s.cases[s.activeCase] && !s.cases[s.activeCase].backendId && (active(s.cases[s.activeCase]).messages.some(m => m.role === "user") || !!s.drafts?.[s.cases[s.activeCase].activeThread] || Object.values(s.attachments || {}).some(a => a.threadId === s.cases[s.activeCase].activeThread));
   return { ...s, order: [...cases.map(c => c.id), ...(keepDraft ? [s.activeCase] : [])], cases: { ...Object.fromEntries(cases.map(c => [c.id, c])), ...(keepDraft ? { [s.activeCase]: s.cases[s.activeCase] } : {}) }, activeCase: keepDraft ? s.activeCase : cases.some(c => c.id === s.activeCase) ? s.activeCase : cases[0].id };
