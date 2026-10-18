@@ -75,6 +75,7 @@ export function connectBackend() {
   enqueue(async current => (await import("./backend")).hydrateBackend(current));
 }
 export function refreshBackend() { connected = false; connectBackend(); }
+export const getBackendStatus = () => backendStatus;
 export function useBackendStatus() { return useSyncExternalStore(subscribe, statusSnapshot, () => serverStatus); }
 
 export function dispatch(a: Action) {
@@ -144,3 +145,6 @@ export async function removeAttachment(id: string) {
   const current = getSnapshot(); if (!current) return;
   const attachments = { ...current.attachments }; delete attachments[id]; set({ ...current, attachments });
 }
+
+/** The current state, for async code that must read what a dispatch just produced. */
+export const peekState = () => getSnapshot();

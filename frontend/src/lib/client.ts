@@ -14,9 +14,12 @@ export function getSessionId(): string {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Machine-readable reason some routes add, e.g. "ai_consent_required". */
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -30,7 +33,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError((data as { error?: string }).error || `Request failed (${res.status})`, res.status);
+    throw new ApiError((data as { error?: string }).error || `Request failed (${res.status})`, res.status, (data as { code?: string }).code);
   }
   return data as T;
 }

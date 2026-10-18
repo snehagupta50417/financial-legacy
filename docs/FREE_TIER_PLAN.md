@@ -32,7 +32,7 @@
 | Secrets | Secret Manager | 6 active secret versions, 10,000 accesses a month | Enough for `PAN_HASH_SECRET` and the API key |
 | Original files | **Not stored** — read, extract, forget (as today) | — | Cloud Storage is free only in US regions, so not used |
 | Malware scanning | **None yet**: uploads are limited to byte-checked PDF / PNG / JPEG / WebP / text up to 8 MB, synthetic only | — | No free scanner fits Cloud Run from source; revisit before real uploads |
-| Voice (B8) | Recognition: Gemini audio on the free key (synthetic only) or the browser's speech API. Replies: Cloud Text-to-Speech or the browser's voice | Text-to-Speech: 4M Standard / 1M Neural2 characters a month. Speech-to-Text: 60 minutes a month (and Chirp is not offered in India) | To decide at B8 |
+| Voice (B8) | **Built:** the browser's own speech recognition and voice (free, no key), driving the agent loop whose reasoning uses the Gemini API key server-side. Optional later: Gemini audio on the free key (synthetic only), Cloud Text-to-Speech | Text-to-Speech: 4M Standard / 1M Neural2 characters a month. Speech-to-Text: 60 minutes a month (and Chirp is not offered in India) | To decide at B8 |
 | Shared rate limit | The database (not Memorystore, which has no free tier) | — | Per-instance today |
 | Logs and uptime | Cloud Logging, uptime checks | 50 GiB logs per project a month | Ready |
 | CI | GitHub Actions | 2,000 minutes a month (private repository) | Built (`.github/workflows/ci.yml`) |
