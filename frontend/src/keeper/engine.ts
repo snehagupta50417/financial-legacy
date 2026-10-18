@@ -648,7 +648,7 @@ export function refreshAsset(c: Case, a: Asset) {
 // ─── the reducer ─────────────────────────────────────────────────────────────────────────────
 
 export type Action =
-  | { t: "signIn"; name: string; mode: Session["mode"] }
+  | { t: "signIn"; name: string; mode: Session["mode"]; persona?: string }
   | { t: "load"; state: AppState }
   | { t: "signOut" }
   | { t: "reset" }
@@ -684,7 +684,7 @@ export type Action =
   | { t: "claim.ack"; id: string; note: string }
   | { t: "claim.outcome"; id: string; kind: Parameters<typeof K.recordOutcome>[2]; note: string; amount?: string; date?: string; documentId?: string };
 
-export const SAMPLE_HOOK: { load: ((name: string) => AppState) | null } = { load: null };
+export const SAMPLE_HOOK: { load: ((name: string, persona?: string) => AppState) | null } = { load: null };
 
 export function reduce(prev: AppState, a: Action): AppState {
   return refineTurns(reduceState(prev, a), prev);
@@ -699,7 +699,7 @@ function reduceState(prev: AppState, a: Action): AppState {
   const th = c ? activeThread(c) : null;
 
   switch (a.t) {
-    case "reset": return s.session?.mode === "sample" && SAMPLE_HOOK.load ? SAMPLE_HOOK.load(s.session.name) : freshState(s.session?.name ?? "", s.session?.mode ?? "signin");
+    case "reset": return s.session?.mode === "sample" && SAMPLE_HOOK.load ? SAMPLE_HOOK.load(s.session.name, s.session.persona) : freshState(s.session?.name ?? "", s.session?.mode ?? "signin");
     case "switchCase": if (s.cases[a.id]) s.activeCase = a.id; break;
     case "newThread": { const t = newThread(); const work = nextWork(c); c.threads.unshift(t); c.activeThread = t.id; t.messages.push(msg("keeper", work?.text || WELCOME_NEW, { ...(work ? { card: work.card } : {}), choices: work ? [{ id: "m:resume", label: "Continue" }, { id: "m:something", label: "Something else" }] : START_CHOICES })); break; }
     case "switchThread": if (c.threads.some((t) => t.id === a.id)) c.activeThread = a.id; break;
@@ -711,7 +711,7 @@ function reduceState(prev: AppState, a: Action): AppState {
       break;
     }
     case "choose":
-      if (a.id === "m:sample" && SAMPLE_HOOK.load) return SAMPLE_HOOK.load(s.session?.name ?? "Asha Rao");
+      if (a.id === "m:sample" && SAMPLE_HOOK.load) return SAMPLE_HOOK.load(s.session?.name ?? "Arjun Sharma", s.session?.persona);
       converse(s, { choice: a.id, label: a.label });
       break;
     case "focus": c.focus = a.focus; break;

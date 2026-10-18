@@ -13,7 +13,7 @@ import type { AppState } from "./types";
  */
 const KEY = "keeper.demo.v1";
 const PERSONAL_KEY = "keeper.personal.v1";
-const EXAMPLE_KEY = "keeper.example.v1";
+const EXAMPLE_KEY = "keeper.example.v2";
 let state: AppState | null | undefined;
 const listeners = new Set<() => void>();
 
@@ -39,7 +39,7 @@ const subscribe = (l: () => void) => (listeners.add(l), () => void listeners.del
 function set(next: AppState | null) {
   state = next;
   try {
-    if (next) { localStorage.setItem(KEY, JSON.stringify(next)); localStorage.setItem(next.session?.mode === "sample" ? EXAMPLE_KEY : PERSONAL_KEY, JSON.stringify(next)); }
+    if (next) { localStorage.setItem(KEY, JSON.stringify(next)); localStorage.setItem(next.session?.mode === "sample" ? EXAMPLE_KEY + "." + (next.session.persona || "arjun") : PERSONAL_KEY, JSON.stringify(next)); }
     else localStorage.removeItem(KEY);
   } catch { /* private mode: the session simply isn't remembered */ }
   listeners.forEach((l) => l());
@@ -104,11 +104,11 @@ export function useBackendStatus() { return useSyncExternalStore(subscribe, stat
 
 export function dispatch(a: Action) {
   const cur = getSnapshot();
-  if (a.t === "signOut") { for (const id of Object.keys(getSnapshot()?.attachments || {})) void import("./attachments").then(files => files.forgetFile(id)).catch(() => {}); epoch++; pending = 0; connected = false; localStorage.removeItem(PERSONAL_KEY); localStorage.removeItem(EXAMPLE_KEY); status({ busy: false, error: null }); return set(null); }
-  if (a.t === "signIn") { epoch++; pending = 0; connected = false; status({ busy: false, error: null }); const saved = read(a.mode === "sample" ? EXAMPLE_KEY : PERSONAL_KEY); set(saved || (a.mode === "sample" ? sampleState(a.name) : freshState(a.name, a.mode))); if (a.mode === "signin") connectBackend(); return; }
+  if (a.t === "signOut") { for (const id of Object.keys(getSnapshot()?.attachments || {})) void import("./attachments").then(files => files.forgetFile(id)).catch(() => {}); epoch++; pending = 0; connected = false; localStorage.removeItem(PERSONAL_KEY); for (const id of ["arjun", "sunita", "rahul"]) localStorage.removeItem(EXAMPLE_KEY + "." + id); status({ busy: false, error: null }); return set(null); }
+  if (a.t === "signIn") { epoch++; pending = 0; connected = false; status({ busy: false, error: null }); const saved = read(a.mode === "sample" ? EXAMPLE_KEY + "." + (a.persona || "arjun") : PERSONAL_KEY); set(saved || (a.mode === "sample" ? sampleState(a.name, a.persona) : freshState(a.name, a.mode))); if (a.mode === "signin") connectBackend(); return; }
   if (!cur) return;
   if (cur.session?.mode === "signin") {
-    if (a.t === "choose" && a.id === "m:sample") return set(sampleState(cur.session.name));
+    if (a.t === "choose" && a.id === "m:sample") return set(sampleState(cur.session.name, cur.session.persona));
     if (a.t === "focus" || a.t === "switchThread") return set(reduce(cur, a));
     return enqueue(async current => (await import("./backend")).backendAction(current, a), a.t === "doc.upload" ? a.t + ":" + a.file.name + ":" + a.file.size + ":" + a.file.lastModified : JSON.stringify(a));
   }

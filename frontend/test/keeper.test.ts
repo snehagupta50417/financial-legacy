@@ -233,9 +233,9 @@ describe("rules that hold across the app", () => {
   it("explores a sample, preserves it, and resets it", () => {
     let s = run(fresh(), pick("m:sample", "Explore a sample"));
     expect(s.session?.mode).toBe("sample");
-    expect(s.order).toHaveLength(2);
-    expect(s.cases["estate-sample"].name).toBe("Estate of Ramesh Iyer");
-    const before = JSON.stringify(sampleState("Asha Rao").order);
+    expect(s.order).toHaveLength(1); // one persona's world at a time
+    expect(s.cases["estate-sample"].name).toBe("Estate of Rajesh Kumar Sharma");
+    const before = JSON.stringify(sampleState("Arjun Sharma").order);
     s = run(s, { t: "switchCase", id: "estate-sample" }, pick("m:resume", "Continue where we left off"));
     expect(last(s).text.length).toBeGreaterThan(20); // Keeper picks the next open question or step
     s = run(s, { t: "reset" });
