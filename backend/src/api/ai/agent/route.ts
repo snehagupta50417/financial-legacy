@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { db } from "@server/db";
 import { extractJsonBlock, getProvider } from "@server/ai";
-import { AGENT_SYSTEM, agentContext, readModelTurn, snapshotText } from "@server/ai/agent";
+import { AGENT_SYSTEM, agentContext, languageNote, readModelTurn, snapshotText } from "@server/ai/agent";
+import { languageName, sarvamConfigured } from "@server/speech/sarvam";
 import { caseAccess, isDenied } from "@server/core/access";
 import { hasAiConsent } from "@server/core/ai-consent";
 import { canDiscover } from "@server/core/gate-engine";
@@ -14,6 +15,8 @@ import { loadKeeperUi } from "@server/domain/keeper-ui";
 const Body = z.object({
   caseId: z.string().min(1),
   utterance: z.string().trim().min(1, "Say or type something").max(800),
+  /** BCP-47 code of the language the person just spoke (from speech to text), so Keeper can answer in it. */
+  language: z.string().regex(/^[a-z]{2,3}-[A-Z]{2}$/).optional(),
   history: z.array(z.object({ role: z.enum(["user", "keeper"]), text: z.string().max(600) })).max(10).default([]),
 });
 
@@ -21,9 +24,11 @@ const Body = z.object({
 export async function GET(req: Request) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
-  if (!getProvider()) return Response.json({ available: false, reason: "not_configured" });
-  if (!(await hasAiConsent(session.id))) return Response.json({ available: false, reason: "consent" });
-  return Response.json({ available: true });
+  // `stt` says which speech recogniser a call should use: the person's-language one (Sarvam) or the browser's.
+  const stt = sarvamConfigured() ? "sarvam" : "browser";
+  if (!getProvider()) return Response.json({ available: false, reason: "not_configured", stt: (await hasAiConsent(session.id)) ? stt : "browser" });
+  if (!(await hasAiConsent(session.id))) return Response.json({ available: false, reason: "consent", stt: "browser" });
+  return Response.json({ available: true, stt });
 }
 
 /**
@@ -82,7 +87,7 @@ export async function POST(req: Request) {
   const timer = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS ?? 45_000));
   let text: string;
   try {
-    text = await provider.generate({ system: AGENT_SYSTEM, messages: turns, json: true, temperature: 0.3 }, controller.signal);
+    text = await provider.generate({ system: AGENT_SYSTEM + languageNote(languageName(body.language)), messages: turns, json: true, temperature: 0.3 }, controller.signal);
   } catch {
     return Response.json({ error: "The assistant is temporarily unavailable. Your case data is unaffected.", code: "ai_unavailable" }, { status: 503 });
   } finally {

@@ -98,6 +98,7 @@ The Act requires a **notice** before or at the time of asking for consent, and c
 | Database (open decision) | All case data | All case data | Depends on the choice — a free Compute Engine VM is US-only; a free external Postgres may be in Mumbai ([FREE_TIER_PLAN §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) ⚖️ | Must be settled before real data |
 | Original documents | — | — | **Not stored** (read, extract, forget) | — |
 | Gemini API, unpaid tier | AI extraction, conversation, embeddings | Case content sent per request | No region control | Google may use prompts to improve products; human review; **no personal information allowed** → **synthetic data only** |
+| Sarvam speech to text (optional) | Voice input in Indian languages | The person's audio for each spoken turn, returned as a transcript and detected language | Sarvam's service; residency and retention terms to be confirmed | Synthetic only until confirmed; Keeper stores no audio; needs the person's AI opt-in |
 | Speech recognition (D-09, B8) | Voice input | Audio, transcripts | Gemini audio (same unpaid terms) or the browser's own speech service | Synthetic only on the unpaid tier; no audio retention |
 | Google Cloud Text-to-Speech | Spoken replies | Reply text | Mumbai listed; residency to confirm | Free monthly quota |
 | Google sign-in (Identity Platform / Firebase Authentication) | Sign-in | Name, email, Google account ID | **Global** | DPA; minimal data; free up to 50,000 monthly users. Phone OTP dropped (SMS is billed) |
