@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, Check, CircleSlash, Headset, Keyboard, Loader2, MessageSquare, Mic, MicOff, PhoneOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { useAgent, type Phase } from "@/keeper/agent";
 import { setPrefs, useKeeper } from "@/keeper/store";
+import { LANGUAGE_NAMES } from "@/keeper/sarvam-speech";
 import { stopSpeaking, useRecognitionSupport, VOICE_ERROR_TEXT } from "@/keeper/voice";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -139,6 +140,7 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
             <p role="status" aria-live="polite" className="text-[0.85rem] text-muted-foreground">{status}</p>
           </div>
           <span className={cn("hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex", mode === "ai" ? "border-moss/40 bg-moss-soft" : "border-line bg-secondary")}><Sparkles className="h-3.5 w-3.5 text-moss" aria-hidden />{mode === "ai" ? "Gemini" : "Built-in guide"}</span>
+          {agent.engine === "sarvam" && <span className="hidden items-center rounded-full border border-line bg-paper px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex" title="Keeper understands Indian languages">{agent.language && agent.language !== "en-IN" ? LANGUAGE_NAMES[agent.language] ?? "Your language" : "Any Indian language"}</span>}
         </div>
         <button onClick={() => setTranscript(true)} aria-label="Show the written conversation" className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary"><MessageSquare className="h-5 w-5" aria-hidden /></button>
       </header>
@@ -159,7 +161,7 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
             {agent.consentNeeded && !ringing && (
               <div role="group" aria-label="Turn on AI help" className="w-full rounded-2xl border border-apricot/60 bg-[#fbf1e8] p-4">
                 <p className="font-semibold">Let Keeper use AI to understand you</p>
-                <p className="mt-1 text-[0.9rem]">Keeper uses Google Gemini to follow what you say and to speak back. Without it, Keeper uses a simpler built-in guide. Use made-up details only while this is a demo.</p>
+                <p className="mt-1 text-[0.9rem]">Keeper uses Google Gemini to follow what you say and to speak back, and Sarvam to understand Indian languages. Without it, Keeper uses a simpler built-in guide. Use made-up details only while this is a demo.</p>
                 <div className="mt-3"><Btn onClick={() => void agent.allowAi()}>Allow AI help</Btn></div>
               </div>
             )}

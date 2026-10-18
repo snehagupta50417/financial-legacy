@@ -35,7 +35,24 @@ export const VOICE_ERROR_TEXT: Record<Exclude<VoiceError, null>, string> = {
   other: "Voice stopped unexpectedly. Your words so far are kept — you can edit them or type.",
 };
 
-export function useSpeech() {
+/** What the call needs from a speech recogniser, so the browser's and Sarvam's are interchangeable. */
+export interface SpeechInput {
+  supported: boolean;
+  listening: boolean;
+  text: string;
+  setText: (t: string) => void;
+  interim: string;
+  error: VoiceError;
+  start: (lang?: string) => void;
+  stop: () => void;
+  clear: () => void;
+  /** How long to wait after speech ends before sending it (the browser's recogniser needs a longer pause). */
+  finalDelay: number;
+  /** Language detected for this turn (BCP-47), when the recogniser knows it. */
+  language: string | null;
+}
+
+export function useSpeech(): SpeechInput {
   const supported = useRecognitionSupport();
   const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
@@ -45,14 +62,14 @@ export function useSpeech() {
 
   useEffect(() => () => { if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); } }, []);
 
-  const start = useCallback(() => {
+  const start = useCallback((lang?: string) => {
     rec.current?.abort();
     const C = ctor();
     if (!C) return setError("unsupported");
     window.speechSynthesis?.cancel(); // interruption: Keeper stops talking when you start
     setError(null);
     const r = new C();
-    r.lang = "en-IN";
+    r.lang = lang || "en-IN";
     r.continuous = true;
     r.interimResults = true;
     r.onresult = (e) => {
@@ -73,11 +90,11 @@ export function useSpeech() {
 
   const stop = useCallback(() => rec.current?.stop(), []);
   const clear = useCallback(() => { rec.current?.abort(); setText(""); setInterim(""); setListening(false); }, []);
-  return { supported, listening, text, setText, interim, error, start, stop, clear };
+  return { supported, listening, text, setText, interim, error, start, stop, clear, finalDelay: 1400, language: null };
 }
 
 /** Speaks `text`. `onEnd` fires exactly once when it finishes, is cut off, or can't be spoken at all. */
-export function speak(text: string, onEnd?: () => void) {
+export function speak(text: string, onEnd?: () => void, lang?: string) {
   let done = false;
   let watchdog: ReturnType<typeof setTimeout> | undefined;
   const finish = () => { if (!done) { done = true; clearTimeout(watchdog); onEnd?.(); } };
@@ -85,7 +102,7 @@ export function speak(text: string, onEnd?: () => void) {
   const clean = text.replace(/\s+/g, " ");
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(clean);
-  u.lang = "en-IN";
+  u.lang = lang || "en-IN";
   // Some browsers have no voice installed and never fire an event: don't leave the conversation waiting on one.
   u.onstart = () => { clearTimeout(watchdog); watchdog = setTimeout(finish, 6000 + clean.length * 110); };
   u.onend = finish; u.onerror = finish;
@@ -111,8 +128,8 @@ export const resetKeeperVoice = () => { geminiVoiceWorks = true; };
  * every other model call) and plays it; if that is unavailable, over quota, or slow to fail, it falls back
  * to the browser's own voice, so a call never goes silent. `onEnd` fires once, when speech finishes.
  */
-export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean } = { gemini: false }) {
-  if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd);
+export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean; lang?: string } = { gemini: false }) {
+  if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd, opts.lang);
   stopSpeaking();
   let done = false;
   const finish = () => { if (!done) { done = true; onEnd?.(); } };
@@ -126,10 +143,10 @@ export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: bo
       const a = new Audio(url);
       audio = a;
       a.onended = () => { URL.revokeObjectURL(url); audio = null; finish(); };
-      a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(text, finish); };
+      a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(text, finish, opts.lang); };
       await a.play();
     } catch {
-      if (!ctrl.signal.aborted) speak(text, finish);
+      if (!ctrl.signal.aborted) speak(text, finish, opts.lang);
     }
   })();
 }

@@ -174,11 +174,11 @@ describe("GET /api/ai/agent (is the planner on?)", () => {
   it("says why it is off: no model, or no opt-in; on only when both exist", async () => {
     const off = await makeCase({ consent: false });
     setProvider(null);
-    expect(await (await availability(get(off.sid))).json()).toEqual({ available: false, reason: "not_configured" });
+    expect(await (await availability(get(off.sid))).json()).toEqual({ available: false, reason: "not_configured", stt: "browser" });
     setProvider(reply({ say: "hi", actions: [] }));
-    expect(await (await availability(get(off.sid))).json()).toEqual({ available: false, reason: "consent" });
+    expect(await (await availability(get(off.sid))).json()).toEqual({ available: false, reason: "consent", stt: "browser" });
     const on = await makeCase();
-    expect(await (await availability(get(on.sid))).json()).toEqual({ available: true });
+    expect(await (await availability(get(on.sid))).json()).toEqual({ available: true, stt: "browser" });
   });
   it("needs a session", async () => {
     expect((await availability(new Request("http://localhost/api/ai/agent"))).status).toBe(401);

@@ -77,6 +77,12 @@ Hard rules:
 - If, after two tries, you still can't tell what the problem is, or the person asks for a human, or it is a legal, dispute or distressing matter you should not handle alone, set "handoff" true and say plainly that you'd like to bring in a person. Never pretend a person is already on the line, and never promise how fast one will respond.
 - If the person says they are done, set "finish" true and make "say" a brief summary of what changed and the single next step. Otherwise "finish" false. Set "listen" false only when you finish.`;
 
+/** Added to the system prompt when the person is speaking an Indian language. */
+export function languageNote(name: string | null): string {
+  if (!name || name === "English") return "";
+  return `\n\nThe person is speaking ${name}. Reply in ${name}, in simple everyday words, written in the script they would read. Keep institution names, document names and numbers as they are. The JSON keys and action types stay in English.`;
+}
+
 export function snapshotText(ctx: AgentContext): string {
   const facts = Object.entries(ctx.facts).slice(0, 24).map(([k, v]) => `${k}: ${v}`).join("; ") || "(nothing saved yet)";
   return [

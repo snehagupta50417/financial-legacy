@@ -8,8 +8,20 @@ import { canSeeFullAsset, type GateCase } from "./gate-engine";
  */
 
 /** Long digit runs (account/policy/folio/phone/Aadhaar) → keep last 4. PAN → masked. */
+/** First digit of each Unicode decimal-digit block used for Indian languages (and Arabic-Indic). */
+const DIGIT_BLOCKS = [0x660, 0x6f0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66];
+
+/** Digits typed or transcribed in Devanagari, Tamil, Telugu and the like become 0-9, so redaction can see them. */
+export function toAsciiDigits(text: string): string {
+  return text.replace(/\p{Nd}/gu, (d) => {
+    const cp = d.codePointAt(0)!;
+    const base = DIGIT_BLOCKS.find((b) => cp >= b && cp < b + 10);
+    return base === undefined ? d : String(cp - base);
+  });
+}
+
 export function redactIdentifiers(text: string): string {
-  return text
+  return toAsciiDigits(text)
     .replace(/\b[A-Z]{5}\d{4}[A-Z]\b/g, (pan) => `•••••${pan.slice(5, 9)}•`)
     // Grouped numbers (Aadhaar 1234 5678 9012, policy 4455-6677-88, phone 98765 43210).
     // Date shapes (2026-03-12, 12-03-2026) are left alone.
