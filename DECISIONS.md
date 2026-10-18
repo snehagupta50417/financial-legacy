@@ -451,3 +451,6 @@ Regular-call output now chooses server speech when the browser has no voices eve
 
 
 Microphone capture no longer discards nonempty recordings based on analyser loudness. Suspended AudioContext and quiet-input recordings are sent to STT for actual speech detection; manual stop preserves audio. Permission wait is bounded at 15 seconds with late-stream cleanup; pending permission/transcription are visible.
+
+
+`npm run dev` now checks local setup before starting anything: a missing `backend/.env`, an ungenerated Prisma client or a missing local SQLite file stops it with the exact fix, instead of the API crashing with "@prisma/client did not initialize yet" and the web app timing out after 60 seconds. It only reads files; it never creates the database itself.

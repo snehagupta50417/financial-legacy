@@ -1,10 +1,27 @@
-// Printed at the start of `npm run dev`: is Keeper's AI switched on? Never prints a key, only whether one is set.
+// Printed at the start of `npm run dev`: is the backend set up, and is Keeper's AI switched on?
+// Never prints a key, only whether one is set. Stops before starting anything if setup is incomplete.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../backend/.env");
+const backend = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../backend");
+const envPath = path.join(backend, ".env");
 const env = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "";
+
+// Setup that `npm run setup` and copying .env.example normally do. Missing pieces crash the API at startup.
+const missing = [];
+if (!env) missing.push(["backend/.env not found", "copy backend/.env.example to backend/.env"]);
+if (!fs.existsSync(path.join(backend, "node_modules/.prisma/client/schema.prisma")))
+  missing.push(["Database client not generated", "npm run db:push --prefix backend   (after creating backend/.env)"]);
+const dbUrl = env.match(/^DATABASE_URL="?file:([^"\s]+)"?/m)?.[1];
+if (dbUrl && !fs.existsSync(path.resolve(backend, "prisma", dbUrl)))
+  missing.push(["Local database not created", "npm run db:push --prefix backend"]);
+if (missing.length) {
+  console.log("\nKeeper isn't set up yet");
+  for (const [problem, fix] of missing) console.log(`  [ ] ${problem}\n      Fix: ${fix}`);
+  console.log("\nRun the fixes above, then npm run dev again.\n");
+  process.exit(1);
+}
 const isSet = (name) => new RegExp(`^${name}="[^"\\s]{10,}"`, "m").test(env);
 
 const gemini = isSet("GEMINI_API_KEY");
