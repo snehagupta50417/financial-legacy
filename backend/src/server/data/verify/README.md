@@ -1,5 +1,7 @@
 # Verify console demo fixtures
 
+> Documentation review — 18 October 2026. These are planted demo expectations, not evidence of a live Verify console, real fraud detection, institution approval or an external submission. They do not change the current synthetic MVP boundary documented in [CURRENT_STATE](../../../../../docs/CURRENT_STATE.md).
+
 Everything here is synthetic. No real person, document, account or institution record is used, and nothing is sent anywhere.
 The fixtures live in `claims.ts`; the expected results below are asserted by `backend/test/verify-*.test.ts`.
 

@@ -1,3 +1,4 @@
+import { providerKeys } from "@server/core/provider-keys";
 import { GeminiProvider } from "./gemini";
 import type { AiImage, AiProvider, AiResult, ChatTurn, EmbedKind, GenerateRequest } from "./provider";
 
@@ -26,8 +27,9 @@ function providerFromEnv(): AiProvider | null {
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001",
     embeddingDims: Number(process.env.GEMINI_EMBEDDING_DIMS || 768),
   };
-  if (process.env.GEMINI_API_KEY) {
-    return new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, models, ...embedding });
+  const keys = providerKeys("GEMINI");
+  if (keys.length) {
+    return new GeminiProvider({ apiKey: keys[0], fallbackApiKeys: keys.slice(1), models, ...embedding });
   }
   if (process.env.GOOGLE_CLOUD_PROJECT) {
     return new GeminiProvider({

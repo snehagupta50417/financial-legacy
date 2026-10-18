@@ -1,12 +1,14 @@
 # Financial Legacy — Feasibility and Compliance
 
+> Implementation reconciled 18 October 2026; legal/source findings retain the original research dates and uncertainty. This is not new legal validation. Current build and limits: [CURRENT_STATE](CURRENT_STATE.md).
+
 | | |
 | --- | --- |
 | **Version** | 0.1 (draft for review) |
 | **Research date** | 17 October 2026 |
 | **Owner** | Founder + privacy/security lead + integrations (PRD D-02, D-03, D-05, D-08) |
 | **Purpose** | One place that answers: **what can we legally and technically do, what needs approval, how to get it, and in what order.** |
-| **Status** | Desk research with citations. **Not legal advice.** Each item is marked with how sure we are. Where the law is unclear, §9 sets the cautious position the product follows, so no lawyer is needed to build or run a free Pilot. |
+| **Status** | Desk research with citations. **Not legal advice.** Each item is marked with how sure we are. Where the law is unclear, §9 records interim positions. These do not approve a real-data pilot; appropriate privacy/legal review remains required. |
 
 **Confidence key:** **V** verified on an official source · **S** secondary sources only · **U** unverified.
 
@@ -23,8 +25,9 @@
 | DigiLocker requester (with audit) · Aadhaar offline verification (OVSE registration) · death-certificate QR check on CRS · DLT-registered SMS | PAN verification · CKYC · Account Aggregator data (own assets only) | Aadhaar authentication (AUA/KUA) for now · Account Aggregator for a deceased person's data · any automated search of the official portals |
 
 4. **Data protection:** the DPDP Rules were notified on **13 Nov 2025**; most duties (notice, security, breach reporting, rights, retention) start around **13 May 2027**. Until then the **IT Act s.43A and SPDI Rules 2011** still apply. We build to the 2027 standard now (§5).
-5. **Two platform decisions were adjusted** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT). Both were revised again for the free-tier rule (Google sign-in only; voice on free tiers) — see §7 and [FREE_TIER_PLAN.md](FREE_TIER_PLAN.md).
-6. **Where the law is unclear, we take the cautious reading** (§9), so no lawyer is needed to build the product or run a free Pilot.
+5. **Two platform decisions were adjusted** (§7): Google Speech-to-Text is **not available in India** (Mumbai), and Google's phone sign-in stores phone numbers **globally** and has an undocumented position on India's SMS registration (DLT).
+ Both were revised again for the free-tier rule (Google sign-in only; voice on free tiers) — see §7 and [FREE_TIER_PLAN.md](FREE_TIER_PLAN.md).
+6. **Where the law is unclear, we take the cautious reading** (§9), these interim positions do not establish legal compliance or approve a real-data pilot.
 
 ---
 
@@ -100,28 +103,21 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 - **Planning hook:** DigiLocker nominee + yearly statements are a concrete, official feature for Journey B.
 - **Bank variation is real value:** ICICI's ₹2 crore vs ₹15 lakh elsewhere decides whether a family needs a succession certificate — a maintained bank-by-bank table is a product asset.
 
-## 7. Platform feasibility (Google Cloud and SMS)
+## 7. Platform feasibility (current implementation)
 
-| Service | Available in India (Mumbai, `asia-south1`)? | Notes | Confidence |
-| --- | --- | --- | --- |
-| Cloud Run, Cloud SQL, Secret Manager, Cloud Storage | **Yes** (Delhi too; Storage has an India dual-region) | Core services are MeitY-empanelled | V |
-| **Gemini on Vertex AI** | **Yes** — GA models such as `gemini-2.5-flash`, `gemini-2.5-pro` listed for Mumbai | Use the **regional** endpoint, never `global`. "Endpoints don't guarantee in-region ML processing" — get written confirmation per model. No training on our data. Turn **caching off**, keep request logging off, request the **abuse-monitoring exception** (or sign a Cloud Master Agreement) for zero retention. Not listed in Delhi | V / U per model |
-| Gemini via AI Studio API key | No region control | Free tier may use data to improve products — **never** for real data | V |
-| **Speech-to-Text (Chirp)** | **No** — Chirp 3 only in US/EU; Chirp 2 in Singapore; no India region listed. Tamil is Preview; no Hindi-English code-mixed model | **Decision change needed** (see below) | V (absent from docs) |
-| Text-to-Speech | **Yes** — Mumbai listed; Chirp 3 HD voices for Hindi, Tamil, English (India) | Residency statement covers only EU/US — confirm Mumbai with Google | V voices / U residency |
-| **Identity Platform phone sign-in** | Global service | $0.07 per SMS to India; set SMS region policy to India only; reCAPTCHA; **phone numbers stored globally** for abuse prevention; **DLT responsibility not documented** | V price / U DLT |
-| Google's DPA and DPDP | No DPDP-specific statement found | Our own legal mapping needed | V / U |
+Reconciled 18 October 2026. Earlier Vertex/Cloud Speech/phone-OTP proposals are superseded. Source research elsewhere retains its original dates; this is not a fresh legal, residency or provider-contract audit.
 
-**Adjustments — confirmed by the founder on 17 Oct 2026** *(superseded by the free-tier revision below)*:
+| Need | Implementation | Remaining acceptance |
+| --- | --- | --- |
+| Database | Supabase PostgreSQL, private keeper schema, strict TLS | Actual region/terms, backups and production recovery |
+| Account login | Supabase Auth + Google OAuth/PKCE | Provider activation, hosted account isolation; login is not financial authority |
+| AI | Gemini key API | Finite quotas; synthetic-only policy |
+| Speech input | Sarvam → same-recording Gemini → browser | Credits, processor terms, devices and per-language quality |
+| Speech output | Browser / Gemini TTS | Gemini quota failed. Sarvam TTS is diagnostic only |
+| Hosting | Source-prepared Cloud Run web/API | Public deployment, cost controls and authenticated journey unverified |
+| Originals/OCR | Local Tesseract/extraction; originals not retained | Malware scanning and broader handwriting/layout/language acceptance |
 
-1. **Voice input:** use **Gemini audio understanding on Vertex AI in Mumbai** for speech-to-text (keeps audio in India), evaluated against Chirp in Singapore on our Hindi, Hinglish and Tamil test set. If Gemini's quality is not good enough, use Chirp with the cross-border transfer disclosed in consent. Text-to-Speech stays on Google Cloud TTS in Mumbai.
-2. **Sign-in:** keep phone OTP as the main method, but send OTPs through a **DLT-registered Indian SMS gateway** (e.g. MSG91, Exotel) with our own OTP verification, so phone numbers stay in India and DLT is under our control; Google sign-in remains an option. Alternatively keep Identity Platform after Google confirms its India DLT handling and we accept global storage of phone numbers.
-
-**Revised again on 17 Oct 2026 — free tier only** ([FREE_TIER_PLAN.md](FREE_TIER_PLAN.md)). The research above still holds, but the two adjustments change because Vertex AI, SMS and Cloud SQL bill:
-
-- **Voice input:** Gemini audio on the **free API key** (synthetic data only) or the browser's built-in speech recognition; replies with Cloud Text-to-Speech inside its free quota or the browser's voice. Chosen at B8.
-- **Sign-in:** **Google sign-in only** (free up to 50,000 monthly users). Phone OTP is dropped — SMS is billed per message beyond 10 a day and DLT registration has costs.
-- **Real data:** the unpaid Gemini tier may use prompts to improve Google's products and forbids personal information, so real cases run without AI until a paid tier is approved.
+No Vertex, Cloud SQL, SMS, paid Speech API or upgrade is authorised. Local Supabase uses synthetic-session mode, not production account acceptance. See [CURRENT_STATE](CURRENT_STATE.md), [FREE_TIER_PLAN](FREE_TIER_PLAN.md), [VOICE](VOICE.md) and [HOSTED_MVP_SETUP](HOSTED_MVP_SETUP.md).
 
 ## 8. Approvals roadmap
 
@@ -130,8 +126,8 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 | Weeks 0–2 | Adopt the cautious legal positions in §9 as product rules (done in PRD §11.2) | Founder |
 | Weeks 0–2 | Referral list for families: free legal aid (15100 / District Legal Services Authority) and a few local lawyers who handle succession | Founder |
 | Before charging money or partnering | Paid legal review of the §9 positions | Founder |
-| Weeks 0–4 | **DLT registration** (entity, header, OTP template) and URL whitelisting | Engineering |
-| Weeks 0–4 | Google: confirm Gemini in-region processing per model; request abuse-monitoring exception; confirm TTS Mumbai residency; test Gemini speech recognition | Engineering |
+| Later only if approved | SMS/DLT research; phone OTP is not in the free-only implementation | Engineering |
+| Before real data | Review current Gemini/Sarvam/Auth terms, residency and retention; no Vertex/Cloud TTS integration is implied | Engineering + privacy |
 | Month 1 | **ISO 27001-style security baseline** (SPDI Rule 8); CERT-In 6-hour incident process | Security lead |
 | Months 1–2 | **DigiLocker requester** application; book a CERT-In empanelled auditor | Integrations |
 | Months 1–3 | **UIDAI OVSE** registration (Aadhaar offline verification); contract a **licensed KYC vendor** for PAN checks | Integrations |
@@ -142,7 +138,7 @@ Detail in [PRIVACY_ASSESSMENT.md](PRIVACY_ASSESSMENT.md) §10.
 
 ## 9. Positions we take without a lawyer
 
-We have no lawyer on hand, so for each point the law leaves unclear we adopt the **most cautious reading**: the product stays compliant whichever way a court or regulator later decides. A lawyer's review is **recommended before charging money or scaling**, not a blocker for building or for a free Pilot.
+We have no lawyer on hand, so for each point the law leaves unclear we adopt the **most cautious reading**: the product aims to minimise risk; this document cannot guarantee how a regulator or court will decide. These are proposed research positions, not a legal opinion or pilot approval. Review remains required before real-data launch.
 
 | # | Unclear point | Our position (built into the product) | Why this is safe under any reading |
 | --- | --- | --- | --- |

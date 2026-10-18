@@ -7,7 +7,7 @@
 | **Owner** | Privacy / security lead (PRD decision D-05) |
 | **Required by** | [PRD §11.2](../PRD.md#112-privacy-and-data-protection) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
 | **Law** | Digital Personal Data Protection Act, 2023 ("DPDP Act") and the Digital Personal Data Protection Rules, 2025 ("DPDP Rules") |
-| **Status** | **Not legal advice.** A first-principles assessment by the product team. Where the law is unclear (⚖️), the product follows the cautious position in §10 and [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §9, so no lawyer is needed to build or run a free Pilot; a paid legal review is recommended before charging money or partnering. |
+| **Status** | **Not legal advice.** A first-principles assessment by the product team. Where the law is unclear (⚖️), the product follows the cautious position in §10 and [FEASIBILITY_AND_COMPLIANCE.md](FEASIBILITY_AND_COMPLIANCE.md) §9, this is not approval for a real-data pilot. Appropriate privacy/legal review remains a release prerequisite. |
 
 ---
 
@@ -94,14 +94,14 @@ The Act requires a **notice** before or at the time of asking for consent, and c
 
 | Processor | Role | Data | Location | Terms and status |
 | --- | --- | --- | --- | --- |
-| Google Cloud Run | Hosting the app | All, in transit and memory | India region (`asia-south1`, Mumbai) | DPA (data processing addendum); free tier |
-| Database (open decision) | All case data | All case data | Depends on the choice — a free Compute Engine VM is US-only; a free external Postgres may be in Mumbai ([FREE_TIER_PLAN §3](FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) ⚖️ | Must be settled before real data |
+| Google Cloud Run (deployment target) | Web/API hosting | Application traffic | Deployer-selected region; not certified by local audit | Public deployment and account controls unverified |
+| Supabase PostgreSQL | Canonical case data | Redacted records, fields, conversations and workflow metadata | Configured project region; verify console/contracts before pilot | Private keeper schema, strict TLS; local persistence tested, production recovery/terms outstanding |
 | Original documents | — | — | **Not stored** (read, extract, forget) | — |
 | Gemini API, unpaid tier | AI extraction, conversation, embeddings | Case content sent per request | No region control | Google may use prompts to improve products; human review; **no personal information allowed** → **synthetic data only** |
 | Sarvam speech to text (optional) | Voice input in Indian languages | The person's audio for each spoken turn, returned as a transcript and detected language | Sarvam's service; residency and retention terms to be confirmed | Synthetic only until confirmed; Keeper stores no audio; needs the person's AI opt-in |
 | Speech recognition (D-09, B8) | Voice input | Audio, transcripts | Gemini audio (same unpaid terms) or the browser's own speech service | Synthetic only on the unpaid tier; no audio retention |
-| Google Cloud Text-to-Speech | Spoken replies | Reply text | Mumbai listed; residency to confirm | Free monthly quota |
-| Google sign-in (Identity Platform / Firebase Authentication) | Sign-in | Name, email, Google account ID | **Global** | DPA; minimal data; free up to 50,000 monthly users. Phone OTP dropped (SMS is billed) |
+| Gemini TTS / browser speech | Spoken replies | Reply text | Provider/device processing; no region guarantee from this build | Gemini quota failed; browser fallback varies; synthetic only |
+| Supabase Auth + Google OAuth | Account login | Account identity/tokens | Provider processing; inspect terms/region | OAuth/PKCE code built; provider activation and hosted acceptance outstanding |
 
 **Consequence:** the free AI tier cannot process real people's data. Real cases either run with AI off (the app already works without a key) or wait for a paid tier with no-training terms, which would change the free-tier rule ([PRD FL-46](../PRD.md#111-security)).
 
@@ -126,9 +126,9 @@ These periods are proposals for D-05, to be confirmed before the Pilot.
 
 | Right | How the user exercises it | Status |
 | --- | --- | --- |
-| Access a summary of their data and processing | Privacy screen and activity history | 🔧 |
+| Access a summary of their data and processing | Activity/settings and case views | ✅ basic; ⏳ full rights/export workflow |
 | Correction and completion | Correct any extracted value; review history kept | ✅ partly / 🔧 |
-| Erasure | Delete case / delete all my data | 🔧 |
+| Erasure | Settings DELETE confirmation removes Keeper application records | ✅ app-data deletion; ⏳ processor/backups policy |
 | Grievance redressal | In-app help and a named grievance officer with response time | ⏳ |
 | Nomination | ⚖️ see §5 | — |
 
@@ -183,3 +183,9 @@ Original questions (kept for reference):
 Review before the Pilot, after any new data source or processor, after any incident, and at least yearly. Record changes in [DECISIONS.md](../DECISIONS.md).
 
 **Status key:** ✅ built · 🔧 to build (MVP) · ⏳ before Pilot · 📌 Later · ⚖️ needs legal answer.
+
+## Implementation reconciliation — 18 October 2026
+
+The retention periods in §7 remain proposals, not an installed automated purge/backup schedule. Current deletion removes the requesting session/account's Keeper application records and clears auth cookies. It does not delete Google/Supabase identities, shared reference data, provider-held copies or all backups. Do not describe it as universal third-party erasure.
+
+AI consent/revocation, scoped activity, saved conversations, server transcription and strict-TLS PostgreSQL are implemented. Audio is not retained by Keeper; provider retention/residency and free-tier terms still need review before real data. Sarvam TTS was used only to generate a synthetic diagnostic fixture, not added as a production reply processor. Legal research below retains its original date and was not revalidated during this documentation edit. See [CURRENT_STATE](CURRENT_STATE.md).

@@ -1,3 +1,4 @@
+import { credentialFailure } from "@server/core/provider-keys";
 import { GoogleGenAI, type Content } from "@google/genai";
 import type { AiProvider, EmbedKind, GenerateRequest } from "./provider";
 
@@ -16,6 +17,7 @@ export class GeminiProvider implements AiProvider {
   readonly name = "gemini";
   private client: GoogleGenAI;
   private models: string[];
+  private fallbackClients: GoogleGenAI[];
 
   readonly embeddingModel: string;
   /** Models that said their daily/minute quota is used up, and until when: skipped so a turn does not wait on them. */
@@ -26,6 +28,7 @@ export class GeminiProvider implements AiProvider {
 
   constructor(opts: {
     apiKey?: string;
+    fallbackApiKeys?: string[];
     project?: string;
     location?: string;
     models: string[];
@@ -38,6 +41,17 @@ export class GeminiProvider implements AiProvider {
     this.client = opts.apiKey
       ? new GoogleGenAI({ apiKey: opts.apiKey })
       : new GoogleGenAI({ vertexai: true, project: opts.project, location: opts.location ?? "asia-south1" });
+    this.fallbackClients = opts.apiKey ? [...new Set(opts.fallbackApiKeys ?? [])].filter(key => key !== opts.apiKey).map(apiKey => new GoogleGenAI({ apiKey })) : [];
+  }
+
+  private async withCredentials<T>(signal: AbortSignal, request: (client: GoogleGenAI) => Promise<T>): Promise<T> {
+    const clients = [this.client, ...this.fallbackClients];
+    for (let i = 0; i < clients.length; i++) {
+      signal.throwIfAborted();
+      try { return await request(clients[i]); }
+      catch (error) { if (signal.aborted || i === clients.length - 1 || !credentialFailure(error)) throw error; }
+    }
+    throw new Error("AI provider unavailable");
   }
 
   async generate(req: GenerateRequest, signal: AbortSignal): Promise<string> {
@@ -66,7 +80,7 @@ export class GeminiProvider implements AiProvider {
       for (let attempt = 0; attempt < 2; attempt++) {
         if (signal.aborted) throw lastError;
         try {
-          const res = await this.client.models.generateContent({
+          const res = await this.withCredentials(signal, client => client.models.generateContent({
             model,
             contents,
             config: {
@@ -78,7 +92,7 @@ export class GeminiProvider implements AiProvider {
               ...(thinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
               abortSignal: signal,
             },
-          });
+          }));
           return res.text ?? "";
         } catch (e) {
           lastError = e;
@@ -100,7 +114,7 @@ export class GeminiProvider implements AiProvider {
 
   /** Gemini text to speech. Returns raw 24 kHz mono PCM wrapped as WAV so any browser can play it. */
   async speak(text: string, signal: AbortSignal, language?: string): Promise<Buffer> {
-    const res = await this.client.models.generateContent({
+    const res = await this.withCredentials(signal, client => client.models.generateContent({
       model: process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts",
       contents: [{ role: "user", parts: [{ text }] }],
       config: {
@@ -108,7 +122,7 @@ export class GeminiProvider implements AiProvider {
         speechConfig: { ...(language ? { languageCode: language } : {}), voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.GEMINI_TTS_VOICE || "Kore" } } },
         abortSignal: signal,
       },
-    });
+    }));
     const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);
     if (!part?.inlineData?.data) throw new Error("No audio returned");
     return pcmToWav(Buffer.from(part.inlineData.data, "base64"), 24000);
@@ -123,7 +137,7 @@ export class GeminiProvider implements AiProvider {
       let res;
       for (let attempt = 0; ; attempt++) {
         try {
-          res = await this.client.models.embedContent({
+          res = await this.withCredentials(signal, client => client.models.embedContent({
             model,
             contents: batch,
             config: {
@@ -131,7 +145,7 @@ export class GeminiProvider implements AiProvider {
               outputDimensionality: this.embedDims,
               abortSignal: signal,
             },
-          });
+          }));
           break;
         } catch (e) {
           if (attempt > 0 || classify(e) !== "retry" || signal.aborted) throw e;

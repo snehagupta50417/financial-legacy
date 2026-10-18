@@ -1,5 +1,8 @@
 # FINANCIAL LEGACY
 
+> Implementation reconciliation — 18 October 2026. Vision and intended scope are preserved below. Current implementation: a connected synthetic Keeper MVP with local Supabase persistence, saved conversation, bounded agent preparation and document-to-claim continuation. Real financial verification, production OAuth/public hosting and fully accepted voice remain open. See [CURRENT_STATE](docs/CURRENT_STATE.md).
+
+
 **An AI-native financial asset discovery, legacy planning and recovery platform**
 
 *Find what’s yours. Make sure nothing gets left behind.*

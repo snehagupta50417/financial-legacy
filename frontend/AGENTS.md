@@ -11,3 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Project rules
 
 The rules for this repository are in [`../AGENTS.md`](../AGENTS.md). Read them before changing code.
+
+## Implementation reference
+
+The dated implementation/audit baseline is [CURRENT_STATE](../docs/CURRENT_STATE.md). It distinguishes synthetic local acceptance from planned/pilot capabilities and does not override product-document authority. Reconcile documentation when behaviour changes.

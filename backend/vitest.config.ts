@@ -20,6 +20,8 @@ export default defineConfig({
       GEMINI_API_KEY: process.env.LIVE_AI ? (process.env.GEMINI_API_KEY ?? "") : "",
       // A key in backend/.env must never reach the tests (Prisma loads that file).
       SARVAM_API_KEY: "",
+      SARVAM_FALLBACK_API_KEY: "",
+      GEMINI_FALLBACK_API_KEY: "",
       GOOGLE_CLOUD_PROJECT: process.env.LIVE_AI ? (process.env.GOOGLE_CLOUD_PROJECT ?? "") : "",
     },
     // Route tests share one SQLite file; run files serially.

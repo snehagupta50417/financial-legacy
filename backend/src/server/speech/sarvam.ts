@@ -1,3 +1,4 @@
+import { providerKeys, fetchWithProviderKeys } from "@server/core/provider-keys";
 /**
  * Multilingual speech to text through Sarvam (Indian languages and Indian-accented English).
  * The key is read from SARVAM_API_KEY on the server only; the browser never sees it. Audio is sent to
@@ -7,7 +8,7 @@
 
 const ENDPOINT = "https://api.sarvam.ai/speech-to-text";
 
-export const sarvamConfigured = () => !!process.env.SARVAM_API_KEY;
+export const sarvamConfigured = () => providerKeys("SARVAM").length > 0;
 
 /** Languages Sarvam's speech model recognises, by BCP-47 code. */
 export { SPEECH_LANGUAGES as LANGUAGES } from "@shared/languages";
@@ -24,8 +25,7 @@ const extOf = (mime: string) => EXT.find(([re]) => re.test(mime))?.[1] ?? "webm"
 
 /** One utterance (Sarvam's REST limit is about 30 seconds). Language "unknown" lets the model detect it. */
 export async function transcribe(audio: Uint8Array, mime: string, signal: AbortSignal, language = process.env.SARVAM_LANGUAGE || "unknown"): Promise<{ transcript: string; language: string | null }> {
-  const key = process.env.SARVAM_API_KEY;
-  if (!key) throw new SarvamError("not_configured");
+  if (!sarvamConfigured()) throw new SarvamError("not_configured");
   const form = new FormData();
   form.set("file", new Blob([audio as BlobPart], { type: mime }), `speech.${extOf(mime)}`);
   form.set("model", process.env.SARVAM_STT_MODEL || "saaras:v3");
@@ -33,7 +33,7 @@ export async function transcribe(audio: Uint8Array, mime: string, signal: AbortS
   if ((process.env.SARVAM_STT_MODEL || "saaras:v3").startsWith("saaras:")) form.set("mode", "codemix");
   let res: Response;
   try {
-    res = await fetch(ENDPOINT, { method: "POST", headers: { "api-subscription-key": key }, body: form, signal });
+    res = await fetchWithProviderKeys("SARVAM", signal, key => fetch(ENDPOINT, { method: "POST", headers: { "api-subscription-key": key }, body: form, signal }));
   } catch {
     throw new SarvamError("failed");
   }

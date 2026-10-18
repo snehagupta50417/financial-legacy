@@ -8,8 +8,8 @@
 | **Version** | 0.6.3 (draft for review) |
 | **Status** | Complete draft, awaiting product-owner review |
 | **Source of truth** | [ONE_PAGER.md](ONE_PAGER.md). Where this PRD and the one-pager disagree, the one-pager wins and this PRD is corrected. |
-| **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · exact data formats: the Prisma schema and Zod types in [`frontend/`](frontend/) (LLD §5) |
-| **Product status** | Partly built, on synthetic data only, with no live integrations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp) for what exists. Nothing in this document claims a capability already works. |
+| **Related documents** | [BRD.md](BRD.md) — business case · [LLD.md](LLD.md) — how it is built · [DESIGN.md](DESIGN.md) — screens and interaction · exact formats: `backend/prisma/schema.prisma`, server Zod schemas and contracts in `shared/` (LLD §5) |
+| **Product status** | Connected synthetic MVP; implementation is not production acceptance. Supabase persistence, conversation/voice fallbacks, guided outcomes and bounded agent preparation exist. Real financial providers, production Google sign-in and public hosting are not verified. See [CURRENT_STATE](docs/CURRENT_STATE.md) and LLD §20. |
 
 ---
 
@@ -792,7 +792,7 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 | D-06 | Evidence freshness, and how amounts and totals work for each asset type | Product + operations |
 | D-07 | Workload, cost, capacity, recovery, support hours, case limits and service targets | Engineering + operations |
 | D-08 | Distribution, pricing and professional-services model (billing needs a PRD change) | Founder |
-| D-09 | Voice: speech provider, initial languages, recording consent and retention, quality and speed thresholds. **Decided (17 Oct 2026), revised the same day for the free-tier rule (D-14):** recognition by Gemini audio on the free API key or the browser's speech recognition (Vertex AI in Mumbai dropped — it bills; Google Speech-to-Text isn't offered in India), replies by Cloud Text-to-Speech within its free quota or the browser's voice; launch languages English (India), Hindi, Hinglish and Tamil; raw audio not retained. Still open: quality and latency thresholds (proposed in [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md)) | Product + AI |
+| D-09 | Voice implementation: Sarvam STT → same-recording Gemini → browser recognition; browser/Gemini TTS output. Sarvam TTS is not integrated. Latest Gemini TTS quota failed; real-device/per-language quality and latency acceptance remain open. Raw audio is not stored. See docs/VOICE.md. | Product + AI |
 | D-10 | Institution procedures: who keeps them current, how often they are reviewed, and how legal, fraud and complaint escalations work | Operations |
 | D-11 | Whether native mobile apps are needed, and device, session, storage and accessibility rules for them | Product + engineering |
 | D-12 | **Fee model — decided (17 Oct 2026):** flat or capped fees only; no percentage of recovered money; the family signs and submits; no representation before institutions ([docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §2). **The Pilot is free.** Still open: price points and payer after the Pilot (D-08) | Founder |
@@ -899,7 +899,7 @@ Spoken reply availability (FL-01, FL-02): calls must select server speech when n
 Microphone reliability: the browser loudness meter must not discard a captured recording solely because it failed to detect speech. Send bounded, nonempty recordings for transcription, including manual stop; show pending microphone permission and transcription separately. Permission requests must time out visibly and release any stream that arrives after cancellation.
 
 
-Local Supabase persistence validation: synthetic local sessions may use the private PostgreSQL keeper schema without changing Google authentication or production auth requirements. Preserve the SQLite database and generate PostgreSQL separately. Browser speech-service failure must offer explicit retry through server transcription, without pretending microphone permissions can be bypassed.
+Local Supabase persistence validation: synthetic local sessions use the private PostgreSQL keeper schema. SQLite remains separate development/test storage. Google authentication and deployment acceptance remain separate. Browser speech failure offers explicit server retry, never permission bypass.
 
 
 ### Contextual conversation continuity (FL-01, FL-02, FL-27)
@@ -912,3 +912,11 @@ A user may delegate case preparation once. Keeper checkpoints source inspection,
 
 ### Document-to-claim continuity (FL-06, FL-07, FL-12, FL-27)
 Uploaded documents expose a concrete progress checklist: extraction, critical-field review, holding confirmation, authority, claim preparation and external institution verification. After reviewed supporting evidence and explicit holding confirmation for a death case, Keeper idempotently prepares a claim draft and may link the reviewed source policy to its exact requirement. It never accepts fields, confirms holdings, grants authority, accepts declarations, approves or submits on the user’s behalf. Post-review preparation failures must preserve the saved review and expose retry. Each upload/review/confirmation produces an accurate saved conversation update and next record.
+
+### Implementation reconciliation — 18 October 2026
+
+Requirements and proposed release criteria in this PRD are not claims that each capability is accepted. [CURRENT_STATE](docs/CURRENT_STATE.md) records tested implementation and known failures. In particular, voice is built but Gemini TTS quota failed; simulated gates are not real financial verification; source review/confirmation can prepare drafts but never approve or submit them. Saved case work is request-driven, not always-on monitoring. Hosted OAuth, public deployment, all-language/device quality, retention automation, legacy export and live contact sharing remain open. This update changes documentation, not product scope.
+
+### Provider fallback credentials and reply audio (FL-01, FL-02, FL-20, FL-41)
+
+Existing primary provider credentials remain intact. An optional server-only fallback credential for Gemini/Sarvam may be tried on rejected credentials or exhausted quota within the original request deadline. Gemini reply-audio failure can fall back to Sarvam synthesis before browser speech; the same AI consent, redaction, rate limits and synthetic/free-credit policy apply. Never log/return credentials, raw provider errors or retained audio. Unsupported Sarvam output languages remain eligible for browser recovery rather than being silently read in another language. No paid plan, top-up, external submission or financial authority change is implied.

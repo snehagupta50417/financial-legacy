@@ -2,6 +2,7 @@
 // accepts it. Run it yourself from the repository root:
 //   npm run set-key          (Gemini: Keeper's brain and voice)
 //   npm run set-sarvam-key   (Sarvam: speech to text in Indian languages)
+//   npm run set-key-backup / set-sarvam-key-backup   (a second key, used only if the first is rejected or out of quota)
 // A key is never written to any other file, and is sent only to its own provider, to be checked.
 import fs from "node:fs";
 import path from "node:path";
@@ -41,11 +42,15 @@ if (!provider) {
   process.exit(1);
 }
 
+// "backup" stores the secondary key (<PROVIDER>_FALLBACK_API_KEY), used only when the primary is rejected or out of quota.
+const backup = (process.argv[3] || "").toLowerCase() === "backup";
+const envName = backup ? provider.env.replace("_API_KEY", "_FALLBACK_API_KEY") : provider.env;
+
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
 let hidden = false;
 rl._writeToOutput = (s) => { if (!hidden) process.stdout.write(s); else if (s.includes("\n")) process.stdout.write("\n"); };
 
-process.stdout.write(`Paste your ${provider.label} API key (it will not be shown), then press Enter: `);
+process.stdout.write(`Paste your ${backup ? "backup " : ""}${provider.label} API key (it will not be shown), then press Enter: `);
 hidden = true;
 rl.question("", async (answer) => {
   rl.close();
@@ -56,8 +61,8 @@ rl.question("", async (answer) => {
   }
   const base = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : fs.existsSync(examplePath) ? fs.readFileSync(examplePath, "utf8") : "";
   const eol = base.includes("\r\n") ? "\r\n" : "\n";
-  const line = `${provider.env}="${key}"`;
-  const pattern = new RegExp(`^${provider.env}=.*$`, "m");
+  const line = `${envName}="${key}"`;
+  const pattern = new RegExp(`^${envName}=.*$`, "m");
   const next = pattern.test(base) ? base.replace(pattern, () => line) : base + (base && !base.endsWith("\n") ? eol : "") + line + eol;
   fs.writeFileSync(envPath, next);
   console.log("Saved to backend/.env (this file is git-ignored).");

@@ -16,3 +16,4 @@
 - [ ] Docs updated in this PR if behaviour, data or rules changed (PRD for product behaviour, LLD for design, DESIGN for screens, DECISIONS.md for implementation decisions)
 - [ ] No real personal data, secrets or `.env` files committed
 - [ ] Anything simulated is labelled "Simulated" in the UI
+- [ ] Implementation status and relevant setup/voice/workflow docs agree with this change; planned or simulated capabilities remain explicit ([CURRENT_STATE](../docs/CURRENT_STATE.md))

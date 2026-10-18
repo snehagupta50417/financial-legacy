@@ -7,7 +7,7 @@
 | **Owner** | Product + AI (PRD decision D-09 for voice thresholds) |
 | **Required by** | [PRD FL-53](../PRD.md#102-ai-requirements) and the Pilot entry criteria ([PRD §15.2](../PRD.md#152-pilot--may-start-when)) |
 | **Applies to** | Everything the AI does in [LLD §13](../LLD.md#13-ai-layer): intake classification, document extraction, death-certificate reading, case Q&A, drafts and checklists, and voice ([LLD §14](../LLD.md#14-voice)) |
-| **Status** | Plan only. No evaluation set exists yet; building it is LLD build step B10. |
+| **Status** | Regression/retrieval fixtures and OCR/voice/workflow tests exist; the larger corpus and acceptance thresholds below remain a plan. See [CURRENT_STATE](CURRENT_STATE.md) for 288 dated automated checks and the live TTS quota failure. |
 
 ---
 
@@ -22,7 +22,7 @@ The AI reads documents that decide who can claim what. A misread account number 
 
 ## 2. The evaluation set
 
-Stored in the repository under `backend/test/eval/` (to create), each item with an expected answer ("golden" file) written by a person.
+The proposed larger corpus belongs under `backend/test/eval/`, with human-checked golden answers. Existing retrieval/route fixtures are not equivalent to this complete document/voice corpus.
 
 | Group | Items (minimum) | Variations to include |
 | --- | --- | --- |
@@ -109,11 +109,11 @@ These are starting points to confirm under D-09 / D-07. Thresholds apply per doc
 | When | What runs |
 | --- | --- |
 | Every PR (CI) | The fixture provider: fast checks that prompts, parsing and Zod validation still work. No model calls |
-| Nightly, and before every release | Full evaluation against the pinned Gemini model (`LIVE_AI=1`), results saved with model, model version, prompt-template version and date |
+| Proposed nightly/pre-release acceptance (not an installed scheduled job) | Full evaluation against the pinned Gemini model (`LIVE_AI=1`), results saved with model, model version, prompt-template version and date |
 | Before changing model, prompt or provider | Full evaluation; compare with the previous run; no regression on any critical-field group without a written decision |
 | Before the Pilot | Full evaluation plus a human review of 10% of passing items |
 
-**Report format:** one table per document group with accuracy per critical field, a list of every zero-tolerance hit (expected: none), the worst 10 errors with examples, and the comparison with the previous run. Saved under `backend/test/eval/results/` and linked from the release notes.
+**Report format:** one table per document group with accuracy per critical field, a list of every zero-tolerance hit (expected: none), the worst 10 errors with examples, and the comparison with the previous run. Proposed destination: `backend/test/eval/results/`, linked from release notes; do not imply every scheduled run or report already exists.
 
 ## 7. Building the set — practical steps
 
@@ -128,3 +128,7 @@ These are starting points to confirm under D-09 / D-07. Thresholds apply per doc
 - Synthetic documents can't capture every real-world format; Pilot monitoring (corrections per field, FL-54) is the real test.
 - Accuracy on the set is not accuracy on real cases; never present these numbers externally as product accuracy.
 - Voice thresholds depend on the provider and languages chosen under D-09.
+
+## Current evidence and limits — 18 October 2026
+
+Automated checks: 213 backend (207 regression + six OCR separately), 75 frontend. Latest live synthetic journey passed 17 checks and failed Gemini TTS; direct diagnosis returned 429 RESOURCE_EXHAUSTED. Separate English STT passed. Real microphone/acoustic quality, all languages, noisy/handwritten/multilayout documents, accessibility and production load remain unaccepted. Do not convert test counts into model accuracy, latency percentiles or a production approval. See [VOICE](VOICE.md).

@@ -4,12 +4,12 @@
 
 | | |
 | --- | --- |
-| **Version** | 0.6 (draft for review) |
-| **Date** | 17 October 2026 |
+| **Version** | 0.6.1 (implementation reconciliation; draft for review) |
+| **Date** | 18 October 2026 |
 | **Sources of truth** | [ONE_PAGER.md](ONE_PAGER.md) (vision) → [PRD.md](PRD.md) (what the product does) → this LLD (how it is built). If this LLD conflicts with the PRD, the PRD wins and this LLD is corrected. |
 | **Describes** | The real codebase: [`frontend/`](frontend/) (Next.js UI), [`backend/`](backend/) (the API: Hono + TypeScript + Prisma + Gemini) and [`shared/`](shared/) (types and pure claim rules), targeting two Google Cloud Run services (deployment is milestone M7, not yet done). **Free tier only** — every service must be free or within existing free credits ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)). |
 | **Replaces** | LLD v0.4 (separate Python/FastAPI backend, Keycloak, Docker). That design is no longer the target. The separate hackathon plan (`BACKEND_PLAN.md`) was folded into §21 and removed; it remains in git history. |
-| **Status** | Built: M0–M3, the document pipeline with OCR, grounded Q&A (RAG), evidence statuses and field review (B4), claims (B6), tests and CI (B1). Not built: real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see §20. |
+| **Status** | Connected synthetic MVP: local Supabase persistence, saved conversations, guided searches, voice fallbacks, bounded agent work and document-to-claim continuation are implemented. Production OAuth/hosting, device voice and real institution providers remain unverified. See [CURRENT_STATE](docs/CURRENT_STATE.md). |
 
 ---
 
@@ -91,7 +91,7 @@ These turn the PRD's product principles into engineering rules.
  │   pdf/            claim-pack PDF (pdf-lib)
  │   data/           official resources · demo data · synthetic registries
  ▼
- Prisma ─► SQLite (v0) ─► permanent free database (open decision — FREE_TIER_PLAN §3)
+ Prisma ─► Supabase PostgreSQL (validated local runtime) / SQLite (development and tests)
  Gemini API key, free tier (text, vision, embeddings; synthetic data only)
 
  shared/   types.ts · contracts.ts (ClaimView, agent actions) · claim-path · claim-pack · claim-lifecycle ·
@@ -121,16 +121,16 @@ These turn the PRD's product principles into engineering rules.
 | Web framework | Next.js 16 (App Router), React 19, TypeScript 5 | `frontend/AGENTS.md`: read the bundled Next.js docs before changing framework code — this version has breaking changes |
 | UI | Tailwind CSS 4, shadcn/ui (Radix), lucide icons, sonner toasts, framer-motion | Accessible primitives from Radix |
 | Validation | Zod 4 at every API boundary | Enums enforced by Zod (SQLite has no native enums) |
-| Database | Prisma 6; **SQLite in v0**; the permanent database is an open decision limited to free options ([FREE_TIER_PLAN §3](docs/FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)) — Cloud SQL is not free | Provider switch only; no raw SQL |
+| Database | Prisma 6; Supabase PostgreSQL private `keeper` schema, separate generated client and `@prisma/adapter-pg`; SQLite remains local/test | Strict CA/hostname verification; explicit schema setup |
 | AI | Google Gemini via `@google/genai`, **free-tier API key** (Vertex AI code path kept but not used — it bills) | Provider interface + fixture provider for tests (§13) |
 | PDF text | `unpdf` | Text layer first; scanned pages are rendered to images (`@napi-rs/canvas`) for OCR |
 | OCR | `tesseract.js` (WASM, runs on the server) | English + Hindi by default (`OCR_LANGS`); used when there is no AI key or Gemini fails (§8.1) |
 | Claim pack PDF | `pdf-lib` (MIT) | Standard fonts; "₹" written "Rs." (§11.3) |
-| Tests | Vitest (unit and route); Playwright (end-to-end, to add) | 159 tests: `backend/test/` (136) and `frontend/test/` (23); GitHub Actions CI on every PR (§19) |
+| Tests | Vitest unit/route/integration; isolated SQLite fixtures; separate live synthetic probes | 18 Oct audit: 213 backend including 6 OCR, 75 frontend; see §19 |
 | Deploy | Google Cloud Run, **from source via buildpacks — no Docker** | `npm run build`, `npm start`, listens on `$PORT` |
 | Secrets | Google Secret Manager | Never in the repo |
 
-`next-auth` and `next-intl` were removed (unused). Real sign-in (B3) uses Google sign-in through Identity Platform / Firebase Authentication, free up to 50,000 monthly active users.
+`next-auth` and `next-intl` were removed (unused). Google sign-in (B3) is implemented through Supabase Auth; provider configuration and hosted acceptance remain pending.
 
 ---
 
@@ -186,7 +186,7 @@ The Prisma schema in `backend/prisma/schema.prisma` is the **source of truth for
 
 | Model | Purpose | PRD concept |
 | --- | --- | --- |
-| `Session` | Anonymous browser session (v0 identity) | Participant (temporary) |
+| `Session` | Synthetic browser session locally; `supabase:<verified-user-id>` in hosted mode | Participant (temporary) |
 | `LegacyCase` | One case (with `keeperUi`, Keeper's redacted saved conversation and draft state): type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
 | `DeceasedPerson` | Name, name variants, DOB, PAN **hash**, date of death, death-proof status | Subject (deceased) |
 | `Claimant` | Relationship, role (lead / co-heir), identity and relationship status | Participant + role |
@@ -198,11 +198,12 @@ The Prisma schema in `backend/prisma/schema.prisma` is the **source of truth for
 | `KnowledgeChunk` | Search index for the assistant: procedure library and case document chunks, optional vectors | — (RAG, §13.5) |
 | `Claim`, `ClaimPack`, `Approval`, `ClaimEvent` | One claim per holding; versioned pack snapshots with hash; approval of an exact pack; claim timeline | Claim, claim pack, approval |
 | `JourneyTask` | Task with instructions, official URL, required documents, dependencies, priority, next-best flag | Task |
-| `ConsentRecord` | Per case and source: purpose, scope, status, expiry, revocation | Consent |
+| `ConsentRecord` | Session-scoped purposes and optional case/source context, status and revocation | Consent |
 | `CaseEvent` | Append-only case timeline with event type and actor | Audit event |
 | `IntakeMessage`, `QaMessage` | Intake conversation; saved assistant answers | Conversation |
+| `CaseAgentRun`, `ClaimWorkflow` | Durable case preparation and claim review: revisions, cursors, leases, receipts and retries | Agent work |
 
-Removed on 17 Oct 2026 because no code used them: `UserProfile`, `Signal`, `Institution`, `Draft`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`, and the holding fields `verificationStatus`, `sourceSignalIds`, `institutionId`. Each comes back with the build step that needs it (e.g. a search-visit model with B5).
+Removed on 17 Oct 2026 because no code used them: `UserProfile`, `Signal`, `Institution`, `Draft`, `ResourceVisit`, `InstitutionClaim`, `CheckResult`, and the holding fields `verificationStatus`, `sourceSignalIds`, `institutionId`. Reintroduce a removed model only when an implementation needs it; guided-search outcomes now use case events instead of restoring ResourceVisit.
 
 ### 5.2 Changes required for the PRD MVP
 
@@ -213,14 +214,14 @@ Removed on 17 Oct 2026 because no code used them: `UserProfile`, `Signal`, `Inst
 | **Built (#14):** `DocumentField` (per-field `state: proposed \| accepted \| corrected \| rejected`, `proposedValue`, `value`, `critical`, reviewer, reason) + append-only `FieldReviewEvent` (from/to state and value, reason, actor). `extractedFields` JSON keeps the AI's original proposal | Critical fields must be reviewed before use | FL-06, FL-26 |
 | **Built (#16):** `Approval`: exact content hash, recipient, channel, purpose, expiry, state (active / used / expired / invalidated) | Approval of exactly what is sent | FL-14 |
 | **Built (#16):** `Claim` (one per holding) with status, path, situation, procedure id/version/check date, checklist, declarations, owner and due date, submission and outcome; `ClaimPack` is now a versioned snapshot per claim (content + hash); `ClaimEvent` timeline; `AssetRecord.nomineeStatus` / `jointHolderStatus` | Claims tracked independently to an outcome | FL-09, FL-12–FL-16 |
-| Add a search-visit model: portal, outcome (found / not found / partial / blocked / failed), resulting potential match | Guided discovery outcomes | FL-10 |
+| **Built:** scoped dated guided-search outcomes in `guided_search` case events with request-ID deduplication | Self-reported search history, never verified ownership | FL-10 |
 | Add `Hold`: scope, reason, created/resolved by | Pause specific actions | FL-47 |
 | Add `LegacySnapshot`: frozen record, date, known gaps; `TrustedContact` (intent only) | Legacy planning | FL-11, FL-31, FL-34 |
-| Add `User` + real auth link; replace session-only ownership | Real sign-in | FL-45, FL-48 |
+| **Built:** Supabase verified-user ownership mapped to Session; Google OAuth/PKCE endpoints | Hosted/provider configuration still pending | FL-45, FL-48 |
 | **Built:** money as **decimal strings** (`Observation.amount`, `Claim.outcomeAmount`), never floats | Exact amounts | FL-29 |
 | **Built:** `insurance` category with the LIC claim procedure | Life insurance is in the MVP | PRD §8.1 |
 
-Until the permanent database is chosen, schema changes are applied with `prisma db push` (no migration files). Once it is chosen, switch to versioned migrations (`prisma migrate`). Changes are reflected in `src/lib/types.ts`.
+Supabase PostgreSQL is selected. The canonical Prisma schema remains SQLite for tests; `scripts/database.mjs` derives a separate PostgreSQL schema/client. Setup is explicit; existing hosted data requires reviewed additive migrations. Startup never initialises or resets data. Contracts live in `shared/`.
 
 ---
 
@@ -334,7 +335,7 @@ upload ─► validate (size ≤ MAX_UPLOAD_MB, magic-byte type sniffing: PDF, P
 ### 9.1 MVP discovery
 
 1. **Documents** the user uploads (statements, CAS, policy bonds, passbooks) → extraction (§8) → holdings.
-2. **Guided official searches** from `backend/src/server/data/resources.ts` (RBI UDGAM, SEBI MITRA / MFCentral, IRDAI Bima Bharosa and insurer searches, the government common landing portal; **IEPF is Later**, with shares and dividends). **To build (B5)** — today only the resources directory exists; a search-visit model will be added. The product will:
+2. **Guided official searches:** the resources directory and saved outcomes are built. `GET/POST /api/cases/:id/searches` stores dated scoped self-reported outcomes in case events, with request-ID deduplication. The product supports:
    - proposes which searches fit this case (discovery plan, FL-10);
    - opens the official portal for the user (a visit is recorded);
    - asks the user to log the outcome — **found / not found / partial / blocked** (e.g. the portal needs an identifier the family doesn't have) **/ failed** (portal unavailable) — recorded on the visit;
@@ -439,10 +440,12 @@ DRAFT → AUTHORITY_REVIEW → DOCUMENT_COLLECTION → PACK_REVIEW → READY_FOR
 
 **PRD:** FL-11, FL-31, FL-34 (MVP); FL-32, FL-33 (Later). The AI does not draft wills (PRD §3.3): the `will` draft kind was removed and replaced by "notes for your lawyer" (`lawyer_notes`).
 
-To build:
+Built: saved family notes, inventory gaps, planning drafts and contact-scope previews through the Keeper UI state. These are not a verified sharing or release service.
 
-- **Legacy record:** the planner's reviewed inventory plus a checklist — missing nominees, missing documents, stale records (older than the configured freshness), open steps.
-- **Trusted contacts:** stored as **intent only**. Adding or changing one sends nothing and grants no access.
+Remaining:
+
+- **Reviewed snapshots/freshness:** a frozen reviewed inventory and consistently enforced freshness policy.
+- **Trusted contacts:** current previews are intent only; verified recipients, sharing and release are not implemented.
 - **Snapshot and export:** `LegacySnapshot` freezes the reviewed record with date and known gaps. Export requires owner approval, uses a short-lived download link, is audited, and warns that downloaded copies cannot be recalled.
 
 ---
@@ -500,7 +503,7 @@ question ─► sync procedure library (once per process; changed passages repla
 ```
 
 - **Two sources.** The **procedure library** (`library.ts`) is a plain-language summary of each official source in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md) — RBI, SEBI, IRDAI, LIC, discovery portals — plus the official resources directory. Each passage carries the link and the date it was checked; passages not confirmed on an official page say so in their text. **Case documents** are the same redacted text the family can open in field review, searched only once `canDiscover()` is true, and redacted again on the way out.
-- **Storage:** `KnowledgeChunk` (scope `library` or `case`; vectors as JSON with the model name). If the permanent database is Postgres, the vector column becomes pgvector; nothing else changes.
+- **Storage:** `KnowledgeChunk` (scope `library` or `case`; vectors as JSON with the model name). PostgreSQL currently keeps these JSON vectors too; pgvector is not installed or implied by the provider switch.
 - **Without a key:** search is keyword-only and the route returns the best-matching passages (`mode: "passages"`) instead of a 503.
 - **Response:** `{ mode, answer, sources[{ n, kind, title, publisher, url, checkedOn, documentId, excerpt }], grounded, retrieval, caseDocumentsSearched }`. The panel lists the cited sources; official pages open in a new tab, documents open in the case. Answers are saved to `QaMessage`.
 - **Quality:** `test/rag.test.ts` holds an evaluation set of family questions → the passage(s) that answer them; each must be in the top 3 with keyword search alone, and top-1 accuracy must stay ≥ 75%. Add a question whenever a passage is added.
@@ -510,23 +513,17 @@ question ─► sync procedure library (once per process; changed passages repla
 
 ## 14. Voice
 
-**PRD:** FL-20, FL-41 — **MVP requirement, not built.**
+**PRD:** FL-20, FL-41. Implemented with unresolved provider/device acceptance; see [VOICE](docs/VOICE.md).
 
 ### 14.1 Design
 
-- **Typed adapters:** `SpeechInput` (speech-to-text) and `SpeechOutput` (text-to-speech) under `backend/src/server/voice/`, same pattern as the AI provider.
-- **Provider (D-09, revised 17 Oct 2026 for the free-tier rule):** recognition with **Gemini audio understanding on the free API key** (synthetic data only) or the browser's built-in speech recognition; spoken replies with **Cloud Text-to-Speech** inside its free monthly quota (4M Standard / 1M Neural2 characters) or the browser's built-in voice. The earlier plan (Gemini on Vertex AI in Mumbai) is dropped because Vertex bills; Google Speech-to-Text is not offered in India and only 60 minutes a month are free. Choose at B8 after evaluating Hindi, Hinglish and Tamil. See [docs/FEASIBILITY_AND_COMPLIANCE.md](docs/FEASIBILITY_AND_COMPLIANCE.md) §7 and [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md).
-- **Launch languages:** **English (India), Hindi, Hinglish (mixed Hindi-English) and Tamil.** Each must pass its own evaluation ([docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) §3.4) before it is offered.
-- **Region:** the Gemini API key endpoint doesn't let us choose a region; any processing outside India is disclosed ([docs/PRIVACY_ASSESSMENT.md](docs/PRIVACY_ASSESSMENT.md) §6).
-- **Flow:** user taps the mic (explicit action + browser permission) → audio streamed to the server → transcript shown for correction → corrected text sent through the normal conversation route → reply shown and optionally spoken.
-- Raw audio is **not stored** by default; transcripts follow the conversation's retention.
-- Names, account numbers and amounts from speech are always shown for correction before use.
-- Stop, case switch or permission revocation cancels capture and playback.
-- Voice never approves an action, verifies identity or changes an accepted fact.
+Explicit capture uses frontend recorder/SpeechInput helpers in `frontend/src/keeper/voice.ts`, server transcription in `backend/src/server/speech/` and `POST /api/stt`. Input order: Sarvam, same-recording Gemini fallback, browser recognition where available. AI consent, MIME/size limits, rate limits and bounded requests apply. Quiet nonempty recordings are sent rather than discarded by amplitude. Permission waits time out visibly and late streams are released.
+
+Browser speech and Gemini TTS provide replies; failures preserve text and show an unavailable notice. Sarvam TTS is not integrated into reply output. No Cloud Speech/TTS or Vertex service is required. Raw audio is not stored. Typed/manual transcript input remains available; endpointing can send completed call turns automatically. Approval remains structured.
 
 ### 14.2 Done when
 
-Real microphone → transcript → corrected message → spoken reply works in all three journeys on desktop and mobile browsers, including: denied permission, silence, noise, stopping mid-reply, switching to text, Indian names, mixed language and spoken numbers — measured per supported language against D-09 thresholds.
+Latest synthetic English STT passed HTTP 200; Gemini TTS returned 429 quota exhaustion (app 503). Actual microphone capture/audible playback require device acceptance. Test each language with noise, accents, quiet speech, interruption, denial and case switching. All-language reliability/full-duplex real-time voice is not claimed.
 
 ---
 
@@ -535,11 +532,11 @@ Real microphone → transcript → corrected message → spoken reply works in a
 ### 15.1 Conventions
 
 - Route handlers are thin: **validate (Zod) → call `src/server` → respond.**
-- Identity: `x-session-id` header in v0 (G0); real authenticated sessions in the MVP (§16.1).
+- Identity: `x-session-id` only in explicit local synthetic demo mode; hosted mode verifies Supabase identity (§16.1).
 - Errors: non-2xx with `{ "error": string }` plus `nextGate` (403) or `frozen` (423) where relevant.
-- Status codes: 400/422 validation, 403 gate locked, 404 not found or not yours, 409 version conflict (to add), 413 too large, 415 unsupported file, 423 frozen, 429 rate limited, 503 AI not available.
+- Status codes: 400/422 validation, 403 gate locked, 404 not found or not yours, 409 version conflict, 413 too large, 415 unsupported file, 423 frozen, 429 rate limited, 503 AI not available.
 - JSON-in-string database fields are always parsed before responding.
-- **To add for the MVP:** idempotency keys on retryable writes (FL-36), version checks (`If-Match`) on mutable records, cursor pagination on lists.
+- Retry safety exists for search request IDs, agent turns, claim creation and workflow revisions/leases. General mutable-record versioning and cursor pagination are not universal.
 
 ### 15.2 Endpoints
 
@@ -558,18 +555,24 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | PATCH | `/api/tasks/:id` | Update a journey task | Owner | Built |
 | POST | `/api/ai/ask`, `/api/ai/draft`, `/api/ai/checklist` | Q&A, drafts, checklists | Owner | Built |
 | GET/POST | `/api/consent` | Consent per case and source | Owner | Built |
-| GET | `/api/cases/:id/messages` | Restore intake chat | Owner | To build |
-| GET | `/api/cases/:id/audit` | Audit trail for the user | Owner | To build |
+| GET | `/api/cases/:id/messages` | Restore saved messages | Owner | Built |
+| GET/PUT | `/api/cases/:id/keeper` | Saved conversation/UI state; activity is returned by the case workspace | Owner | Built |
 | POST | `/api/claims` | Start a claim for a confirmed holding (idempotent) | G3 | Built |
 | GET / PATCH | `/api/claims/:id` | Claim, path, pack, timeline / answers, checklist, declarations | G3 (pack shown at G4) | Built |
 | POST | `/api/claims/:id/approve` | Approve the exact pack (hash) | G4 | Built |
 | GET | `/api/claims/:id/pack` | Approved pack as PDF | G4 + live approval | Built |
 | POST | `/api/claims/:id/submission`, `/api/claims/:id/update` | Record submission; record what the institution did, outcome, reopen | G4 | Built |
 | PUT | `/api/documents/:id/review` | Per-field review decisions | G3 for deceased | Built |
-| POST | `/api/resources/:id/visit`, `/api/visits/:id/outcome` | Guided official search | G0 / G3 | To build |
+| GET/POST | `/api/cases/:id/searches` | Scoped dated search outcomes/history | Discovery | Built |
 | POST | `/api/cases/:id/legacy/snapshot`, `/api/legacy/:id/export` | Legacy snapshot and export | Owner | To build |
-| POST | `/api/voice/session`, `/api/voice/transcript` | Voice capture and transcript | Owner | To build |
-| DELETE | `/api/cases/:id`, `/api/session` | Delete case / all my data | Owner | To build |
+| POST | `/api/stt`, `/api/ai/speak` | Transcription / server reply audio | Session + AI consent | Built; quota/device limits |
+| DELETE | `/api/privacy/data` | Delete Keeper app records after confirmation | Session/account owner | Built |
+| GET/POST | `/api/documents/:id/progress` | Document checks / retry preparation | Discovery | Built |
+| GET/POST | `/api/cases/:id/agent-work` | Bounded preparation, pause/resume/reconcile | Discovery | Built |
+| GET | `/api/cases/:id/evidence` | Canonical evidence graph | Discovery | Built |
+| GET/POST | `/api/claims/:id/workflow`; POST `/api/workflows/:id/advance` | Saved claim review | Discovery | Built |
+| GET | `/api/ready` | Configured readiness | Route-specific | Built |
+| — | `/api/auth/*` | OAuth/PKCE/config/session/logout; exact methods in code | Route-specific | Built; provider setup pending |
 | — | `/api/cases/:id/connectors/*`, `/api/console/*` | Connectors, Verify console | — | Later (§22) |
 
 
@@ -581,8 +584,9 @@ Real microphone → transcript → corrected message → spoken reply works in a
 
 ### 16.1 Authentication
 
-- **v0 (built):** anonymous session UUID in `localStorage`, sent as `x-session-id`. Acceptable only for synthetic demo data.
-- **MVP (to build, B3):** **Google sign-in** through Identity Platform / Firebase Authentication — free up to 50,000 monthly active users (3,000 a day on the Spark plan). **Phone OTP is dropped** under the free-tier rule (17 Oct 2026): SMS is billed per message beyond 10 a day and Indian DLT registration has costs. The earlier phone-OTP decisions (DECISIONS.md) are superseded. The server issues its own session after Google sign-in. Server-side session, HttpOnly + Secure + SameSite cookies, idle and absolute expiry, fresh re-authentication (≤5 minutes) for approvals, exports and consent changes. Cases owned by `User`, not by browser session.
+Local `AUTH_MODE=demo` accepts synthetic browser sessions. Hosted mode verifies the Supabase user, uses OAuth/PKCE, state and HttpOnly cookies, and maps ownership to immutable account identity. Browser headers cannot grant hosted access. Google OAuth code is built; the inspected project has Google disabled and hosted acceptance remains pending. Do not infer a dedicated User table, completed fresh re-authentication for every sensitive operation or financial authority from login. Phone OTP is excluded.
+
+Access denials are recognised across Response constructor realms used by the Node adapter. Foreign document/asset/claim IDs, freeze and discovery gates are enforced in code.
 
 ### 16.2 Data protection (built unless noted)
 
@@ -600,16 +604,16 @@ Real microphone → transcript → corrected message → spoken reply works in a
 
 ### 16.3 Audit
 
-`CaseEvent` is the append-only trail (actor, event type, time). **To build:** record every sensitive read, export, approval and outside action with actor, case, object, reason and request ID; expose it to the user (`/api/cases/:id/audit`); never put secrets or document contents in audit or application logs (FL-18).
+`CaseEvent` records case activity and is displayed through the workspace/activity view. Field review and claim/agent receipts retain their own histories. General sensitive-read auditing, immutable external audit retention and operator review remain open. No `/audit` route is implemented; do not put secrets or source contents in logs.
 
 ### 16.4 Deletion and retention
 
-To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes access immediately, cancels pending work and purges derived copies; retention periods set by D-05; backups expire on a schedule and restores honour deletion markers.
+**Built (FL-19):** `DELETE /api/privacy/data` requires DELETE confirmation and removes the requesting session/account's Keeper records with cascades and auth-cookie clearing. Google/Supabase identities, provider copies and all backups are outside this deletion. Retention automation, legal-hold exceptions and restore/deletion reconciliation remain open.
 
 ### 16.5 Before real data
 
 1. Real authentication (Google sign-in).
-2. A permanent database (FREE_TIER_PLAN §3).
+2. Production PostgreSQL recovery, backup/retention and account-isolation acceptance (FREE_TIER_PLAN §3).
 3. Malware scanning.
 4. AI terms that allow personal data — the free Gemini tier does not (FREE_TIER_PLAN §4) — or real cases run without AI.
 
@@ -625,8 +629,8 @@ To build (FL-19): delete case and delete-all-my-data endpoints; deletion revokes
 ### 17.1 Deployment
 
 - **Google Cloud Run**, deployed **from source with buildpacks** (`gcloud run deploy --source .` or continuous deployment from the repository), as **two services**: `backend/` first, then `frontend/` built with `BACKEND_URL` set to the backend's URL. **No Dockerfile, docker-compose or Caddy.**
-- Backend scripts: `build` = `prisma generate`; `start` = `prisma db push --skip-generate && tsx src/index.ts` (v0 SQLite); `postinstall` = `prisma generate`. Frontend: `build` = `next build`; `start` = `next start`.
-- **Database:** on Cloud Run, SQLite in `/tmp` (`DATABASE_URL=file:/tmp/finlegacy.db`) is wiped on every restart — demos only. The permanent database is an open, free-only decision ([FREE_TIER_PLAN §3](docs/FREE_TIER_PLAN.md#3-decision-needed-the-permanent-database)); once chosen, use versioned Prisma migrations (`prisma migrate deploy`). Environments: development now; production only when real users are approved. Setup: [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Cloud Run runs with minimum instances 0 so nothing bills while idle.
+- Backend scripts: `build` generates the selected client through `scripts/database.mjs`; `start` runs `tsx --env-file-if-exists=.env src/index.ts`; `postinstall` generates the SQLite client. Setup is explicit, never part of startup. Frontend: `build` = `next build`; `start` = `next start`.
+- **Database:** external Supabase PostgreSQL, private `keeper` schema, strict TLS and small pool. Hosted startup rejects SQLite. See [HOSTED_MVP_SETUP](docs/HOSTED_MVP_SETUP.md); public deployment is not established by local tests.
 
 ### 17.2 Operating
 
@@ -647,7 +651,7 @@ Used to measure FL-52 before agreeing production targets (D-07): one Cloud Run i
 
 ### 17.5 Demo operations
 
-Demo cases are loaded fresh per session with `POST /api/demo`; a separate reset endpoint isn't needed while SQLite resets on restart. Every demo and mock is visibly labelled "Simulated".
+Demo fixtures are created through `POST /api/demo`; persistent storage survives ordinary restarts. Use scoped deletion or disposable test databases for cleanup; never assume restart resets data. Every demo and mock is visibly labelled "Simulated".
 
 ---
 
@@ -657,7 +661,15 @@ Backend variables are listed in `backend/.env.example`; the frontend has one, `B
 
 | Variable | Purpose | Used now |
 | --- | --- | --- |
-| `DATABASE_URL` | Prisma connection | Yes |
+| `DATABASE_URL`, `KEEPER_DB_PROVIDER` | Select SQLite or private-schema PostgreSQL and its separate client | Yes |
+| `AUTH_MODE` | Local synthetic demo or verified Supabase identity | Yes |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (legacy `SUPABASE_ANON_KEY`) | Hosted account authentication | Code built; provider setup pending |
+| `PUBLIC_APP_URL` | Same-origin OAuth/cookie origin; HTTPS required in production | Yes |
+| `PORT` | API listen port; Cloud Run provides it | Yes |
+| `BACKEND_URL` (frontend build) | Same-origin API proxy target; rebuild when changed | Yes |
+| `SARVAM_API_KEY`, `SARVAM_STT_MODEL`, `SARVAM_LANGUAGE` | Primary speech transcription and language hint | Yes |
+| `GEMINI_AGENT_MODEL`, `GEMINI_STT_MODEL` | Agent/transcription model overrides | Yes |
+| `GEMINI_TTS_MODEL`, `GEMINI_TTS_VOICE` | Server speech output; provider quota applies | Yes |
 | `GEMINI_API_KEY` | Gemini API key, free tier (Secret Manager on Cloud Run) | Yes |
 | `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI — kept for a future paid setup; leave empty | Read, not used |
 | `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | Model selection | Yes |
@@ -671,13 +683,13 @@ Backend variables are listed in `backend/.env.example`; the frontend has one, `B
 
 Unused variables (connector modes, console key, demo mode, log level) were removed from `.env.example` on 17 Oct 2026; they return with the feature that needs them.
 
-**To build:** startup should refuse to run in production when `PAN_HASH_SECRET` is missing or when demo data would be served to real users.
+Production startup validates PostgreSQL/private schema, Supabase authentication configuration and HTTPS origin. PAN hashing separately requires its configured HMAC secret in production. Passing startup is not proof of provider setup, device voice or hosted acceptance.
 
 ---
 
 ## 19. Testing and evaluation
 
-**PRD:** FL-53, FL-55; PRD §15.1. **Current state:** 159 Vitest tests: 136 in `backend/test/` and 23 in `frontend/test/` — route tests against a throwaway SQLite database, the fixture AI provider, and no network calls to a model. Covered: intake fallback, journey stages, synthetic demo data, document text access, OCR and no-AI extraction, RAG retrieval with an evaluation set, field review, evidence statuses, amounts and totals, duplicates, claim paths, packs, approval and the claim lifecycle. **Not yet covered by dedicated tests:** the gate engine, masking, name matching, redaction and upload validation on their own (they are exercised indirectly by route tests).
+**PRD:** FL-53, FL-55; PRD §15.1. **18 Oct audit:** 213 backend tests (207 regression + 6 OCR separately) and 75 frontend tests passed. Live synthetic probes separately exercised persistence, AI and STT; Gemini TTS exhausted quota. These do not establish real-device/all-language/security/accessibility acceptance. See [CURRENT_STATE](docs/CURRENT_STATE.md) and [AI_EVALUATION](docs/AI_EVALUATION.md).
 
 | Level | Tool | Must cover |
 | --- | --- | --- |
@@ -696,23 +708,20 @@ Unused variables (connector modes, console key, demo mode, log level) were remov
 
 ## 20. Gap analysis against the PRD MVP
 
-| Area | PRD | Built | Gap |
-| --- | --- | --- | --- |
-| Intake and journeys | FL-01, FL-02, FL-22 | Intake with AI + fallback; 7 case types; journey engine | Restore chat (`/messages`); user correction of journey type |
-| Trust gates and authority | FL-03, FL-04, FL-23 | G0–G4 with mock providers; guards; freeze; masking | Proof expiry, reviewer/reason, operator unfreeze, real providers |
-| Real sign-in | FL-45, FL-48 | Session UUID only | **Google sign-in** (free); cases owned by users |
-| Database | FL-51 | SQLite (wiped on Cloud Run restart) | **Choose a free permanent database** (FREE_TIER_PLAN §3); migrations |
-| Documents | FL-05, FL-06, FL-25, FL-26 | Upload, sniffing, extraction (AI, OCR, rules), redaction; per-field review with history (#14); claim packs invalidated on a material change (#16) | Malware scan (no free option chosen) |
-| Discovery | FL-10 | Resources directory | Discovery plan; search-visit model; outcome logging; no-result/partial states |
-| Evidence and totals | FL-07–FL-09, FL-28, FL-29 | Four evidence statuses, append-only observations, honest totals, duplicate review (#14); nominee and joint-holder information (#16) | Holds (B9) |
-| Insurance in MVP | PRD §8.1 | LIC death-claim procedure and pack (#16) | Procedures for other insurers |
-| Claims | FL-12–FL-17, FL-36, FL-37 | Claim model, versioned procedures, path rules, packs + PDF, hash-bound approval, manual submission, outcomes, reopen (#16) | Operator review queue for claims sent to review (B9); reminders on due dates (B9) |
-| Legacy | FL-11, FL-31, FL-34 | Legacy gaps list; "notes for your lawyer" drafts (no will drafting) | Legacy record, trusted contacts (intent), snapshot, export |
-| AI | FL-38–FL-40, FL-46, FL-53 | Gemini, fallbacks; grounded Q&A with retrieval and citations (§13.5); retrieval evaluation set; synthetic data only | Case-manager coordinator; full AI evaluation set (AI_EVALUATION); per-answer model logging; AI terms that allow personal data — not available on the free tier (FL-46) |
-| Voice | FL-20, FL-41 | — | **Not started**; free-tier provider to choose at B8 |
-| Tasks and operations | FL-42–FL-44, FL-47, FL-49 | Journey tasks; versioned claim procedures (#16) | In-app reminders; operator queue; holds; help/complaints |
-| Audit, deletion | FL-18, FL-19 | `CaseEvent` timeline | User-visible audit; delete endpoints; retention |
-| Quality | FL-50–FL-55 | 106 tests, GitHub Actions CI (type-check, lint, tests, build) | Dedicated unit tests for gates, masking, redaction, upload; end-to-end tests; accessibility checks; metrics |
+| Area | Built/verified locally | Open |
+| --- | --- | --- |
+| Conversation | AI/rules, saved messages and return briefing | Larger quality/latency corpus |
+| Authority | Deterministic gates, masking, freeze, mock providers | Real providers, proof expiry, operator review/unfreeze |
+| Authentication | Supabase Google OAuth/PKCE and account guards | Provider setup and hosted acceptance |
+| Persistence | Supabase PostgreSQL, strict TLS, restart checks; SQLite tests | Production recovery, backup/retention policy and migrations |
+| Documents | OCR/extraction/redaction/review; document-to-claim progress | Malware scan; broad handwriting/layout/language evaluation |
+| Discovery/evidence | Scoped self-reported searches, four statuses, dated amounts, duplicates, evidence map | Approved live connectors; institution verification; holds |
+| Claims | Bank/MF/LIC, versioned packs, approval/PDF/handoff and recorded outcomes | More insurers, operator queue, real submissions/responses |
+| Legacy | Saved notes/gaps/contact previews | Snapshot export and verified sharing/release |
+| Agent | Durable bounded case work/claim review | No always-on monitoring; broader adversarial acceptance |
+| Voice | Sarvam/Gemini/browser input, browser/Gemini output | TTS quota, actual-device/per-language acceptance |
+| Privacy/activity | Activity, AI consent and app-data deletion | Retention automation, grievance/processor/backups policy |
+| Quality | 288 dated automated checks and synthetic live probes | Production OAuth/deployment, accessibility/workload/full corpus |
 
 ---
 
@@ -729,7 +738,7 @@ Unused variables (connector modes, console key, demo mode, log level) were remov
 | M4 | Discovery: document pipeline (AI, OCR, rules) and realistic synthetic demo — **done**; guided search outcome logging — built | Done locally |
 | M5 | Verify console — demo of the Later capability FL-56, labelled "Simulated" | Built as a local demo: [VERIFY_DEMO](docs/VERIFY_DEMO.md) |
 | M6 | Claim paths (§11.1) and packs for bank, mutual fund and LIC; approve + receipt | Done (B6, #16) |
-| M7 | Deploy to Cloud Run on the free tier ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) — needs the project ID | Next |
+| M7 | Deploy to Cloud Run on the free tier ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) — deployer handles account/project setup | Not verified |
 
 Phase A does not change PRD scope. Mock connectors and the Verify console may appear in the hackathon demo only, labelled "Simulated". The original plan (`BACKEND_PLAN.md` v3) is in git history.
 
@@ -739,21 +748,21 @@ Ordered so that each step leaves a working product:
 
 | # | Work | PRD |
 | --- | --- | --- |
-| B1 | **Done:** tests, CI, leftovers removed. Still open: dedicated unit tests for gates, masking, redaction, upload | FL-55 |
-| B2 | **On hold:** permanent database — choose a free option (FREE_TIER_PLAN §3), then migrations | FL-51 |
-| B3 | Google sign-in (free); cases owned by users; re-authentication for sensitive actions; chat restore; journey-type correction | FL-01, FL-02, FL-45, FL-48 |
+| B1 | **Built:** test/typecheck/lint/build scripts and CI; current audit in CURRENT_STATE | FL-50–FL-55 |
+| B2 | **Implemented/locally validated:** Supabase PostgreSQL; production recovery/backup and migration acceptance remain | FL-51 |
+| B3 | **Implemented:** Supabase Google OAuth/PKCE; provider configuration and two-account hosted acceptance remain | FL-45, FL-48 |
 | B3a | Gate completion: proof expiry, reviewer and reason on proofs, nominee/executor/joint-holder routes to G3, encrypted full identifiers for G4 | FL-03, FL-04 |
 | B4 | **Done (#14):** evidence statuses, observations, field review, totals, duplicates | FL-06–FL-09, FL-26, FL-28, FL-29 |
-| B5 | Guided discovery plan and search-visit outcomes | FL-10 |
+| B5 | **Built locally:** guided search outcomes and official handoffs | FL-10 |
 | B6 | **Done (#16):** claims model, versioned procedures (bank/FD, MF, LIC), packs, approval, manual submission, outcomes. Open: procedures for other insurers | FL-12–FL-16, FL-36, FL-37, FL-44 |
 | B7 | Legacy record, trusted contacts (intent), snapshot, export | FL-11, FL-31, FL-34 |
-| B8 | Voice on free tiers (after D-09); case-manager coordinator and prompt-injection hardening | FL-20, FL-38, FL-39, FL-41 |
-| B9 | Audit view, deletion, holds, operator queue (including unfreezing a case), help, in-app reminders | FL-17–FL-19, FL-42, FL-43, FL-47, FL-49 |
+| B8 | **Implemented:** voice fallbacks and bounded coordinator; quota/device/language acceptance and hardening remain | FL-20, FL-38, FL-39, FL-41 |
+| B9 | **Built:** activity, app-data deletion and follow-up preferences. Open: holds, operator queue/unfreeze, help and guaranteed reminders | FL-17–FL-19, FL-42, FL-43, FL-47, FL-49 |
 | B10 | AI evaluation set, accessibility pass, metrics, reference-workload measurement (§17.4) | FL-46, FL-50, FL-52, FL-53, FL-54 |
 
 ### Phase C — Pilot readiness
 
-Real providers where approved, a permanent database, malware scanning, AI terms that allow personal data (or AI off for real cases), threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when), within the free-tier rule ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)).
+Real providers where approved, production database recovery/backup acceptance, malware scanning, AI terms that allow personal data (or AI off for real cases), threat model, DPDP assessment, pinned AI models, runbooks — per [PRD §15.2](PRD.md#152-pilot--may-start-when), within the free-tier rule ([docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md)).
 
 ### M9 — Service extraction (done 18 Oct 2026)
 
@@ -802,14 +811,14 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
 The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` into `LegacyCase.keeperUi` (`backend/src/server/domain/keeper-ui.ts`) — **not** the `CaseEvent` audit table. Identifiers in the saved text are redacted before storage, verification states and document/sample sources are stripped, and the workspace `events` never include it; a copy left in `CaseEvent` by earlier code is moved and deleted on first read. This state cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
 
-`GET /api/cases/:id/messages` resumes historical intake/Q&A; fallback passage replies are saved. Case corrections use owner-scoped PATCH; asset owner/nomination edits use the existing discovery-gated PATCH. Original claim controls use the server path, pack and approval hash, and only record the family’s own submission. Verification forms are small cards inside the existing details panel. Failed chat retains its draft. Explore a sample is unchanged and uses no backend.
+`GET /api/cases/:id/messages` resumes historical intake/Q&A; fallback passage replies are saved. Case corrections use owner-scoped PATCH; asset owner/nomination edits use the existing discovery-gated PATCH. Original claim controls use the server path, pack and approval hash, and only record the family’s own submission. Verification forms are small cards inside the existing details panel. Failed chat retains its draft. Browser-only examples do not execute canonical case actions; consented sample conversation may use AI without accessing a canonical case.
 
 
 ### Refinement behavior — 18 Oct 2026
 
 `presentation.ts` consolidates fragmented assistant turns and selects a next step from saved task/claim/document state. The original interviewer supplies focused information gathering; `backend.ts` projects authoritative server records and preserves self-reported context and follow-ups. UI metadata never grants a gate or evidence status. `attachments.ts` uses native IndexedDB for recoverable selected-file uploads; JSON metadata is scoped to its thread. Personal and example drafts use separate local caches.
 
-`hasAiConsent` is checked before generation and semantic embedding; retrieval can explicitly use keyword-only mode. Consent is also required for image AI, drafting and checklist generation. No database schema change. The production authentication, identity-provider connections, institution connectors, sharing/release and direct submission remain unavailable. Personal protected-record operations remain gated; the UI explains unavailable checks rather than passing them through a mock provider.
+`hasAiConsent` is checked before generation and semantic embedding; retrieval can explicitly use keyword-only mode. Consent is also required for image AI, drafting and checklist generation. No database schema change. Supabase account-authentication code is built but not enabled/accepted in the inspected runtime. Real financial-identity providers, institution connectors, sharing/release and direct submission remain unavailable. Personal protected-record operations remain gated; the UI explains unavailable checks rather than passing them through a mock provider.
 
 ### Voice agent — 18 Oct 2026
 
@@ -817,7 +826,7 @@ The existing landing, sign-in, shell, conversation, voice controls, views and pa
 
 ### Calls and hand-off — 18 Oct 2026
 
-The conversation page opens on a call screen; the written chat is a toggle (`keeper.view`). `frontend/src/components/keeper/agent-mode.tsx` is the call room (ringing, timer, mute, speaker, type, person, end; a sheet for the written conversation; a dialog for hand-off) and `frontend/src/keeper/agent.ts` is its loop. Keeper speaks through `speakKeeper` (`frontend/src/keeper/voice.ts`): `POST /api/ai/speak` returns Gemini speech as WAV, and any failure falls back to the browser voice for the rest of the call. `POST/GET /api/cases/:id/handoff` stores a `HandoffRequest` (`why`, redacted `note` and `transcript`, `status` requested, acknowledged or closed) and logs a case event; the planner's `handoff` flag (in `shared/contracts.ts` `AgentTurn`) and the person's own words both open the same dialog. No reviewer console exists, so the app says a request is saved and not yet picked up.
+The conversation opens in the text workspace; Call Keeper explicitly opens the voice room. Returning to typing closes that room. `frontend/src/components/keeper/agent-mode.tsx` is the call room (ringing, timer, mute, speaker, type, person, end; a sheet for the written conversation; a dialog for hand-off) and `frontend/src/keeper/agent.ts` is its loop. Keeper speaks through `speakKeeper` (`frontend/src/keeper/voice.ts`): `POST /api/ai/speak` returns Gemini speech as WAV, and any failure falls back to the browser voice for the rest of the call. `POST/GET /api/cases/:id/handoff` stores a `HandoffRequest` (`why`, redacted `note` and `transcript`, `status` requested, acknowledged or closed) and logs a case event; the planner's `handoff` flag (in `shared/contracts.ts` `AgentTurn`) and the person's own words both open the same dialog. No reviewer console exists, so the app says a request is saved and not yet picked up.
 
 ### Speech in Indian languages — 18 Oct 2026
 
@@ -827,7 +836,7 @@ The conversation page opens on a call screen; the written chat is a toggle (`kee
 ## Synthetic hosted MVP implementation update — 18 Oct 2026
 
 - Supabase Auth PKCE is implemented server-side through same-origin /api/auth routes, HttpOnly access/refresh cookies and state verification. Hosted ownership uses a user verified by Supabase for every request; browser session IDs remain only in local demo mode. Financial gates are separate.
-- The schema remains SQLite for local development. backend/scripts/database.mjs derives the PostgreSQL Prisma schema for hosted builds. The hosted URL must select the private keeper schema. Initial schema setup is explicit, never application startup. Provisioning, live PostgreSQL migration/restore checks and Google provider setup remain external prerequisites.
+- The schema remains SQLite for local development. backend/scripts/database.mjs derives the PostgreSQL Prisma schema for hosted builds. The hosted URL must select the private keeper schema. Initial schema setup is explicit, never application startup. Local Supabase provisioning/persistence is validated. Production migration/restore and Google provider/hosted acceptance remain prerequisites.
 - Guided search outcomes are structured, redacted append-only CaseEvents (guided_search_v1), keyed by request UUID; JourneyTask contains the latest completion evidence. APIs check owner, discovery gates, the case's official source and document ownership. Possible matches do not create verified holdings. Progress updates transactionally with the outcome.
 - DELETE /api/privacy/data requires explicit DELETE confirmation and deletes the current account's Keeper Session and its cascading records, plus unreferenced deceased-person rows owned through those cases. Other accounts and shared public reference sources remain. The separate authentication-provider identity and processor/backups are outside this application-data deletion.
 - Source-only Cloud Run staging copies each service with shared/ and excludes credentials and database files. The deployed runtime fails closed when PostgreSQL, private schema, hosted authentication or HTTPS app origin are missing.
@@ -836,3 +845,9 @@ The conversation page opens on a call screen; the written chat is a toggle (`kee
 ### Durable claim-review implementation
 
 ClaimWorkflow persists one row per claim with a cursor, JSON checkpoints, a revision, attempts, lease token/deadline and a review result. Workers claim rows by conditional update, checkpoint by matching lease token/revision, and recover expired leases. Each checkpoint rechecks the case discovery/freeze gate; pack preparation uses the existing canonical claim service. Retry replays safe review steps and never external submission. A local process timer and authenticated request-driven advancement share the same lease path. Public GETs are read-only. Schema setup is explicit, never automatic startup. Case/claim deletion cascades workflows.
+
+### Document and case preparation continuity — 18 October 2026
+
+`document-progress.ts` derives source-review, holding-match, authority, pack and external-institution stages. Upload returns progress; review/confirmation can idempotently create drafts. Deterministic draft IDs fence creation races. Only an eligible reviewed source policy can fill its exact requirement after entitlement. Successful review/confirmation survives preparation failure; retry is explicit. Multiple source-linked confirmed holdings receive separate drafts. Fields, ownership, authority, declarations, approval and submission remain user/institution decisions.
+
+The distinct `CaseAgentRun` scans canonical evidence and refreshes up to five existing claims. Leased checkpoints, revisions and bounded retries fence stale work; paused runs never auto-restart. Conversation requests advance work; returning resumes eligible runs. `ClaimWorkflow` is the separate per-claim review. Neither completion means settlement. See [CASE_AGENT](docs/CASE_AGENT.md) and [EVIDENCE_WORKFLOWS](docs/EVIDENCE_WORKFLOWS.md).

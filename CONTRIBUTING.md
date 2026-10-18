@@ -25,3 +25,9 @@ The PR template includes this checklist.
 ## Running locally
 
 See [README.md](README.md#running-it).
+
+## Documentation verification
+
+Use [CURRENT_STATE](docs/CURRENT_STATE.md) for the dated implementation audit. Keep requirements, implementation, observed results and planned acceptance separate. Do not duplicate undated totals, promise unlimited free APIs or turn simulated verification into real authority. Reconcile README, PRD/LLD, DESIGN and relevant setup/privacy guides together. Preserve historical decisions and append superseding ones.
+
+Documentation-only changes require Markdown/link/anchor checks, commands/routes compared with source, and secret-free diffs. Do not reset databases or call paid providers to verify prose. Code changes retain the implementation checks above.
