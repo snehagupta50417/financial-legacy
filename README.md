@@ -47,7 +47,7 @@ Later: more asset types (shares, IEPF, EPF, NPS, PPF, lockers), approved live co
 
 | Part | State |
 | --- | --- |
-| `frontend/` — the product | **Keeper web app (new):** public site, mocked sign-in and a conversation-first app (voice and chat, assets, documents, family record, claims, activity) running on a clearly labelled deterministic demo assistant with synthetic data in the browser — not yet wired to the backend below. **Backend, built and tested:** intake (AI or rules), case workspace, trust gates G0–G4 (simulated providers), document extraction (Gemini, local OCR, text rules), per-field review with history, four evidence statuses, dated amounts and honest totals, grounded Q&A with sources (RAG), claims for bank / mutual fund / LIC with packs, approval and tracking. 106 tests and CI. **Not built:** real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
+| `frontend/` — the product | **Keeper web app (new):** public site, mocked sign-in and a conversation-first app (voice and chat, assets, documents, family record, claims, activity) with its original landing, sign-in, chat, voice, sidebar and detail layouts. Normal Continue now uses the backend through the Keeper store adapter; Explore a sample retains the clearly labelled offline engine. **Backend, built and tested:** intake (AI or rules), case workspace, trust gates G0–G4 (simulated providers), document extraction (Gemini, local OCR, text rules), per-field review with history, four evidence statuses, dated amounts and honest totals, grounded Q&A with sources (RAG), claims for bank / mutual fund / LIC with packs, approval and tracking. 106 tests and CI. **Not built:** real sign-in, a permanent database, guided search outcomes, legacy record, voice, operations — see [LLD §20](LLD.md#20-gap-analysis-against-the-prd-mvp). |
 | Hosting and cost | **Free tier only** — Google Cloud free tier, a free Gemini API key (synthetic data only), GitHub Actions free minutes. See [docs/FREE_TIER_PLAN.md](docs/FREE_TIER_PLAN.md). |
 
 ## Documents
@@ -109,3 +109,6 @@ npm run build
 Tests use a throwaway SQLite database and never call a real model (set `LIVE_AI=1` to allow it). The OCR tests download Tesseract's English and Hindi data once.
 
 **Deploying:** Google Cloud Run from source, no Docker, free tier only — [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md). Not deployed yet.
+
+
+**Connected Keeper:** Open `/` for the original landing page, then Continue to Keeper. Cases and original screen controls connect through `src/keeper/backend.ts`; there is no replacement workspace layout. Use synthetic data only. Family records and contact-view drafts are saved, but no real contact invitations or sharing happen. Identity and institutional providers remain prototypes.

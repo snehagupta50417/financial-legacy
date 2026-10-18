@@ -57,3 +57,6 @@ server.log
 *.db-journal
 !.env.example
 test/.tmp
+
+# Local refinement screenshots and test artifacts
+/artifacts/refinement/

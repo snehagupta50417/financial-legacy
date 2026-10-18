@@ -54,6 +54,8 @@ model LegacyCase {
   events          CaseEvent[]
   chunks          KnowledgeChunk[]
   claims          Claim[]
+  // Keeper's saved conversation and draft state, as redacted JSON (domain/keeper-ui.ts). Not an audit record.
+  keeperUi        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { FileText, History, Layers, MessageCircle, Plus, ScrollText, Settings2, Users } from "lucide-react";
-import { dispatch, useKeeper } from "@/keeper/store";
+import { connectBackend, refreshBackend, useBackendStatus, dispatch, useKeeper } from "@/keeper/store";
 import { cn } from "@/lib/utils";
-import { Btn, Pill, Wordmark } from "./ui";
+import { Btn, Wordmark } from "./ui";
 
 const NAV = [
   { href: "/app", label: "Conversation", short: "Talk", icon: MessageCircle },
@@ -19,22 +19,14 @@ const NAV = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { state, loaded, c } = useKeeper();
+  const backend = useBackendStatus();
   const path = usePathname();
   const router = useRouter();
-  const scheduled = useRef(new Set<string>());
 
   useEffect(() => { if (loaded && !state) router.replace("/signin"); }, [loaded, state, router]);
 
-  // Sample documents "process" for a moment so the upload states are visible.
-  useEffect(() => {
-    if (!state) return;
-    for (const cs of Object.values(state.cases)) for (const d of cs.docs) {
-      if (d.state === "processing" && !scheduled.current.has(d.id)) {
-        scheduled.current.add(d.id);
-        setTimeout(() => { dispatch({ t: "doc.ready", id: d.id }); }, 900);
-      }
-    }
-  }, [state]);
+  useEffect(() => { if (state?.session?.mode === "signin") connectBackend(); }, [state?.session?.mode]);
+
 
   if (!state || !c) return <div className="grid min-h-dvh place-items-center text-muted-foreground" role="status">Opening Keeper…</div>;
 
@@ -42,8 +34,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (h: string) => (h === "/app" ? path === "/app" : path.startsWith(h));
   const caseSelect = (cls?: string) => (
     <label className={cn("block", cls)}>
-      <span className="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wider text-moss">Whose information</span>
-      <select value={state.activeCase} onChange={(e) => { dispatch({ t: "switchCase", id: e.target.value }); router.push("/app"); }} className="min-h-11 w-full rounded-xl border border-input bg-paper px-3 font-medium">
+      <span className="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wider text-moss">{state.session?.mode === "sample" ? "Example workspace" : "Whose information"}</span>
+      <select aria-label="Whose information" value={state.activeCase} onChange={(e) => { dispatch({ t: "switchCase", id: e.target.value }); router.push("/app"); }} className="min-h-11 w-full rounded-xl border border-input bg-paper px-3 font-medium">
         {state.order.map((id) => <option key={id} value={id}>{state.cases[id].name}</option>)}
       </select>
     </label>
@@ -76,7 +68,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="mt-auto space-y-2 border-t border-line pt-4">
           <Link href="/app/settings" aria-current={path === "/app/settings" ? "page" : undefined} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-3 font-medium", path === "/app/settings" ? "bg-ink text-ivory" : "hover:bg-secondary")}><Settings2 className="h-[1.1rem] w-[1.1rem]" aria-hidden />Settings</Link>
-          <p className="px-3 text-[0.82rem] text-muted-foreground">{state.session?.name} · <Pill tone="warn">{state.session?.mode === "sample" ? "Sample" : "Demo"}</Pill></p>
+          <p className="px-3 text-[0.82rem] text-muted-foreground">{state.session?.name}</p>
         </div>
       </aside>
 
@@ -96,7 +88,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main id="content" className={cn("min-h-0 min-w-0 flex-1", path === "/app" ? "overflow-hidden" : "scroll-soft overflow-y-auto")}>{children}</main>
+      <main id="content" className={cn("relative min-h-0 min-w-0 flex-1", path === "/app" ? "overflow-hidden" : "scroll-soft overflow-y-auto")}>{backend.error && <div className="absolute inset-x-3 top-2 z-40 mx-auto max-w-2xl rounded-xl border border-line bg-paper/95 px-4 py-2 text-sm shadow-sm" role={backend.error ? "alert" : "status"}>{backend.error}{backend.error && <button className="ml-3 underline" onClick={refreshBackend}>Retry</button>}</div>}{children}</main>
 
       {/* Mobile bottom navigation */}
       <nav aria-label="Sections" className="grid grid-cols-5 border-t border-line bg-paper lg:hidden">

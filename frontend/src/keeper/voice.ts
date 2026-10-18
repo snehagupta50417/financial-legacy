@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /**
  * Voice uses the BROWSER's own speech recognition (Web Speech API). It starts only when the user taps
@@ -42,7 +42,10 @@ export function useSpeech() {
   const [error, setError] = useState<VoiceError>(null);
   const rec = useRef<Rec | null>(null);
 
+  useEffect(() => () => { if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); } }, []);
+
   const start = useCallback(() => {
+    rec.current?.abort();
     const C = ctor();
     if (!C) return setError("unsupported");
     window.speechSynthesis?.cancel(); // interruption: Keeper stops talking when you start

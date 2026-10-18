@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CATEGORY_LABEL } from "@/keeper/catalog";
 import { OUTCOME_LABEL, claimStep, CLAIM_STEPS } from "@/keeper/claims";
-import { dispatch, setPrefs, useKeeper } from "@/keeper/store";
+import { dispatch, setPrefs, useKeeper, attachDocument } from "@/keeper/store";
 import type { Activity, Case, Category } from "@/keeper/types";
+import { documentTitle } from "@/keeper/presentation";
 import { formatDay, money } from "@/keeper/util";
 import { useSpeechOutSupport, useRecognitionSupport } from "@/keeper/voice";
 import { cn } from "@/lib/utils";
+import { AiPermission } from "./backend-access";
 import { AssetDetail, ClaimDetail, DocDetail, FamilyView, PlanView } from "./panel";
 import { Btn, Card, EvidenceBadge, Hint, Pill } from "./ui";
 
@@ -42,9 +44,9 @@ export function AssetsView() {
   if (!c) return null;
   const a = c.assets.find((x) => x.id === sel) ?? c.assets[0];
   return (
-    <Page c={c} wide title="Assets" sub="Each asset shows its evidence status, dated amounts with what they mean, and what to do next. Uncertain and historical amounts are never added into a total.">
+    <Page c={c} wide title="Assets" sub="Review holdings and the evidence behind them.">
       <details className="mb-6 rounded-2xl border border-line bg-card" open={c.plan.length > 0}>
-        <summary className="flex min-h-12 cursor-pointer items-center justify-between px-5 font-semibold">Discovery plan <Pill>{c.plan.length ? `${c.plan.length} sources` : "Not built yet"}</Pill></summary>
+        <summary className="flex min-h-12 cursor-pointer items-center justify-between px-5 font-semibold">Discovery plan <Pill>{c.plan.length ? `${c.plan.length} ${c.plan.length === 1 ? "source" : "sources"}` : "Not built yet"}</Pill></summary>
         <div className="border-t border-line p-5"><PlanView c={c} />{!c.plan.length && <div className="mt-3"><TalkButton label="Find my assets" id="j:discover" /></div>}</div>
       </details>
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
@@ -58,12 +60,13 @@ export function AssetsView() {
             </button>
           ))}
           {!c.assets.length && <Empty title="No assets yet" hint="Tell Keeper what you know, or add one yourself. You can add details and documents later." />}
-          <form className="space-y-2 rounded-2xl border border-dashed border-line p-4" onSubmit={(e) => { e.preventDefault(); if (f.institution.trim()) { dispatch({ t: "asset.add", institution: f.institution, category: f.category, ref: f.ref }); setF({ institution: "", category: "bank", ref: "" }); } }}>
+          <form className="space-y-2 rounded-2xl border border-dashed border-line p-4" onSubmit={(e) => { e.preventDefault(); if (f.institution.trim()) { const result = dispatch({ t: "asset.add", institution: f.institution, category: f.category, ref: f.ref }); if (result) void result.then(ok => { if (ok) setF({ institution: "", category: "bank", ref: "" }); }); else setF({ institution: "", category: "bank", ref: "" }); } }}>
             <p className="font-semibold">Add a record</p>
+            {c.gate && !c.gate.discoveryUnlocked && <Hint>Saving holdings requires identity checks. This source is not connected.</Hint>}
             <input aria-label="Institution" className={field} placeholder="Institution, e.g. Bank A" value={f.institution} onChange={(e) => setF({ ...f, institution: e.target.value })} />
             <select aria-label="Type" className={field} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{(Object.keys(CATEGORY_LABEL) as Category[]).map((k) => <option key={k} value={k}>{CATEGORY_LABEL[k]}</option>)}</select>
             <input aria-label="Last 4 digits of the reference (optional)" className={field} inputMode="numeric" placeholder="Last 4 digits only (optional)" maxLength={4} value={f.ref} onChange={(e) => setF({ ...f, ref: e.target.value.replace(/\D/g, "") })} />
-            <Btn type="submit" variant="ink" className="w-full">Add record</Btn>
+            <Btn type="submit" variant="ink" className="w-full" disabled={!!c.gate && !c.gate.discoveryUnlocked}>Add record</Btn>
           </form>
         </div>
         <div>{a ? <Card><AssetDetail key={a.id} a={a} c={c} /></Card> : <Hint>Select an asset to see its evidence, history and next step.</Hint>}</div>
@@ -73,23 +76,23 @@ export function AssetsView() {
 }
 
 export function DocumentsView() {
-  const { c } = useKeeper();
+  const { c, state } = useKeeper();
   const [sel, setSel] = useState<string | null>(null);
   if (!c) return null;
   const d = c.docs.find((x) => x.id === sel) ?? c.docs[0];
   const kinds: ["statement" | "policy" | "folio" | "unreadable" | "password" | "duplicate", string][] = [["statement", "Bank statement"], ["policy", "Insurance policy"], ["folio", "Mutual fund statement"], ["unreadable", "Blurred scan"], ["password", "Password-protected PDF"], ["duplicate", "Copy of a document"]];
   return (
-    <Page c={c} wide title="Documents" sub="Only synthetic sample documents work in this prototype — real files are never accepted. Keeper reads each one, shows the details beside the original, and you correct anything wrong.">
-      <Card className="mb-6"><p className="font-semibold">Add a sample document</p><div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Sample documents">{kinds.map(([v, l]) => <Btn key={v} variant="quiet" className="min-h-10 px-4 text-[0.88rem]" onClick={() => { dispatch({ t: "doc.sample", variant: v }); setSel(null); }}>{l}</Btn>)}</div></Card>
+    <Page c={c} wide title="Documents" sub="Check extracted details against the source.">
+      <Card className="mb-6">{state?.session?.mode === "signin" && <label className="mb-4 block font-semibold">Add a document<input aria-label="Add document" className="mt-2 block w-full text-sm" type="file" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" onChange={e => { const file = e.target.files?.[0]; if (file) void attachDocument(file); e.target.value = ""; }} /></label>}{state?.session?.mode === "sample" && <details><summary className="min-h-11 cursor-pointer py-2 font-semibold">Add document</summary><div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Choose a document">{kinds.map(([v, l]) => <Btn key={v} variant="quiet" className="min-h-10 px-4 text-[0.88rem]" onClick={() => { dispatch({ t: "doc.sample", variant: v }); setSel(null); }}>{l}</Btn>)}</div></details>}</Card>
       <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
         <ul className="space-y-3">
           {c.docs.map((x) => (
             <li key={x.id}><button onClick={() => setSel(x.id)} aria-current={d?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", d?.id === x.id ? "border-ink" : "border-line")}>
-              <p className="break-words font-semibold">{x.name}</p><p className="text-[0.85rem] text-muted-foreground">{x.kind}</p>
+              <p className="break-words font-semibold">{documentTitle(x.name)}</p><p className="text-[0.85rem] text-muted-foreground">{x.kind}</p>
               <div className="mt-2"><Pill tone={x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "ok" : "warn") : x.state === "processing" ? "plain" : "warn"}>{x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "Reviewed" : `${x.fields.filter((f) => !f.reviewed).length} to check`) : x.state === "processing" ? "Reading…" : x.state === "unreadable" ? "Couldn’t read" : x.state === "password" ? "Password-protected" : "Duplicate"}</Pill></div>
             </button></li>
           ))}
-          {!c.docs.length && <Empty title="No documents yet" hint="Add a sample statement or policy to see how review works." />}
+          {!c.docs.length && <Empty title="No documents yet" hint="Add a statement or policy to get started." />}
         </ul>
         <div>{d ? <Card><DocDetail key={d.id} d={d} c={c} /></Card> : null}</div>
       </div>
@@ -140,12 +143,12 @@ export function FamilyPage() {
   return <div className="mx-auto max-w-[900px] px-4 py-6 sm:px-8"><FamilyView c={c} /></div>;
 }
 
-const KIND: Record<Activity["kind"], string> = { prepared: "Keeper prepared", confirmed: "You confirmed", approved: "You approved", sent: "Sent externally (simulated)", institution: "Institution response (as you recorded it)" };
+const KIND: Record<Activity["kind"], string> = { prepared: "Keeper prepared", confirmed: "You confirmed", approved: "You approved", sent: "Submission preparation", institution: "Institution response (as you recorded it)" };
 export function ActivityView() {
   const { c } = useKeeper();
   if (!c) return null;
   return (
-    <Page c={c} title="Activity" sub="Everything that happened in this record, kept apart by who did it. Nothing here was sent to a real institution.">
+    <Page c={c} title="Activity" sub="Saved actions, approvals and institution updates.">
       {c.activity.length ? (
         <ol className="space-y-2">
           {c.activity.map((a) => (
@@ -166,14 +169,14 @@ export function SettingsView() {
   return (
     <Page c={c} title="Settings" sub="Account, access, consent, privacy and sessions.">
       <div className="space-y-4">
-        <Card><h2 className="font-semibold">Account</h2><p className="mt-1">{state.session?.name} · <Pill tone="warn">Prototype sign-in (mocked)</Pill></p><Hint>No password, phone number or OTP is stored. Real sign-in is a later step.</Hint></Card>
-        <Card><h2 className="font-semibold">Access and consent</h2><ul className="mt-2 space-y-1 text-[0.95rem]"><li>Guided searches permission: <b>{c.facts.consent?.value ?? "not asked yet"}</b></li><li>Trusted contacts: <b>{c.contacts.length}</b> — each sees nothing until you choose, and nothing is shared in this prototype</li></ul></Card>
-        <Card><h2 className="font-semibold">Privacy</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] text-ink/85"><li>Everything here is synthetic and stays in this browser. Nothing is sent to institutions or servers.</li><li>Real documents are not accepted. Keeper keeps only the last four digits of any account reference.</li><li>Keeper never asks for passwords, PINs or OTPs, and doesn’t ask about health.</li></ul></Card>
-        <Card><h2 className="font-semibold">Voice</h2><p className="mt-1 text-[0.95rem]">Speech recognition: <b>{rec ? "available in this browser" : "not available — type instead"}</b>. Spoken replies: <b>{out ? "available" : "not available"}</b>.</p>
+        <Card><h2 className="font-semibold">Account</h2><p className="mt-1">{state.session?.name}</p><Hint>This browser session keeps your progress. Secure account sign-in is not available yet.</Hint></Card>
+        <Card><h2 className="font-semibold">Access and consent</h2><ul className="mt-2 space-y-1 text-[0.95rem]"><li>Guided searches permission: <b>{c.facts.consent?.value ?? "not asked yet"}</b></li><li>Trusted contacts: <b>{c.contacts.length}</b>. access is a preview. Sharing is not connected.</li></ul>{state.session?.mode === "signin" && <AiPermission />}</Card>
+        <Card><h2 className="font-semibold">Privacy</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] text-ink/85"><li>{state.session?.mode === "signin" ? "Your case is saved. Keeper does not submit to institutions." : "The example workspace stays in this browser."}</li><li>Account references are masked.</li><li>Keeper never asks for passwords, PINs or OTPs, and doesn’t ask about health.</li></ul></Card>
+        <Card><h2 className="font-semibold">Voice</h2><p className="mt-1 text-[0.95rem]">Speech recognition: <b>{rec ? "available in this browser" : "not available. type instead"}</b>. Spoken replies: <b>{out ? "available" : "not available"}</b>.</p>
           {out && <label className="mt-2 flex min-h-11 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#526653]" checked={state.speakReplies} onChange={(e) => setPrefs({ speakReplies: e.target.checked })} />Read Keeper’s replies aloud</label>}
           <Hint>The microphone only turns on when you tap it. Keeper stores no audio. Chrome and Edge send audio to their speech service.</Hint></Card>
-        <Card><h2 className="font-semibold">Sessions and demo</h2><p className="mt-1 text-[0.95rem]">This browser — signed in (demo). Progress is saved here so a refresh keeps your place.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><Btn variant="quiet" onClick={() => dispatch({ t: "reset" })}>Reset demo</Btn><Btn variant="quiet" onClick={() => { dispatch({ t: "signIn", name: state.session?.name ?? "Asha Rao", mode: "sample" }); router.push("/app"); }}>Load the sample</Btn><Btn variant="danger" onClick={() => { dispatch({ t: "signOut" }); router.push("/"); }}>Sign out</Btn></div></Card>
+        <Card><h2 className="font-semibold">Your session</h2><p className="mt-1 text-[0.95rem]">Your progress is saved through navigation and refresh.</p>
+          <div className="mt-3 flex flex-wrap gap-2"><Btn variant="quiet" onClick={() => dispatch({ t: "reset" })}>{state.session?.mode === "sample" ? "Reset example" : "Start a new record"}</Btn><Btn variant="quiet" onClick={() => { dispatch({ t: "signIn", name: state.session?.name ?? "Asha Rao", mode: "sample" }); router.push("/app"); }}>Open example workspace</Btn><Btn variant="danger" onClick={() => { dispatch({ t: "signOut" }); router.push("/"); }}>Sign out</Btn></div></Card>
         <p className="text-[0.85rem] text-muted-foreground"><Link href="/" className="underline underline-offset-4">Back to the website</Link></p>
       </div>
     </Page>

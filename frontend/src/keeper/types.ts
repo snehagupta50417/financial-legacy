@@ -1,3 +1,5 @@
+import type { CaseWorkspace } from "@/lib/types";
+import type { ClaimView } from "@/server/domain/claim-service";
 /**
  * Keeper prototype data model. Everything the UI shows — conversation, facts, assets,
  * documents, family record, claims, tasks, approvals, activity — lives in one case record,
@@ -87,7 +89,7 @@ export interface Contact {
 }
 
 export type ClaimStage = "intake" | "authority" | "requirements" | "documents" | "review" | "submission" | "followup" | "outcome";
-export type Outcome = "settled" | "transferred" | "rejected" | "withdrawn" | "unresolved_dispute";
+export type Outcome = "settled" | "transferred" | "partially_settled" | "rejected" | "withdrawn" | "unresolved_dispute";
 
 export interface Approval {
   id: string;
@@ -100,6 +102,7 @@ export interface Approval {
 }
 
 export interface Claim {
+  backend?: ClaimView;
   id: string;
   assetId: string;
   claimant: { name: string; relation: string; verification: "not_started" | "awaiting_review" | "sample_reviewed" };
@@ -159,6 +162,10 @@ export interface PlanSource {
 }
 
 export interface Case {
+  uiTasks?: Task[];
+  backendId?: string;
+  gate?: CaseWorkspace["gate"];
+  proofs?: CaseWorkspace["proofs"];
   id: string;
   name: string; // "My financial record" | "Estate of …"
   kind: "self" | "estate";
@@ -184,6 +191,8 @@ export interface Session {
 }
 
 export interface AppState {
+  attachments?: Record<string, { id: string; name: string; threadId: string; state: "ready" | "uploading" | "failed"; error?: string }>;
+  drafts?: Record<string, string>;
   v: 1;
   session: Session | null;
   activeCase: string;

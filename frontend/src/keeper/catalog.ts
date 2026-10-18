@@ -39,7 +39,7 @@ export const EVIDENCE_LABEL: Record<Evidence, { label: string; hint: string }> =
   self_declared: { label: "Self-declared", hint: "You told Keeper; no document yet" },
   potential_match: { label: "Potential match", hint: "A clue suggests it; not yet confirmed" },
   document_backed: { label: "Document-backed", hint: "A document you reviewed supports it" },
-  institution_verified: { label: "Institution-verified", hint: "The institution confirmed it (no live source in this prototype)" },
+  institution_verified: { label: "Institution-verified", hint: "Confirmed by the institution" },
 };
 
 export const FACT_STATE_LABEL: Record<FactState, string> = {
@@ -54,7 +54,7 @@ export const FACT_STATE_LABEL: Record<FactState, string> = {
 
 export const FACT_META: Record<string, { label: string; group: string }> = {
   goal: { label: "What you want help with", group: "Goal and scope" },
-  relation: { label: "Your relationship to them (intake, not proof of authority)", group: "Person" },
+  relation: { label: "Your relationship", group: "Person" },
   name: { label: "Name on their accounts", group: "Person" },
   known_assets: { label: "Assets you already know about", group: "Assets and institutions" },
   known: { label: "Institutions you mentioned", group: "Assets and institutions" },
@@ -67,7 +67,7 @@ export const FACT_META: Record<string, { label: string; group: string }> = {
   consent: { label: "Permission to prepare guided searches", group: "Authority and consent" },
   contact: { label: "Trusted contact", group: "Family access" },
   instructions: { label: "Practical instructions", group: "Family access" },
-  review: { label: "Review reminders", group: "Family access" },
+  review: { label: "Review preference", group: "Family access" },
 };
 
 export const GROUP_ORDER = ["Goal and scope", "Person", "Assets and institutions", "Documents", "Nomination", "Authority and consent", "Family access"];
@@ -88,7 +88,7 @@ export const MILESTONES: { id: Milestone; label: string }[] = [
 ];
 
 export const WELCOME_NEW =
-  "Hi, I'm Keeper. Tell me what you'd like help with. You can speak or type, and we'll take it step by step.";
+  "What would you like to work on?";
 
 export const STARTERS: { journey: Journey; label: string; text: string }[] = [
   { journey: "discover", label: "I've lost track of some accounts", text: "I changed jobs and cities. I've lost track of some investments." },
@@ -96,9 +96,9 @@ export const STARTERS: { journey: Journey; label: string; text: string }[] = [
   { journey: "claim", label: "A family member has died", text: "My mother died. I need help finding and claiming her assets." },
 ];
 
-/** What a trusted contact would see, in plain words — preview only in this prototype. */
+/** What a trusted contact would see, in plain words. preview only in this prototype. */
 export const CONTACT_VIEW = {
-  assets: "A list of institutions and asset types — no balances and no account numbers",
+  assets: "A list of institutions and asset types. no balances and no account numbers",
   documents: "The names of your documents and where they are kept",
   instructions: "Your written practical instructions",
   claims: "Claim progress, if there is a claim",

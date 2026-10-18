@@ -1,3 +1,4 @@
+import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { caseAccess, isDenied } from "@/server/core/access";
@@ -159,7 +160,7 @@ export async function POST(req: NextRequest) {
   // 1. With an AI key, photos go straight to Gemini vision (best quality).
   // 2. Otherwise — or if that fails — text comes from the PDF text layer or local OCR,
   //    then Gemini structures it, or basic text rules do when AI is unavailable.
-  const aiOn = !!getProvider();
+  const aiOn = !!getProvider() && await hasAiConsent(session.id);
   let ex: ExtractedDocumentData | null = null;
   let aiError: string | null = null;
   if (imageMime && aiOn) {

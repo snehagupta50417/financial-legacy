@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { dispatch } from "@/keeper/store";
-import { Btn, FamilyScene, Pill, Wordmark } from "./ui";
+import { Btn, FamilyScene, Wordmark } from "./ui";
 
 const JOURNEYS: Record<string, string> = { discover: "Find my assets", prepare: "Prepare for my family", claim: "Get help after a death" };
 
@@ -25,10 +25,9 @@ export default function SignIn() {
       <main className="flex flex-col justify-between px-6 py-8 sm:px-12">
         <Wordmark />
         <div className="mx-auto w-full max-w-[26rem] py-12">
-          <Pill tone="warn">Prototype sign-in · mocked</Pill>
           <h1 className="display mt-4 text-[2.6rem]">Welcome to keeper.</h1>
           <p className="mt-3 text-ink/75">
-            {journey && JOURNEYS[journey] ? <>You chose <b>{JOURNEYS[journey]}</b>. We’ll carry that into the conversation.</> : "After you continue, you’ll go straight into a conversation. No long form first."}
+            {journey && JOURNEYS[journey] ? <>You chose <b>{JOURNEYS[journey]}</b>. We’ll carry that into the conversation.</> : "Start a conversation. Add details as you go."}
           </p>
           <form className="mt-8 space-y-4" onSubmit={(e) => { e.preventDefault(); go("signin"); }}>
             <label className="block">
@@ -37,12 +36,12 @@ export default function SignIn() {
             </label>
             <Btn type="submit" className="w-full">Continue to Keeper</Btn>
           </form>
-          <p className="mt-3 text-[0.88rem] text-muted-foreground">No password, phone number or OTP is asked for or stored. Real sign-in comes later; this only keeps your demo progress in this browser.</p>
+          <p className="mt-3 text-[0.88rem] text-muted-foreground">Your progress is saved to this browser session. Secure account sign-in is not available yet.</p>
           <div className="my-6 flex items-center gap-3 text-[0.85rem] text-muted-foreground"><hr className="flex-1 border-line" />or<hr className="flex-1 border-line" /></div>
-          <Btn variant="quiet" className="w-full" onClick={() => go("sample")}>Explore a sample</Btn>
-          <p className="mt-3 text-[0.88rem] text-muted-foreground">Opens made-up records: a family record and an estate, so you can try every screen.</p>
+          <Btn variant="quiet" className="w-full" onClick={() => go("sample")}>Explore an example</Btn>
+          <p className="mt-3 text-[0.88rem] text-muted-foreground">An example workspace with fictional records, separate from your own.</p>
         </div>
-        <p className="text-[0.85rem] text-muted-foreground"><Link href="/" className="underline underline-offset-4">Back to the website</Link> · Synthetic data only.</p>
+        <p className="text-[0.85rem] text-muted-foreground"><Link href="/" className="underline underline-offset-4">Back to the website</Link></p>
       </main>
       <aside className="paper-grain hidden items-center justify-center bg-secondary p-12 lg:flex" aria-hidden>
         <FamilyScene variant="porch" className="w-full max-w-[34rem]" />

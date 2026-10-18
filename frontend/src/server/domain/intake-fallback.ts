@@ -6,6 +6,7 @@ const OWN_DEATH = /\b(when|after|once|if) i(['’]| a)m (gone|no more)\b|\b(when
 const DEATH = /\b(died|passed away|death|deceased|no more|demise|funeral)\b/;
 // "will" only as a document, never the auxiliary verb ("will I get…").
 const WILL = /\b(my|a) will\b|\b(write|make|draft|prepare|update)\w* (a |my )?will\b/;
+const PREPARE_FAMILY = /\b(?:prepare|plan|organise|organize).{0,45}(?:my|our) family\b|\b(?:end.of.life|put my.{0,30}in order)\b/;
 const LEGACY = /\b(estate plan\w*|legacy plan\w*|beneficiar\w*|inherit plan|my family (can|could|should|will|would) (find|know)|family (to|can) find)\b/;
 const SELF = /\b(i have|i own|i hold|i invested|i bought|i opened|my own|my (assets|investments|accounts|money|savings|policies|funds|shares))\b/;
 const THIRD_PARTY =
@@ -38,7 +39,7 @@ export function fallbackClassification(message: string): ClassifiedSituation {
   const ownDeath = OWN_DEATH.test(m);
   const deceased = DEATH.test(m.replace(new RegExp(OWN_DEATH, "g"), " "));
   const rejected = /\b(reject\w*|denied|not responded|no response|stall\w*|delay\w*)\b/.test(m);
-  const legacy = ownDeath || WILL.test(m) || LEGACY.test(m);
+  const legacy = ownDeath || WILL.test(m) || LEGACY.test(m) || PREPARE_FAMILY.test(m);
   const nominee = /\b(nominee|legal heir|succession|executor)\b/.test(m);
   const nri = /\b(nri|abroad|foreign|usa|uk|dubai|singapore|cross.border)\b/.test(m);
   const caregiver = /\b(elderly|caregiver|helping my (mother|father|parent)|senior)\b/.test(m);
@@ -73,7 +74,7 @@ export function fallbackClassification(message: string): ClassifiedSituation {
     urgency: deceased || rejected ? "high" : "medium",
     confirmedFacts: [message.slice(0, 200)],
     assumptions: [],
-    followUpQuestions: followUps(caseType, holderLiving),
+    followUpQuestions: followUps(caseType, holderLiving).slice(0, 1),
     summary: message.slice(0, 240),
   };
 }

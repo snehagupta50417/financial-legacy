@@ -145,7 +145,7 @@ describe("flow 3 — after a death → known asset → authority → checklist �
     plan = claimPlan(cur(s).assets[0], cur(s).claims[0]);
     expect(plan.path).toBe("simplified");
     expect(plan.procedure?.authority).toMatch(/RBI/);
-    expect(claimStep(cur(s), cur(s).claims[0])).toBe("documents");
+    expect(claimStep(cur(s), cur(s).claims[0])).toBe("authority"); // Having a certificate is not authority verification.
 
     // Can't request approval until required items and declarations are in.
     s = run(s, { t: "claim.request", id: cl.id });
@@ -167,9 +167,9 @@ describe("flow 3 — after a death → known asset → authority → checklist �
 
     // Re-prepare, re-approve, simulate submission, record acknowledgement and outcome.
     s = run(s, { t: "claim.edit", id: cl.id, edit: { have: { "indemnity-ic": true } } }, { t: "claim.request", id: cl.id }, { t: "claim.approve", id: cl.id }, { t: "claim.submit", id: cl.id, method: "branch" });
-    expect(cur(s).claims[0].submitted?.ref).toMatch(/^SIM-/);
-    expect(cur(s).claims[0].nextFollowUp).toBeTruthy();
-    expect(cur(s).activity.some((a) => a.kind === "sent" && /Nothing was actually sent/.test(a.text))).toBe(true);
+    expect(cur(s).claims[0].submitted?.ref).toBe("Not submitted");
+    expect(cur(s).claims[0].nextFollowUp).toBeNull();
+    expect(cur(s).activity.some((a) => a.kind === "sent" && /Nothing was sent/.test(a.text))).toBe(true);
     s = run(s, { t: "claim.ack", id: cl.id, note: "Counter receipt 42" }, { t: "claim.outcome", id: cl.id, kind: "rejected", note: "Needs a succession certificate" });
     expect(cur(s).claims[0].outcome?.kind).toBe("rejected");
     expect(claimStep(cur(s), cur(s).claims[0])).toBe("outcome");
@@ -220,12 +220,12 @@ describe("rules that hold across the app", () => {
   it("manual changes show up in conversation context; conversation changes show up in views", () => {
     let s = run(fresh(), { t: "asset.add", institution: "Bank A", category: "bank", ref: "1234 5678 9012" });
     expect(cur(s).assets[0].ref).toBe("••••9012"); // only the last four digits are ever kept
-    expect(last(s).role).toBe("note");
-    expect(last(s).text).toMatch(/link a statement/);
+    expect(thread(cur(s)).messages).toHaveLength(1);
+    expect(cur(s).context).toContain("added Bank A");
     s = run(s, { t: "asset.edit", id: cur(s).assets[0].id, patch: { institution: "Bank A Ltd" } });
     expect(cur(s).context).toContain("updated Bank A Ltd");
     s = run(s, send(STARTERS[1].text));
-    expect(texts(s)).toMatch(/I noticed you updated Bank A Ltd/);
+    expect(texts(s)).toMatch(/updated Bank A Ltd/);
     s = run(s, send("and HDFC"));
     expect(cur(s).assets.map((a) => a.institution)).toContain("HDFC Bank");
   });
@@ -234,7 +234,7 @@ describe("rules that hold across the app", () => {
     let s = run(fresh(), pick("m:sample", "Explore a sample"));
     expect(s.session?.mode).toBe("sample");
     expect(s.order).toHaveLength(2);
-    expect(s.cases["estate-sample"].name).toBe("Estate of Ramesh Iyer (sample)");
+    expect(s.cases["estate-sample"].name).toBe("Estate of Ramesh Iyer");
     const before = JSON.stringify(sampleState("Asha Rao").order);
     s = run(s, { t: "switchCase", id: "estate-sample" }, pick("m:resume", "Continue where we left off"));
     expect(last(s).text).toMatch(/Each institution gets its own claim|So far/);

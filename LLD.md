@@ -96,7 +96,7 @@ These turn the PRD's product principles into engineering rules.
 
 | Layer (one-pager §7) | Where it lives | Status |
 | --- | --- | --- |
-| User experience | `src/app/page.tsx` (public site), `src/app/signin`, `src/app/app/*`, `src/components/keeper/*`, `src/keeper/*` | **Keeper web app built on a client-side demo engine** (synthetic data, deterministic assistant, browser voice); not yet wired to the backend |
+| User experience | `src/app/page.tsx` (public site), `src/app/signin`, `src/app/app/*`, `src/components/keeper/*`, `src/keeper/*` | **Original Keeper UI with backend adapter**: normal Continue calls the session-scoped APIs through `src/keeper/backend.ts`; Explore a sample retains the offline engine |
 | Identity and authorisation | `src/server/core/{session,access,gate-engine}.ts`, `src/server/providers/*` | Built with mock providers and session-based identity; real sign-in to build |
 | AI orchestration | `src/server/ai/*`, `src/server/domain/journey-engine.ts`, AI routes | Built (Gemini + deterministic journey engine) |
 | Financial integration | `src/server/data/resources.ts`, `ResourceVisit`, connector interface | Guided official resources built; connectors Later |
@@ -182,7 +182,7 @@ The Prisma schema in `frontend/prisma/schema.prisma` is the **source of truth fo
 | Model | Purpose | PRD concept |
 | --- | --- | --- |
 | `Session` | Anonymous browser session (v0 identity) | Participant (temporary) |
-| `LegacyCase` | One case: type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
+| `LegacyCase` | One case (with `keeperUi`, Keeper's redacted saved conversation and draft state): type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
 | `DeceasedPerson` | Name, name variants, DOB, PAN **hash**, date of death, death-proof status | Subject (deceased) |
 | `Claimant` | Relationship, role (lead / co-heir), identity and relationship status | Participant + role |
 | `Proof` | Identity / death / relationship / entitlement proof: provider, status, matched fields | Authority evidence |
@@ -585,7 +585,7 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | --- | --- |
 | Masking by default | `masking.ts` on every asset response below G4 |
 | PAN | Stored only as HMAC (`PAN_HASH_SECRET`, required in production) |
-| Redaction before storage | Identifiers removed from stored text and extracted fields |
+| Redaction before storage | Identifiers removed from stored document text, extracted fields, the intake and Q&A logs, and Keeper's saved conversation and draft state |
 | No raw originals | Original files are not stored (read, extract, forget) |
 | Encryption at rest | Google Cloud default encryption for whatever database is chosen (FREE_TIER_PLAN §3) |
 | Encryption in transit | HTTPS only (Cloud Run) |
@@ -791,3 +791,17 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 - Adds trust gates G0–G4 as the implementation of the PRD's authority model; four evidence statuses; claim lifecycle; voice design; API inventory with built/to-build status; gap analysis; phased build plan.
 - MVP discovery is upload + guided official searches; connectors and the Verify console are Later.
 - **0.5.1:** G3 accepts any evidenced claimant role (nominee, heir, executor, joint holder), not only close relatives; encrypted full identifiers designed for G4 and claim packs; IEPF moved to Later; discovery outcomes include blocked and failed; built vs to-build marked in §6, §9.1, §10.2; fixture provider at runtime and a reference workload (§17.3–17.4); every MVP requirement now has a build step in Phase B; Cloud Run described as the target, not current state.
+
+
+### Keeper state adapter — 18 Oct 2026
+
+The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` into `LegacyCase.keeperUi` (`src/server/domain/keeper-ui.ts`) — **not** the `CaseEvent` audit table. Identifiers in the saved text are redacted before storage, verification states and document/sample sources are stripped, and the workspace `events` never include it; a copy left in `CaseEvent` by earlier code is moved and deleted on first read. This state cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
+
+`GET /api/cases/:id/messages` resumes historical intake/Q&A; fallback passage replies are saved. Case corrections use owner-scoped PATCH; asset owner/nomination edits use the existing discovery-gated PATCH. Original claim controls use the server path, pack and approval hash, and only record the family’s own submission. Verification forms are small cards inside the existing details panel. Failed chat retains its draft. Explore a sample is unchanged and uses no backend.
+
+
+### Refinement behavior — 18 Oct 2026
+
+`presentation.ts` consolidates fragmented assistant turns and selects a next step from saved task/claim/document state. The original interviewer supplies focused information gathering; `backend.ts` projects authoritative server records and preserves self-reported context and follow-ups. UI metadata never grants a gate or evidence status. `attachments.ts` uses native IndexedDB for recoverable selected-file uploads; JSON metadata is scoped to its thread. Personal and example drafts use separate local caches.
+
+`hasAiConsent` is checked before generation and semantic embedding; retrieval can explicitly use keyword-only mode. Consent is also required for image AI, drafting and checklist generation. No database schema change. The production authentication, identity-provider connections, institution connectors, sharing/release and direct submission remain unavailable. Personal protected-record operations remain gated; the UI explains unavailable checks rather than passing them through a mock provider.

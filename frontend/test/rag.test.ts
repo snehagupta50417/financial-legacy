@@ -24,6 +24,7 @@ function post(url: string, body: unknown, sid = session) {
 async function demoCase(sid = session) {
   const res = await loadDemo(post("/api/demo", { scenario: "demo-a" }, sid));
   const { caseId } = (await res.json()) as { caseId: string };
+  await db.consentRecord.create({ data: { sessionId: sid, purpose: "ai_processing", status: "granted" } });
   return db.legacyCase.findUniqueOrThrow({ where: { id: caseId } });
 }
 

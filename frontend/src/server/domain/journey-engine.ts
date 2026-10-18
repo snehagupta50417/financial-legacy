@@ -148,7 +148,7 @@ export function buildJourney(
           instructions:
             "Open the Asset Inventory, compare each clue against its source evidence, and confirm or dismiss it. Confirmed assets drive the recovery checklist.",
           rationale:
-            "AI extraction is a hypothesis; your confirmation converts a clue into a verified record without inventing assets.",
+            "A document clue is a potential match. Confirm ownership and review the source before relying on it.",
           dependencies: ["Collect every financial record you can find"],
           priority: 15,
         },

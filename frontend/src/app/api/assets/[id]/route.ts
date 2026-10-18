@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 const ASSET_CATEGORIES = ["bank_deposit", "bank_account", "insurance", "mutual_fund", "shares", "provident_fund", "other", "unknown"] as const;
 
 const Body = z.object({
+  holderName: z.string().trim().min(1).max(120).optional(),
+  nomineeStatus: z.enum(["recorded", "none", "unknown"]).optional(),
   institution: z.string().trim().min(1).max(120).optional(),
   maskedRef: z.string().trim().max(60).optional(),
   notes: z.string().max(500).optional(),
@@ -31,8 +33,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { asset, legacyCase } = access;
   const body = await parseJson(req, Body);
   if (body instanceof Response) return body;
+  if (body.holderName !== undefined && body.holderName !== asset.holderName && asset.entitled) return errorResponse(409, "The holder name needs an authority review before it can change.");
 
   const data: Record<string, unknown> = {};
+  if (body.holderName !== undefined) data.holderName = body.holderName;
+  if (body.nomineeStatus !== undefined) data.nomineeStatus = body.nomineeStatus;
   if (body.institution !== undefined) data.institution = body.institution;
   if (body.maskedRef !== undefined) {
     data.maskedRef = body.maskedRef;

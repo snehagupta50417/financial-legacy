@@ -252,3 +252,27 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Voice** uses the browser's own speech recognition: explicit start, disclosure before first use, editable transcript, clear denied/unsupported states, text fallback, spoken replies opt-in. No audio is stored by Keeper. Free, in line with the free-tier rule.
 - **Imagery:** drawn illustrations instead of photographs (none could be licensed here). Swap in real photography later.
 - Tests: `test/keeper.test.ts` drives the three flows and the cross-cutting rules through the reducer (14 tests); the old `case-nav` test went with the old UI.
+
+
+## Backend integration through the original Keeper UI — 18 Oct 2026
+
+- Preserve the original frontend. The separate replacement workspace was removed. `src/keeper/backend.ts` adapts existing API responses to Keeper state; the store queues server actions while the existing shell, conversation, voice, views and panels render them. Explore a sample keeps its offline engine.
+- Server gates, evidence, masking, claim paths, packs and approval hashes are authoritative. UI draft metadata is owner-scoped and cannot authorize access or approve claims. No new dependency or paid service. *(The saved-state storage was changed the same day — see "Keeper saved state moved off the audit table" below.)*
+- Added conversation resume and draft persistence endpoints, case fact correction, and owner/nomination fields on the existing asset editor endpoint. Synthetic upload uses the original paperclip. Original family drafts persist, but no invitation or real sharing is claimed.
+- Existing FL-01, FL-03, FL-06–FL-09, FL-12–FL-16, FL-26–FL-29 and FL-36–FL-37 apply. Prototype authentication, simulated verification and synthetic-only data restrictions remain.
+
+
+## Targeted Keeper refinement — 18 Oct 2026
+
+- Preserve all landing sections, branding, illustrations, routes, shell and responsive layouts. Reduce repeated copy and status badges; share the actual chat-bubble component with the landing preview. Add compact record provenance, actual claim-stage, duplicate-comparison and access-preview visuals inside existing views. Listening motion appears only during active recognition and stops under reduced motion.
+- Reuse the existing interviewer for one-question turns with saved context and volunteered details. Backend workspace data is refreshed before a response; only gated APIs can create holdings, evidence or claims. Unknown and skipped answers retain their state, and follow-up tasks persist independently of messages. Corrected family-preparation fallback classification.
+- Preserve drafts, reading position and user-selected attachments. Selected files are stored locally in IndexedDB until upload succeeds or the user removes them. Retries stay bound to the original conversation. Signing out removes queued files. No new dependency, framework, provider, auth system, deployment or cloud configuration.
+- Personal records contain no fixture-loading controls. The separate example workspace is identified once in the case selector; reference providers remain available for tests but the UI does not present them as live identity verification. Example submission previews have no invented reference or follow-up date.
+- Model generation, semantic retrieval and image extraction require explicit processing permission through existing consent records and Settings. Keyword search and local extraction still work without permission. Approval uses the server package hash; self-reported submissions collect the date and any genuine receipt, and outcome evidence can be recorded.
+
+## Keeper saved state moved off the audit table — 18 Oct 2026
+
+- **Problem found in review:** the first backend wiring stored Keeper's conversation and draft state as JSON in a `CaseEvent` row that was overwritten on every save. That broke two documented rules: `CaseEvent` is the append-only audit trail, and identifiers are redacted before anything is stored (a full account number typed into the chat was kept verbatim). The workspace API also sent the whole blob back to the browser in `events`, relying on the client to hide it.
+- **Fix:** one nullable column, `LegacyCase.keeperUi` (applied with `prisma db push`), owned by `src/server/domain/keeper-ui.ts`. Saving redacts identifiers in every free-text field (messages, facts, tasks, family instructions, plan notes), downgrades any `verified` / `document_supported` state and any `Document` / `Sample record` source (draft state is self-reported), and writes nothing to `CaseEvent`. The workspace `events` filter out `keeper_ui` rows; any old row is redacted, moved into the column and deleted on first read.
+- **Same redaction applied to the other logs that kept raw text:** `IntakeMessage` (the model still sees the original in memory; only the stored copy is redacted) and `QaMessage` (question and answer).
+- Tests: `test/keeper-ui-state.test.ts` (9) covers redaction before storage, stripped verification, no `CaseEvent` writes, events filtering, migration of old rows, ownership (404/401) and malformed input.
