@@ -20,6 +20,7 @@ export default defineConfig({
       DATABASE_URL: `file:${path.resolve(__dirname, "test/.tmp/test.db")}`,
       GEMINI_API_KEY: "",
       GOOGLE_CLOUD_PROJECT: "",
+      SARVAM_API_KEY: "",
     },
     fileParallelism: false,
   },
