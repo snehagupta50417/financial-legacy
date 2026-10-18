@@ -426,3 +426,8 @@ Keep external search and submission user-controlled. Reuse curated source URLs; 
 ### 2026-10-18: Bind agent execution and report durable results
 
 Guard conversational dispatch at invocation and again when queued work starts. Preserve the user’s selection when in-flight writes complete. Invalidate unmounted agent instances, and key the conversation by its stable thread ID so initial server case creation does not interrupt turn one. Await turn persistence and retain unsaved replies for explicit retry without re-running actions. Replace model prose when tool execution fails. Bind server history to the requested case-owned thread and supply validated saved follow-ups as data, respecting discovery visibility.
+
+
+### 2026-10-18: Motion tied to actual UI state
+
+Use CSS transforms/opacity for route, panel and new-message entrances. Remember the message IDs present at mount so old transcripts do not animate again. The existing request phase drives thinking indicators; execution state drives completion feedback. Modern details-content transitions are progressive enhancement with a simple open animation fallback. No dependency, new timer or network request.

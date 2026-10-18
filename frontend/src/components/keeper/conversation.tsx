@@ -43,12 +43,12 @@ function MessageText({ text, user }: { text: string; user?: boolean }) {
   return <>{clean.slice(0, split)}<details className="mt-3 whitespace-normal"><summary className="cursor-pointer text-[0.85rem] font-medium text-moss">Sources and evidence</summary><div className="mt-2 whitespace-pre-wrap text-[0.85rem] text-muted-foreground">{clean.slice(split + 10).split(/(https?:\/\/[^\s]+)/g).map((part, i) => /^https?:\/\//.test(part) ? <a key={i} href={part} target="_blank" rel="noreferrer" className="break-all underline">{part}</a> : part)}</div></details></>;
 }
 
-function Bubble({ m, onOpen, current }: { current?: boolean; m: Message; onOpen: (type: NonNullable<Message["card"]>["type"], id?: string) => void }) {
+function Bubble({ m, onOpen, current, animate }: { animate?: boolean; current?: boolean; m: Message; onOpen: (type: NonNullable<Message["card"]>["type"], id?: string) => void }) {
   if (m.role === "user") {
-    return <ChatBubble user><span className="keeper-user-label">You</span>{m.voice && <span className="mb-1 flex items-center gap-1 text-[0.78rem] text-ivory/70"><Mic className="h-3 w-3" aria-hidden />Spoken, as transcribed</span>}<MessageText text={m.text} user /></ChatBubble>;
+    return <ChatBubble user className={animate ? "keeper-message-enter keeper-message-enter-user" : undefined}><span className="keeper-user-label">You</span>{m.voice && <span className="mb-1 flex items-center gap-1 text-[0.78rem] text-ivory/70"><Mic className="h-3 w-3" aria-hidden />Spoken, as transcribed</span>}<MessageText text={m.text} user /></ChatBubble>;
   }
   return (
-    <ChatBubble className={cn("border", m.role === "note" ? "border-dashed border-moss/50 bg-moss-soft/50" : current && m.pending ? "border-moss/30 bg-paper" : "border-transparent bg-paper")}>
+    <ChatBubble className={cn("border", animate && "keeper-message-enter", m.role === "note" ? "border-dashed border-moss/50 bg-moss-soft/50" : current && m.pending ? "border-moss/30 bg-paper" : "border-transparent bg-paper")}>
       <span className="keeper-message-label"><Sparkles className="h-3.5 w-3.5" aria-hidden />Keeper{m.role === "note" && <span className="keeper-update-tag">Update</span>}</span>
       
       <MessageText text={m.text} />
@@ -71,9 +71,10 @@ function ConversationWorkspace() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const chat = useAgent(false, { micOn: false, passive: true });
   const chatBusy = ["thinking", "acting"].includes(chat.phase);
+  const chatBlocked = chatBusy || !!chat.unsaved;
   const [sheet, setSheet] = useState(false);
   const [callTopic, setCallTopic] = useState<string | undefined>();
-  const startCall = (topic?: string) => { if (chatBusy || backend.busy) return; setCallTopic(topic); setVoiceOpen(true); };
+  const startCall = (topic?: string) => { if (chatBlocked || backend.busy) return; setCallTopic(topic); setVoiceOpen(true); };
   // Supporting records open beside the chat or in a mobile sheet.
   const [asideOpen, setAsideOpen] = useState(() => { try { return localStorage.getItem("keeper.details") === "open"; } catch { return false; } });
   const toggleDetails = () => {
@@ -88,6 +89,7 @@ function ConversationWorkspace() {
   const started = useRef(false);
   const spoken = useRef<string | null>(null);
   const msgs = th?.messages ?? [];
+  const [initialMessageIds] = useState(() => new Set(msgs.map(m => m.id)));
   const fresh = msgs.length <= 1 && !th?.journey;
 
   // A choice made on the landing page carries into the conversation.
@@ -130,10 +132,10 @@ function ConversationWorkspace() {
     if (window.matchMedia("(min-width: 1280px)").matches) setAsideOpen(true);
     else setSheet(true);
   };
-  const submit = () => { const t = text.trim(); if (!t || backend.busy) return; followLatest.current = true; if (chatBusy) return;
+  const submit = () => { const t = text.trim(); if (!t || backend.busy) return; followLatest.current = true; if (chatBlocked) return;
     if (state?.session?.mode === "signin") { updateText(""); void chat.handle(t, false); }
     else { const result = dispatch({ t: "send", text: t }); if (result) void result.then(ok => { if (ok) updateText(""); }); else updateText(""); } };
-  const pick = (ch: Choice) => { if (chatBusy || backend.busy) return; followLatest.current = true; if (ch.id.startsWith("a:sampleDoc:") || ch.id.startsWith("a:linkStatement:")) { router.push("/app/documents"); return; } if (state?.session?.mode === "signin") void chat.handle(ch.label, false); else dispatch({ t: "choose", id: ch.id, label: ch.label }); };
+  const pick = (ch: Choice) => { if (chatBlocked || backend.busy) return; followLatest.current = true; if (ch.id.startsWith("a:sampleDoc:") || ch.id.startsWith("a:linkStatement:")) { router.push("/app/documents"); return; } if (state?.session?.mode === "signin") void chat.handle(ch.label, false); else dispatch({ t: "choose", id: ch.id, label: ch.label }); };
   const lastMsg = msgs.at(-1);
   const who = state?.session?.name?.trim();
   const greeting = who && who !== "You" ? "Hi " + who.split(" ")[0] + ". What’s on your mind?" : "What’s on your mind?";
@@ -143,7 +145,7 @@ function ConversationWorkspace() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label="Conversation with Keeper">
         <header className="keeper-conversation-header flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-8">
           <div className="min-w-0"><p className="keeper-overline">YOUR PERSONAL WORKSPACE</p><p className="truncate font-semibold">{th.title === "New conversation" ? "A conversation with Keeper" : th.title}</p><p className="keeper-case-subtitle truncate text-[0.85rem] text-muted-foreground">{c.name}<span aria-hidden> · </span><span>Synthetic data</span></p></div>
-          <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn><button disabled={chatBusy || backend.busy} onClick={() => startCall()} aria-label="Call Keeper" title="Call Keeper" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-paper hover:bg-secondary disabled:opacity-40"><Phone className="h-4 w-4" aria-hidden /></button></div>
+          <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn><button disabled={chatBlocked || backend.busy} onClick={() => startCall()} aria-label="Call Keeper" title="Call Keeper" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-paper hover:bg-secondary disabled:opacity-40"><Phone className="h-4 w-4" aria-hidden /></button></div>
         </header>
 
 
@@ -151,8 +153,8 @@ function ConversationWorkspace() {
           <div className="keeper-message-column mx-auto flex max-w-[44rem] flex-col gap-3">
             <FollowUpQueue c={c} onOpen={open} />
             {!fresh && <CaseMemory c={c} busy={backend.busy || chatBusy} />}
-            {!fresh && msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} onOpen={open} />)}
-            {(backend.busy || chatBusy) && <p role="status" className="px-4 text-sm text-muted-foreground">{chatBusy ? "Keeper is thinking…" : "Reviewing records…"}</p>}
+            {!fresh && msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} animate={!initialMessageIds.has(m.id)} onOpen={open} />)}
+            {(backend.busy || chatBusy) && <div role="status" className="keeper-thinking"><Sparkles className="h-4 w-4" aria-hidden /><span>{chatBusy ? "Keeper is thinking" : "Updating your case"}</span><span className="keeper-thinking-dots" aria-hidden><i /><i /><i /></span></div>}
             {fresh ? (
               <div className="keeper-welcome settle flex flex-col items-center gap-6 pt-4 text-center sm:pt-10">
                 <div className="keeper-welcome-symbol" aria-hidden><Sparkles strokeWidth={1.3} /></div>
@@ -162,12 +164,12 @@ function ConversationWorkspace() {
                 </div>
                 <div className="keeper-starters w-full max-w-md">
                   <p className="mb-2 text-[0.85rem] font-medium text-muted-foreground">A place to begin</p>
-                  <div className="grid gap-3 sm:grid-cols-3">{STARTERS.map((s, i) => <button key={s.journey} disabled={backend.busy || chatBusy} onClick={() => { followLatest.current = true; if (state?.session?.mode === "signin") void chat.handle(s.text, false); else dispatch({ t: "send", text: s.text }); }} className="keeper-starter min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{i === 0 ? <Search aria-hidden /> : i === 1 ? <Heart aria-hidden /> : <ShieldCheck aria-hidden />}<span>{s.label}</span><ArrowRight className="keeper-starter-arrow" aria-hidden /></button>)}</div>
+                  <div className="grid gap-3 sm:grid-cols-3">{STARTERS.map((s, i) => <button key={s.journey} disabled={backend.busy || chatBlocked} onClick={() => { followLatest.current = true; if (state?.session?.mode === "signin") void chat.handle(s.text, false); else dispatch({ t: "send", text: s.text }); }} className="keeper-starter min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{i === 0 ? <Search aria-hidden /> : i === 1 ? <Heart aria-hidden /> : <ShieldCheck aria-hidden />}<span>{s.label}</span><ArrowRight className="keeper-starter-arrow" aria-hidden /></button>)}</div>
                 </div>
               </div>
             ) : work && work.card.type !== "know" && !lastMsg?.pending ? <WorkCard c={c} work={work} onOpen={open} /> : lastMsg && lastMsg.role !== "user" ? <Chips choices={lastMsg.card ? lastMsg.choices?.filter(c => c.id !== "m:resume") : lastMsg.choices} pending={lastMsg.pending} onPick={pick} /> : null}
             {fresh && <CaseMemory c={c} busy={backend.busy || chatBusy} />}
-            {chat.steps.some(s => s.kind === "act") && <details className="rounded-xl border border-line bg-paper p-3" open={chat.steps.some(s => s.state === "failed" || s.state === "running")}><summary className="cursor-pointer text-sm font-medium">What Keeper did this turn</summary><ul className="mt-2 space-y-2 text-sm">{chat.steps.filter(s => s.kind === "act").map(s => <li key={s.id} className={s.state === "failed" ? "text-red-800" : "text-muted-foreground"}><b>{s.state === "done" ? "Completed" : s.state === "running" ? "In progress" : s.state === "failed" ? "Failed" : "Skipped"}:</b> {s.text}</li>)}</ul></details>}
+            {chat.steps.some(s => s.kind === "act") && <details className="rounded-xl border border-line bg-paper p-3" open={chat.steps.some(s => s.state === "failed" || s.state === "running")}><summary className="cursor-pointer text-sm font-medium">What Keeper did this turn</summary><ul className="mt-2 space-y-2 text-sm">{chat.steps.filter(s => s.kind === "act").map(s => <li key={s.id + s.state} data-step-state={s.state} className={s.state === "failed" ? "text-red-800" : "text-muted-foreground"}><b>{s.state === "done" ? "Completed" : s.state === "running" ? "In progress" : s.state === "failed" ? "Failed" : "Skipped"}:</b> {s.text}</li>)}</ul></details>}
             <div ref={endRef} />
           </div>
         </div>
@@ -187,9 +189,9 @@ function ConversationWorkspace() {
                 {state?.session?.mode === "sample" && SAMPLE_DOCS.map(([v, l]) => <button type="button" key={v} onClick={(e) => { dispatch({ t: "doc.sample", variant: v }); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }} className="block min-h-11 w-full rounded-xl px-3 text-left hover:bg-secondary">{l}</button>)}
               </div>
             </details>
-            <textarea readOnly={backend.busy || chatBusy} value={text} onChange={(e) => updateText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} rows={1} aria-label="Message Keeper" placeholder="Ask anything, or tell me where to start…" className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-2 py-2.5 [field-sizing:content] focus:outline-none" />
+            <textarea readOnly={backend.busy || chatBlocked} value={text} onChange={(e) => updateText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} rows={1} aria-label="Message Keeper" placeholder="Ask anything, or tell me where to start…" className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-2 py-2.5 [field-sizing:content] focus:outline-none" />
             <button type="button" onClick={() => startCall()} className="inline-flex h-11 items-center gap-2 rounded-full bg-apricot px-4 font-semibold hover:bg-[#dd9566]"><Mic className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Talk to Keeper</span><span className="sr-only sm:hidden">Talk to Keeper</span></button>
-            <button type="submit" disabled={!text.trim() || backend.busy || chatBusy} aria-label="Send message" className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-ivory disabled:opacity-40"><Send className="h-4 w-4" aria-hidden /></button>
+            <button type="submit" disabled={!text.trim() || backend.busy || chatBlocked} aria-label="Send message" className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-ivory disabled:opacity-40"><Send className="h-4 w-4" aria-hidden /></button>
           </div>
           <p className="mx-auto mt-2 max-w-[44rem] text-center text-[0.78rem] text-muted-foreground">Synthetic data only · Keeper can make mistakes. Review extracted details before using them.</p>
         </form>

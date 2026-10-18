@@ -659,7 +659,7 @@ export type Action =
   /** Make sure this conversation has a saved case, opening it from what the person just said. Changes nothing else. */
   | { t: "case.ensure"; text: string }
   /** One turn of the voice agent: what the person said and what Keeper said back. Changes nothing else. */
-  | { t: "agent.turn"; user: string; reply: string; voice?: boolean; card?: Message["card"]; note?: boolean }
+  | { t: "agent.turn"; turnId?: string; user: string; reply: string; voice?: boolean; card?: Message["card"]; note?: boolean }
   | { t: "choose"; id: string; label: string }
   | { t: "focus"; focus: Case["focus"] }
   | { t: "followup.set"; target: string; enabled: boolean; nextCheckOn: string | null }
@@ -708,8 +708,11 @@ function reduceState(prev: AppState, a: Action): AppState {
     case "switchThread": if (c.threads.some((t) => t.id === a.id)) c.activeThread = a.id; break;
     case "send": converse(s, { text: a.text, voice: a.voice }); break;
     case "agent.turn": {
-      if (!th) break;
-      th.messages.push(msg("user", a.user, { voice: a.voice }), msg(a.note ? "note" : "keeper", a.reply, a.card ? { card: a.card } : {}));
+      if (!th || (a.turnId && th.messages.some(m => m.id === a.turnId + ":user"))) break;
+      const user = msg("user", a.user, { voice: a.voice });
+      const reply = msg(a.note ? "note" : "keeper", a.reply, a.card ? { card: a.card } : {});
+      if (a.turnId) { user.id = a.turnId + ":user"; reply.id = a.turnId + ":keeper"; }
+      th.messages.push(user, reply);
       if (a.card) c.focus = a.card;
       break;
     }

@@ -52,8 +52,9 @@ async function request<T>(url: string, init?: RequestInit, retried = false): Pro
 
 export const api = {
   get: <T>(url: string) => request<T>(url),
-  post: <T>(url: string, body?: unknown) =>
+  post: <T>(url: string, body?: unknown, options?: { signal?: AbortSignal }) =>
     request<T>(url, {
+      signal: options?.signal,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body ?? {}),

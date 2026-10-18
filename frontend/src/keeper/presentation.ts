@@ -21,17 +21,18 @@ export function refineTurns(next: AppState, previous: AppState): AppState {
 }
 
 export function nextWork(c: Case): { text: string; card: NonNullable<Message["card"]> } | null {
-  const claim = c.claims.find(cl => !cl.outcome || cl.backend?.remainderTracked);
+  const claim = c.claims.find(cl => !cl.outcome || ["partially_settled", "unresolved_dispute"].includes(cl.outcome.kind) || cl.backend?.remainderTracked);
   if (claim) {
     const institution = c.assets.find(a => a.id === claim.assetId)?.institution || "Your";
     const pack = claim.backend?.pack;
-    if (claim.backend?.remainderTracked) return { text: "Part of your claim was settled. The remaining amount is still being tracked in this case.", card: { type: "claim", id: claim.id } };
+    if (claim.outcome?.kind === "unresolved_dispute") return { text: "This claim has an unresolved dispute. Review the institution’s response and next steps.", card: { type: "claim", id: claim.id } };
+    if (claim.backend?.remainderTracked || claim.outcome?.kind === "partially_settled") return { text: "Part of your claim was settled. The remaining amount is still being tracked in this case.", card: { type: "claim", id: claim.id } };
     if (!claim.backend) { const holding = c.assets.find(a => a.id === claim.assetId); if (holding) { const plan = claimPlan(holding, claim); const missing = plan.items.filter(i => i.required && !claim.have[i.id]); if (missing.length || plan.decision.kind === "ask") return { text: institution + " claim " + (missing.length ? "still needs " + (missing.length === 1 ? "one document." : missing.length + " documents.") : "needs your input."), card: { type: "claim", id: claim.id } }; } }
     if (claim.backend && !claim.backend.entitled) return { text: institution + " claim needs authority evidence.", card: { type: "claim", id: claim.id } };
     const missing = pack?.items.filter(i => i.required && i.state === "missing");
     if (missing?.length) return { text: institution + " claim needs " + (missing.length === 1 ? "one more document." : missing.length + " documents."), card: { type: "claim", id: claim.id } };
     if (claim.approval?.state === "requested") return { text: "Your claim package is waiting for approval.", card: { type: "claim", id: claim.id } };
-    if (claim.submitted) return { text: claim.backend ? "Your claim is awaiting an institution update." : "Your documents are prepared. Submission is the next step.", card: { type: "claim", id: claim.id } };
+    if (claim.submitted) return { text: claim.backend ? "Your claim is awaiting an institution update." : "Simulated submission recorded. Review the claim’s follow-up steps.", card: { type: "claim", id: claim.id } };
     if (claim.prepared) return { text: "Your claim package is ready for review.", card: { type: "claim", id: claim.id } };
   }
   const doc = c.docs.find(d => d.state === "ready" && d.fields.some(f => !f.reviewed));

@@ -355,3 +355,8 @@ Retain the ivory, moss and apricot identity with a quieter sage navigation surfa
 ### Landing page polish and motion — 18 October 2026
 
 Keep the one-pager’s three journeys and honest coverage limits. Refine the hero with large editorial typography, an explicitly simulated case preview and supporting evidence card. Use finite staggered entrances, hover elevation, story-panel transitions and once-only section reveals. Content remains visible without JavaScript; reduced motion disables reveals, transforms, smooth scrolling and decorative animation. No invented testimonials, metrics, integrations or security certifications.
+
+
+### Application motion — 18 October 2026
+
+Use short route entrances without exit delays; animate only newly added chat messages, not restored history. Thinking dots represent an active request and disappear when it completes. Details disclosure, contextual panels, current claim stages and follow-up feedback use short transitions. Do not animate layout measurements or insert fake progress. Hover effects apply only to precise pointers. All new motion is disabled under prefers-reduced-motion, including smooth scroll, while status text remains readable.
