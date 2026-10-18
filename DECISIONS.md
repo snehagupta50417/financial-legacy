@@ -431,3 +431,8 @@ Guard conversational dispatch at invocation and again when queued work starts. P
 ### 2026-10-18: Motion tied to actual UI state
 
 Use CSS transforms/opacity for route, panel and new-message entrances. Remember the message IDs present at mount so old transcripts do not animate again. The existing request phase drives thinking indicators; execution state drives completion feedback. Modern details-content transitions are progressive enhancement with a simple open animation fallback. No dependency, new timer or network request.
+
+
+### 2026-10-18: Evidence provenance and durable review
+
+Build the evidence map from canonical records, not model-generated relationships. Add a small database-backed claim-review worker with checkpoint/lease fencing, explicit restart and bounded failure recovery. Keep human authority, approval and external submission outside automatic work. Use the existing database and no paid queue or new service. Local timers support development; request-driven advancement supports free-tier hosts without guaranteed idle CPU.

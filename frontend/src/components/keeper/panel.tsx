@@ -15,6 +15,7 @@ import { cap, formatDay, money } from "@/keeper/util";
 import { QUESTION_TEXT } from "@shared/claim-path";
 import { cn } from "@/lib/utils";
 import { Btn, Card, EvidenceBadge, FactBadge, Hint, Pill } from "./ui";
+import { EvidenceExplorer, DurableClaimReview } from "./evidence-explorer";
 import { FollowUpChoice, OfficialHandoff } from "./follow-up";
 import { BackendAccess, BackendPackDownload } from "./backend-access";
 import { SourceToRecord, ClaimTimeline, DuplicateComparison, ContactScope, FamilyConnections } from "./task-visuals";
@@ -128,6 +129,7 @@ export function AssetDetail({ a, c }: { a: Asset; c: Case }) {
         <div><dt className="text-[0.85rem] text-muted-foreground">Last checked</dt><dd className="font-medium">{a.lastChecked ? formatDay(a.lastChecked) : "Not checked yet"}</dd></div>
         <div><dt className="text-[0.85rem] text-muted-foreground">Next action</dt><dd className="font-medium">{a.next}</dd></div>
       </dl>
+      <EvidenceExplorer c={c} assetId={a.id} />
       <div>
         <H>Source documents</H>
         {a.docIds.length ? <ul className="mt-2 space-y-1">{a.docIds.map((id) => { const d = c.docs.find((x) => x.id === id); return d ? <li key={id}><button className="text-moss underline underline-offset-4" onClick={() => dispatch({ t: "focus", focus: { type: "doc", id } })}>{d.name}</button></li> : null; })}</ul> : <Hint>None yet. A document is the strongest evidence.</Hint>}
@@ -247,6 +249,8 @@ export function ClaimDetail({ cl, c }: { cl: Claim; c: Case }) {
       {cl.backend && !cl.backend.entitled && <BackendAccess c={c} assetId={a.id} />}
       {cl.backend?.approval && <BackendPackDownload claimId={cl.id} />}
       <ClaimTimeline step={step} />
+      <DurableClaimReview c={c} claimId={cl.id} />
+      <details className="rounded-2xl border border-line bg-paper p-4"><summary className="min-h-11 cursor-pointer text-sm font-semibold text-moss">Explore this claim’s evidence map</summary><EvidenceExplorer c={c} assetId={a.id} /></details>
       <p className="text-sm font-medium text-moss">{cl.backend?.statusLabel || (cl.outcome ? OUTCOME_LABEL[cl.outcome.kind] : cl.submitted ? "Submission preview" : ap?.state === "requested" ? "Waiting for approval" : cl.prepared ? "Ready for review" : "Needs your input")}</p>
 
       <Card>
