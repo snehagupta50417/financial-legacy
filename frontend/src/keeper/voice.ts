@@ -64,7 +64,8 @@ export function useSpeech(): SpeechInput {
   useEffect(() => () => { if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); } }, []);
 
   const start = useCallback((lang?: string) => {
-    rec.current?.abort();
+    if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); }
+    setListening(false);
     const C = ctor();
     if (!C) return setError("unsupported");
     window.speechSynthesis?.cancel(); // interruption: Keeper stops talking when you start
@@ -91,16 +92,16 @@ export function useSpeech(): SpeechInput {
   }, []);
 
   const stop = useCallback(() => rec.current?.stop(), []);
-  const clear = useCallback(() => { rec.current?.abort(); setText(""); setInterim(""); setListening(false); }, []);
+  const clear = useCallback(() => { if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); rec.current = null; } setText(""); setInterim(""); setError(null); setListening(false); }, []);
   return { supported, listening, text, setText, interim, error, start, stop, clear, finalDelay: 1400, language };
 }
 
 /** Speaks `text`. `onEnd` fires exactly once when it finishes, is cut off, or can't be spoken at all. */
-export function speak(text: string, onEnd?: () => void, lang?: string) {
+export function speak(text: string, onEnd?: () => void, lang?: string, onUnavailable?: () => void) {
   let done = false;
   let watchdog: ReturnType<typeof setTimeout> | undefined;
   const finish = () => { if (!done) { done = true; clearTimeout(watchdog); onEnd?.(); } };
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return finish();
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) { onUnavailable?.(); return finish(); }
   const clean = text.replace(/\s+/g, " ");
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(clean);
@@ -111,8 +112,8 @@ export function speak(text: string, onEnd?: () => void, lang?: string) {
   if (voice) u.voice = voice;
   // Some browsers have no voice installed and never fire an event: don't leave the conversation waiting on one.
   u.onstart = () => { clearTimeout(watchdog); watchdog = setTimeout(finish, 6000 + clean.length * 110); };
-  u.onend = finish; u.onerror = finish;
-  watchdog = setTimeout(finish, 4000);
+  u.onend = finish; u.onerror = () => { onUnavailable?.(); finish(); };
+  watchdog = setTimeout(() => { onUnavailable?.(); finish(); }, 4000);
   window.speechSynthesis.speak(u);
 }
 let audio: HTMLAudioElement | null = null;
@@ -152,8 +153,8 @@ async function fetchSpeech(text: string, signal: AbortSignal, language?: string)
  * seconds, so the first sentence is requested on its own and the rest is fetched alongside it. If it is
  * unavailable or over quota, the browser's voice takes over, so a call never goes silent. `onEnd` fires once.
  */
-export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean; lang?: string } = { gemini: false }) {
-  if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd, opts.lang);
+export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean; lang?: string; onUnavailable?: () => void } = { gemini: false }) {
+  if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd, opts.lang, opts.onUnavailable);
   stopSpeaking();
   let done = false;
   const finish = () => { if (!done) { done = true; onEnd?.(); } };
@@ -164,14 +165,14 @@ export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: bo
   const play = async (i: number): Promise<void> => {
     const blob = await clips[i];
     if (ctrl.signal.aborted) return;
-    if (!blob) return speak(parts.slice(i).join(" "), finish, opts.lang);
+    if (!blob) return speak(parts.slice(i).join(" "), finish, opts.lang, opts.onUnavailable);
     const url = URL.createObjectURL(blob);
     const a = new Audio(url);
     audio = a;
     const next = () => { URL.revokeObjectURL(url); audio = null; if (i + 1 < parts.length) void play(i + 1); else finish(); };
     a.onended = next;
-    a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(parts.slice(i + 1).join(" ") || " ", finish, opts.lang); };
-    try { await a.play(); } catch { if (!ctrl.signal.aborted) speak(parts.slice(i).join(" "), finish, opts.lang); }
+    a.onerror = () => { URL.revokeObjectURL(url); audio = null; if (!ctrl.signal.aborted) speak(parts.slice(i).join(" "), finish, opts.lang, opts.onUnavailable); };
+    try { await a.play(); } catch { if (!ctrl.signal.aborted) speak(parts.slice(i).join(" "), finish, opts.lang, opts.onUnavailable); }
   };
   void play(0);
 }

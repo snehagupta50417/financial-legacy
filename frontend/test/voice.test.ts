@@ -67,3 +67,26 @@ describe("speakKeeper", () => {
     expect(spoken).toEqual(["Still here."]);
   });
 });
+
+
+it("replays the failed audio sentence instead of silently skipping it", async () => {
+  vi.stubGlobal("fetch", async () => new Response(new Blob(["synthetic audio"], { type: "audio/wav" })));
+  vi.stubGlobal("Audio", class {
+    onerror: (() => void) | null = null;
+    pause() {}
+    async play() { this.onerror?.(); }
+  });
+  const done = vi.fn();
+  speakKeeper("First sentence. Remaining sentence.", done, { gemini: true, lang: "en-IN" });
+  await vi.waitFor(() => expect(done).toHaveBeenCalledTimes(1));
+  expect(spoken).toEqual(["First sentence. Remaining sentence."]);
+});
+
+
+it("reports unavailable browser speech instead of silently completing", () => {
+  vi.stubGlobal("window", {});
+  const unavailable = vi.fn(), ended = vi.fn();
+  speakKeeper("Your reply remains visible.", ended, { gemini: false, onUnavailable: unavailable });
+  expect(unavailable).toHaveBeenCalledTimes(1);
+  expect(ended).toHaveBeenCalledTimes(1);
+});

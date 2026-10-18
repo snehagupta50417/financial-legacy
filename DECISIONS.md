@@ -436,3 +436,18 @@ Use CSS transforms/opacity for route, panel and new-message entrances. Remember 
 ### 2026-10-18: Evidence provenance and durable review
 
 Build the evidence map from canonical records, not model-generated relationships. Add a small database-backed claim-review worker with checkpoint/lease fencing, explicit restart and bounded failure recovery. Keep human authority, approval and external submission outside automatic work. Use the existing database and no paid queue or new service. Local timers support development; request-driven advancement supports free-tier hosts without guaranteed idle CPU.
+
+
+Voice recovery: guard transcription fallback by active conversation, microphone choice and browser support; explicitly request repetition of lost audio, preserve selected language, detach obsolete recognition handlers, and replay failed playback sentences through browser speech. No new provider or paid service.
+
+
+STT recovery uses the existing Gemini API-key account after Sarvam failure, reusing request-memory audio under existing AI consent and rate limits. Each provider has an independent 12-second timeout; request cancellation suppresses backup. No paid provider, new key, audio persistence or raw provider error logging.
+
+
+Example mode now supports consented AI conversation via an isolated conversation-only endpoint. It never hydrates demo holdings into canonical cases or executes model actions. Existing signed-in case-agent access gates remain unchanged.
+
+
+Regular-call output now chooses server speech when the browser has no voices even before language detection. Browser playback errors and startup timeout report an explicit visible notice, while preserving the reply text.
+
+
+Microphone capture no longer discards nonempty recordings based on analyser loudness. Suspended AudioContext and quiet-input recordings are sent to STT for actual speech detection; manual stop preserves audio. Permission wait is bounded at 15 seconds with late-stream cleanup; pending permission/transcription are visible.

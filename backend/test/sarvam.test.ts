@@ -177,3 +177,37 @@ describe("the call knows which speech recogniser to use, and the language to ans
     expect(languageNote(null)).toBe("");
   });
 });
+
+
+describe("same-recording Gemini speech backup", () => {
+  afterEach(() => { delete process.env.GEMINI_API_KEY; });
+  it("retries failed Sarvam audio through Gemini without requiring repetition", async () => {
+    process.env.GEMINI_API_KEY = "synthetic-gemini-key";
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      urls.push(url);
+      if (url.includes("sarvam")) return new Response("", { status: 429 });
+      const body = JSON.parse(init.body as string);
+      expect(body.contents[0].parts[0].inlineData.data).toBeTruthy();
+      expect(body.contents[0].parts[0].inlineData.mimeType).toBe("audio/webm");
+      return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ transcript: "नमस्ते", language: "hi-IN" }) }] } }] });
+    });
+    const response = await stt(audioReq(await makeSession()));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ transcript: "नमस्ते", language: "hi-IN" });
+    expect(urls).toHaveLength(2);
+  });
+  it("does not send audio to either provider without AI consent", async () => {
+    process.env.GEMINI_API_KEY = "synthetic-gemini-key";
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    expect((await stt(audioReq(await makeSession(false)))).status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("keeps malformed backup responses and provider secrets out of client errors", async () => {
+    process.env.GEMINI_API_KEY = "synthetic-gemini-key";
+    vi.stubGlobal("fetch", async (url: string) => url.includes("sarvam") ? new Response("private-provider-error", { status: 403 }) : Response.json({ candidates: [{ content: { parts: [{ text: "invalid-json" }] } }] }));
+    const response = await stt(audioReq(await makeSession()));
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toMatch(/private-provider|synthetic-gemini|invalid-json/);
+  });
+});
