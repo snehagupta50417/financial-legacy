@@ -63,4 +63,6 @@ export interface AgentTurn {
   actions: AgentAction[];
   listen: boolean;
   finish: boolean;
+  /** Keeper wants to offer a person (could not follow, or a matter it should not handle alone). */
+  handoff: boolean;
 }

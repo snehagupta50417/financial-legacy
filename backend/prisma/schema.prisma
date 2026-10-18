@@ -10,9 +10,9 @@ datasource db {
 // Demo-grade identity: a client-generated session key. All records are scoped
 // by sessionId so one visitor can never read another visitor's cases.
 model Session {
-  id        String   @id
-  isDemo    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id        String          @id
+  isDemo    Boolean         @default(false)
+  createdAt DateTime        @default(now())
   cases     LegacyCase[]
   consents  ConsentRecord[]
   messages  IntakeMessage[]
@@ -20,145 +20,146 @@ model Session {
 }
 
 model LegacyCase {
-  id              String   @id @default(cuid())
-  sessionId       String
-  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  caseType        String // living_individual | family_death | nominee_heir | estate_planning | rejected_claim | caregiver | nri_cross_border | general
-  assetHolderName String?
-  relationship    String?
-  holderLiving    Boolean?
-  jurisdiction    String   @default("India")
-  summary         String
-  stage           String   @default("understanding") // understanding | discovery | documentation | action | resolution
-  progress        Float    @default(0)
-  nextBestAction  String?
-  scenarioLabel   String?
-  confidence      Float?
-  confirmedFacts  String? // JSON array
-  assumptions     String? // JSON array
-  isDemo          Boolean  @default(false)
-  demoKey         String? // demo-a | demo-b | demo-c | demo-reclaim
+  id               String           @id @default(cuid())
+  sessionId        String
+  session          Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  caseType         String // living_individual | family_death | nominee_heir | estate_planning | rejected_claim | caregiver | nri_cross_border | general
+  assetHolderName  String?
+  relationship     String?
+  holderLiving     Boolean?
+  jurisdiction     String           @default("India")
+  summary          String
+  stage            String           @default("understanding") // understanding | discovery | documentation | action | resolution
+  progress         Float            @default(0)
+  nextBestAction   String?
+  scenarioLabel    String?
+  confidence       Float?
+  confirmedFacts   String? // JSON array
+  assumptions      String? // JSON array
+  isDemo           Boolean          @default(false)
+  demoKey          String? // demo-a | demo-b | demo-c | demo-reclaim
   // Trust gates (plan §3). Enforced in src/server/core/gate-engine.ts
-  gateReached     String   @default("G0") // G0 | G1 | G2 | G3 | G4
-  frozenReason    String?
+  gateReached      String           @default("G0") // G0 | G1 | G2 | G3 | G4
+  frozenReason     String?
   deceasedPersonId String?
-  deceasedPerson  DeceasedPerson? @relation(fields: [deceasedPersonId], references: [id])
-  linkedCaseId    String?
-  assets          AssetRecord[]
-  claimants       Claimant[]
-  proofs          Proof[]
-  consents        ConsentRecord[]
-  qaMessages      QaMessage[]
-  documents       DocumentRecord[]
-  tasks           JourneyTask[]
-  events          CaseEvent[]
-  chunks          KnowledgeChunk[]
-  claims          Claim[]
+  deceasedPerson   DeceasedPerson?  @relation(fields: [deceasedPersonId], references: [id])
+  linkedCaseId     String?
+  assets           AssetRecord[]
+  claimants        Claimant[]
+  proofs           Proof[]
+  consents         ConsentRecord[]
+  qaMessages       QaMessage[]
+  documents        DocumentRecord[]
+  tasks            JourneyTask[]
+  events           CaseEvent[]
+  chunks           KnowledgeChunk[]
+  claims           Claim[]
   // Keeper's saved conversation and draft state, as redacted JSON (domain/keeper-ui.ts). Not an audit record.
-  keeperUi        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  keeperUi         String?
+  handoffs         HandoffRequest[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 model AssetRecord {
-  id                String   @id @default(cuid())
+  id                String        @id @default(cuid())
   caseId            String
-  case              LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case              LegacyCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
   category          String // bank_deposit | bank_account | insurance | mutual_fund | shares | provident_fund | other | unknown
   institution       String
   maskedRef         String?
   holderName        String?
   evidence          String?
   sourceDocumentId  String?
-  discoveryStatus   String   @default("possible") // possible | confirmed | dismissed
+  discoveryStatus   String        @default("possible") // possible | confirmed | dismissed
   // The one status shown to people (PRD FL-07). Set only by rules/evidence.ts.
-  evidenceStatus    String   @default("self_declared") // self_declared | potential_match | document_backed | institution_verified
+  evidenceStatus    String        @default("self_declared") // self_declared | potential_match | document_backed | institution_verified
   // Duplicate review (FL-08): same institution + category + last-4 is a candidate, never merged automatically.
   duplicateOfId     String?
-  duplicateState    String?  // candidate | distinct | merged
+  duplicateState    String? // candidate | distinct | merged
   observations      Observation[]
   // Nominee and joint-holder information (FL-09); "unknown" until someone tells us or a document shows it.
-  nomineeStatus     String   @default("unknown") // recorded | none | unknown
-  jointHolderStatus String   @default("unknown") // surviving | none | unknown
+  nomineeStatus     String        @default("unknown") // recorded | none | unknown
+  jointHolderStatus String        @default("unknown") // surviving | none | unknown
   claims            Claim[]
-  confidence        Float    @default(0.5)
+  confidence        Float         @default(0.5)
   notes             String?
-  entitled          Boolean  @default(false) // G4 for this asset
-  valueBand         String?  // e.g. "₹1–5 lakh"
+  entitled          Boolean       @default(false) // G4 for this asset
+  valueBand         String? // e.g. "₹1–5 lakh"
   last4             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model DocumentRecord {
-  id               String   @id @default(cuid())
+  id               String           @id @default(cuid())
   caseId           String
-  case             LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  category         String   @default("other") // bank_statement | policy_document | death_certificate | will | claim_letter | receipt | other
+  case             LegacyCase       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  category         String           @default("other") // bank_statement | policy_document | death_certificate | will | claim_letter | receipt | other
   fileName         String
   fileType         String
   sizeLabel        String?
-  extractionStatus String   @default("pending") // pending | processing | extracted | failed
+  extractionStatus String           @default("pending") // pending | processing | extracted | failed
   extractionNote   String?
   rawText          String?
   extractedFields  String? // JSON object
-  userVerified     Boolean  @default(false)
-  isSynthetic      Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  userVerified     Boolean          @default(false)
+  isSynthetic      Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
   chunks           KnowledgeChunk[]
   fields           DocumentField[]
 }
 
 model JourneyTask {
-  id               String   @id @default(cuid())
-  caseId           String
-  case             LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  title            String
-  instructions     String
-  rationale        String?
-  institution      String?
-  assetCategory    String?
-  officialUrl      String?
-  officialName     String?
-  integrationType  String   @default("guided_workflow") // guided_workflow | official_website | public_api
-  requiredDocs     String? // JSON array
-  missingInfo      String? // JSON array
-  dependencies     String? // JSON array of task ids
-  status           String   @default("ready") // not_started | ready | in_progress | waiting_institution | needs_expert | completed
-  priority         Int      @default(50)
-  isNextBest       Boolean  @default(false)
-  sortOrder        Int      @default(0)
+  id                 String     @id @default(cuid())
+  caseId             String
+  case               LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title              String
+  instructions       String
+  rationale          String?
+  institution        String?
+  assetCategory      String?
+  officialUrl        String?
+  officialName       String?
+  integrationType    String     @default("guided_workflow") // guided_workflow | official_website | public_api
+  requiredDocs       String? // JSON array
+  missingInfo        String? // JSON array
+  dependencies       String? // JSON array of task ids
+  status             String     @default("ready") // not_started | ready | in_progress | waiting_institution | needs_expert | completed
+  priority           Int        @default(50)
+  isNextBest         Boolean    @default(false)
+  sortOrder          Int        @default(0)
   completionEvidence String?
-  completedAt      DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  completedAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 }
 
 model CaseEvent {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   caseId      String
   case        LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   eventType   String // created | document | asset | task | ai | consent | gate | claim | discovery
   description String
-  actor       String   @default("ai") // ai | user | system | staff
+  actor       String     @default("ai") // ai | user | system | staff
   refId       String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 }
 
 model ConsentRecord {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   sessionId String
-  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   caseId    String?
   case      LegacyCase? @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  source    String?  // connector id: email | tax_record | sms | statement | registry | scan
+  source    String? // connector id: email | tax_record | sms | statement | registry | scan
   purpose   String
-  scope     String   @default("")
-  status    String   @default("granted") // granted | revoked
+  scope     String      @default("")
+  status    String      @default("granted") // granted | revoked
   expiresAt DateTime?
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
 }
 
 model IntakeMessage {
@@ -175,63 +176,63 @@ model IntakeMessage {
 // ─── Trust gates: people, proofs and the deceased person (LLD §7) ─────────
 
 model DeceasedPerson {
-  id               String   @id @default(cuid())
+  id               String       @id @default(cuid())
   name             String
-  nameVariants     String   @default("[]") // JSON array
-  dob              String?  // YYYY-MM-DD
-  panHash          String?  // HMAC of PAN; the PAN itself is never stored
-  dateOfDeath      String?  // YYYY-MM-DD
-  deathProofStatus String   @default("pending") // pending | verified | needs_review
+  nameVariants     String       @default("[]") // JSON array
+  dob              String? // YYYY-MM-DD
+  panHash          String? // HMAC of PAN; the PAN itself is never stored
+  dateOfDeath      String? // YYYY-MM-DD
+  deathProofStatus String       @default("pending") // pending | verified | needs_review
   cases            LegacyCase[]
-  createdAt        DateTime @default(now())
+  createdAt        DateTime     @default(now())
 
   @@index([panHash])
 }
 
 model Claimant {
-  id                 String   @id @default(cuid())
+  id                 String     @id @default(cuid())
   caseId             String
   case               LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   sessionId          String
-  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session            Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   fullName           String?
   relationship       String?
-  role               String   @default("lead") // lead | co_heir
-  identityStatus     String   @default("pending") // pending | verified | needs_review
-  relationshipStatus String   @default("pending") // pending | verified | needs_review | not_required
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  role               String     @default("lead") // lead | co_heir
+  identityStatus     String     @default("pending") // pending | verified | needs_review
+  relationshipStatus String     @default("pending") // pending | verified | needs_review | not_required
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 }
 
 model Proof {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   caseId        String
   case          LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  kind          String   // identity | death | relationship | entitlement
+  kind          String // identity | death | relationship | entitlement
   assetId       String?
-  provider      String   // mock_digilocker | mock_passport_selfie | gemini_scan | mock_registry | demo_seed ...
-  status        String   // verified | needs_review | failed
-  matchedFields String   @default("{}") // JSON: field → { expected, found, match }
+  provider      String // mock_digilocker | mock_passport_selfie | gemini_scan | mock_registry | demo_seed ...
+  status        String // verified | needs_review | failed
+  matchedFields String     @default("{}") // JSON: field → { expected, found, match }
   note          String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime   @default(now())
 }
 
 // One claim per holding (PRD FL-12–FL-16, FL-36, FL-37; LLD §11). The family submits it themselves.
 model Claim {
-  id                 String      @id @default(cuid())
+  id                 String       @id @default(cuid())
   caseId             String
-  case               LegacyCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case               LegacyCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
   assetId            String
-  asset              AssetRecord @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  status             String      @default("draft") // see rules/claim-lifecycle.ts
+  asset              AssetRecord  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  status             String       @default("draft") // see rules/claim-lifecycle.ts
   path               String? // nominee | joint | quick | simplified | succession | no_nominee — chosen by rules/claim-path.ts
   reviewReason       String? // why a person must look at it instead of a path being chosen
-  situation          String      @default("{}") // JSON answers: nominee, claimant relationship, amount band, bank type, dispute
+  situation          String       @default("{}") // JSON answers: nominee, claimant relationship, amount band, bank type, dispute
   procedureId        String?
   procedureVersion   String?
   procedureCheckedOn String?
-  checklist          String      @default("{}") // JSON: item id → { state: missing | have | linked, documentId? }
-  declarations       String      @default("[]") // JSON array of accepted declaration ids
+  checklist          String       @default("{}") // JSON: item id → { state: missing | have | linked, documentId? }
+  declarations       String       @default("[]") // JSON array of accepted declaration ids
   waitingOn          String? // family | institution | financial_legacy
   dueDate            String? // YYYY-MM-DD for the open item
   institutionRef     String?
@@ -243,11 +244,11 @@ model Claim {
   outcomeDate        String?
   outcomeNote        String?
   outcomeDocumentId  String?
-  remainderTracked   Boolean     @default(false)
+  remainderTracked   Boolean      @default(false)
   packs              ClaimPack[]
   events             ClaimEvent[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@index([caseId])
 }
@@ -296,12 +297,12 @@ model ClaimEvent {
 }
 
 model QaMessage {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   caseId    String
   case      LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   question  String
   answer    String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 }
 
 // Search index for the case assistant (RAG). "library" rows are the official
@@ -332,23 +333,23 @@ model KnowledgeChunk {
 // One value read from a document, and the person's decision on it (PRD FL-06, FL-26).
 // extractedFields on DocumentRecord keeps the original AI proposal; this is the reviewed truth.
 model DocumentField {
-  id            String         @id @default(cuid())
+  id            String             @id @default(cuid())
   documentId    String
-  document      DocumentRecord @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document      DocumentRecord     @relation(fields: [documentId], references: [id], onDelete: Cascade)
   ordinal       Int
   label         String
   proposedValue String
   value         String // current value: proposedValue, or the correction
-  confidence    Float          @default(0.5)
-  sourceExcerpt String         @default("")
-  critical      Boolean        @default(false)
-  state         String         @default("proposed") // proposed | accepted | corrected | rejected
+  confidence    Float              @default(0.5)
+  sourceExcerpt String             @default("")
+  critical      Boolean            @default(false)
+  state         String             @default("proposed") // proposed | accepted | corrected | rejected
   reason        String?
   reviewedAt    DateTime?
   reviewedBy    String? // session id until real sign-in (B3)
   history       FieldReviewEvent[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@unique([documentId, ordinal])
 }
@@ -386,4 +387,23 @@ model Observation {
   createdAt        DateTime    @default(now())
 
   @@index([assetId])
+}
+
+// A person asked for a human to look at their case (voice agent or the Talk to a person button).
+// Text is redacted before it is stored. No reviewer console exists yet, so requests wait with the case.
+model HandoffRequest {
+  id         String     @id @default(cuid())
+  caseId     String
+  case       LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sessionId  String
+  // why: person_asked | keeper_unsure | sensitive
+  why        String
+  note       String     @default("")
+  // Redacted JSON: the last turns of the conversation, so a person does not make them repeat themselves.
+  transcript String     @default("[]")
+  // requested | acknowledged | closed
+  status     String     @default("requested")
+  createdAt  DateTime   @default(now())
+
+  @@index([caseId])
 }
