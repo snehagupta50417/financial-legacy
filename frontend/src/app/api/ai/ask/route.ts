@@ -1,4 +1,5 @@
 import { hasAiConsent } from "@/server/core/ai-consent";
+import { loadKeeperUi } from "@/server/domain/keeper-ui";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/server/db";
@@ -6,7 +7,7 @@ import { complete, getProvider } from "@/server/ai";
 import { caseAccess, isDenied } from "@/server/core/access";
 import { canDiscover } from "@/server/core/gate-engine";
 import { parseJson } from "@/server/core/http";
-import { maskAsset } from "@/server/core/masking";
+import { maskAsset, redactIdentifiers } from "@/server/core/masking";
 import { aiRateLimit } from "@/server/core/rate-limit";
 import { checkCitations, type AnswerSource } from "@/server/knowledge/citations";
 import { retrieve, type RetrievedSource } from "@/server/knowledge/retrieve";
@@ -56,9 +57,8 @@ export async function POST(req: NextRequest) {
   // gate, and masked assets below G4.
   const unlocked = canDiscover(full);
   const visibleAssets = unlocked ? full.assets.map((a) => maskAsset(full, a)) : [];
-  const savedUi = await db.caseEvent.findFirst({ where: { caseId: full.id, eventType: "keeper_ui", refId: "keeper-ui" } });
-  let intakeDetails = "";
-  try { const ui = JSON.parse(savedUi?.description || "{}"); intakeDetails = JSON.stringify({ facts: ui.facts, family: ui.family, followUps: ui.uiTasks }).slice(0, 12000); } catch { /* malformed older metadata is ignored */ }
+  const savedUi = await loadKeeperUi(full.id);
+  const intakeDetails = savedUi ? JSON.stringify({ facts: savedUi.facts, family: savedUi.family, followUps: savedUi.uiTasks }).slice(0, 12000) : "";
   const caseFile = [
     "Saved case details (self-reported, not proof of entitlement): " + intakeDetails,
     "Claims and outcomes: " + JSON.stringify(full.claims),
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     const answer = top.length
         ? "I found relevant source passages. Review them before acting."
         : "I could not find a source for that in this case or the procedure library. Which institution is this about?";
-    await db.qaMessage.create({ data: { caseId: full.id, question: body.question, answer } });
+    await db.qaMessage.create({ data: { caseId: full.id, question: redactIdentifiers(body.question), answer: redactIdentifiers(answer) } });
     return Response.json({
       mode: "passages",
       answer,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
   const answer = checked.answer.replace(/\u2014/g, ",");
   const cited = checked.cited;
   const marked = sources.map((s) => ({ ...s, cited: cited.has(s.n) }));
-  await db.qaMessage.create({ data: { caseId: full.id, question: body.question, answer } });
+  await db.qaMessage.create({ data: { caseId: full.id, question: redactIdentifiers(body.question), answer: redactIdentifiers(answer) } });
   return Response.json({
     mode: "ai",
     answer,

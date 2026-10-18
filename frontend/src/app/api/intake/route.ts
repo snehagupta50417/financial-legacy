@@ -1,6 +1,7 @@
 import { hasAiConsent } from "@/server/core/ai-consent";
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
+import { redactIdentifiers } from "@/server/core/masking";
 import { requireSession, unauthorized } from "@/server/core/session";
 import { completeJson, completeWithHistory } from "@/server/ai";
 import { aiRateLimit } from "@/server/core/rate-limit";
@@ -87,7 +88,8 @@ export async function POST(req: NextRequest) {
     : [];
 
   const userMessage = await db.intakeMessage.create({
-    data: { sessionId: session.id, role: "user", content: message, caseId: existingCase?.id ?? null },
+    // The model sees the original text in memory; only a redacted copy is kept ("read, extract, forget").
+    data: { sessionId: session.id, role: "user", content: redactIdentifiers(message), caseId: existingCase?.id ?? null },
   });
 
   const priorContext = existingCase
@@ -308,7 +310,7 @@ export async function POST(req: NextRequest) {
     data: {
       sessionId: session.id,
       role: "assistant",
-      content: reply,
+      content: redactIdentifiers(reply),
       caseId: legacyCase.id,
       meta: JSON.stringify(meta),
     },

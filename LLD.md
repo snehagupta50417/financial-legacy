@@ -182,7 +182,7 @@ The Prisma schema in `frontend/prisma/schema.prisma` is the **source of truth fo
 | Model | Purpose | PRD concept |
 | --- | --- | --- |
 | `Session` | Anonymous browser session (v0 identity) | Participant (temporary) |
-| `LegacyCase` | One case: type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
+| `LegacyCase` | One case (with `keeperUi`, Keeper's redacted saved conversation and draft state): type, stage, progress, next-best action, `gateReached`, `frozenReason`, `deceasedPersonId`, `linkedCaseId` | Case |
 | `DeceasedPerson` | Name, name variants, DOB, PAN **hash**, date of death, death-proof status | Subject (deceased) |
 | `Claimant` | Relationship, role (lead / co-heir), identity and relationship status | Participant + role |
 | `Proof` | Identity / death / relationship / entitlement proof: provider, status, matched fields | Authority evidence |
@@ -585,7 +585,7 @@ Real microphone → transcript → corrected message → spoken reply works in a
 | --- | --- |
 | Masking by default | `masking.ts` on every asset response below G4 |
 | PAN | Stored only as HMAC (`PAN_HASH_SECRET`, required in production) |
-| Redaction before storage | Identifiers removed from stored text and extracted fields |
+| Redaction before storage | Identifiers removed from stored document text, extracted fields, the intake and Q&A logs, and Keeper's saved conversation and draft state |
 | No raw originals | Original files are not stored (read, extract, forget) |
 | Encryption at rest | Google Cloud default encryption for whatever database is chosen (FREE_TIER_PLAN §3) |
 | Encryption in transit | HTTPS only (Cloud Run) |
@@ -795,7 +795,7 @@ Designed but switched off in the MVP. Each needs its own gate (PRD §15.3).
 
 ### Keeper state adapter — 18 Oct 2026
 
-The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` in one `CaseEvent` metadata row, excluded from visible activity. No schema migration. This metadata cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
+The existing landing, sign-in, shell, conversation, voice controls, views and panels remain the application UI. The store serializes backend actions and exposes busy/error status. The adapter projects gated `CaseWorkspace` responses into the original Keeper types and calls the existing APIs for chat, assets, document extraction/review, tasks and claims. UI-only conversations, facts, family/contact-view drafts and source notes are saved through owner-scoped `/api/cases/:id/keeper` into `LegacyCase.keeperUi` (`src/server/domain/keeper-ui.ts`) — **not** the `CaseEvent` audit table. Identifiers in the saved text are redacted before storage, verification states and document/sample sources are stripped, and the workspace `events` never include it; a copy left in `CaseEvent` by earlier code is moved and deleted on first read. This state cannot set gates, holdings, evidence or approvals. No actual family sharing is added.
 
 `GET /api/cases/:id/messages` resumes historical intake/Q&A; fallback passage replies are saved. Case corrections use owner-scoped PATCH; asset owner/nomination edits use the existing discovery-gated PATCH. Original claim controls use the server path, pack and approval hash, and only record the family’s own submission. Verification forms are small cards inside the existing details panel. Failed chat retains its draft. Explore a sample is unchanged and uses no backend.
 

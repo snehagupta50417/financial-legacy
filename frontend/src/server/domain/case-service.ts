@@ -176,7 +176,8 @@ export async function getWorkspacePayload(
       completionEvidence: t.completionEvidence,
       completedAt: t.completedAt ? t.completedAt.toISOString() : null,
     })),
-    events: c.events.map((e) => ({
+    // Keeper's saved UI state is not a case event; older copies are moved out on first read.
+    events: c.events.filter((e) => e.eventType !== "keeper_ui").map((e) => ({
       id: e.id,
       eventType: e.eventType,
       description: e.description,
