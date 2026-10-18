@@ -463,3 +463,9 @@ Conversation continuity now derives a return briefing and call greeting from the
 
 
 Bounded case preparation uses a persisted CaseAgentRun with leased checkpoints, bounded retries, explicit pause/recheck and request-driven recovery. Only existing claim drafts are refreshed. Human evidence review, financial authority, approval, external submission and outcomes remain outside autonomous execution.
+
+End-to-end verification caught guided-search provenance being omitted from evidence maps because the query selected only discovery events. Read both guided_search and legacy discovery event types; preserve self-reported status and never upgrade ownership. Added a regression test.
+
+
+Reviewed document evidence plus explicit holding confirmation now prepares one idempotent claim draft for death cases. Only a reviewed policy linked to that holding can fill its exact policy requirement after authority checks. No fields, ownership, authority, declarations, approval or submission are accepted automatically. Document progress and saved conversation receipts explain the next required review; transient preparation failure preserves the canonical review.
+The live HTTP adapter exposed a Response-constructor mismatch in access-denial detection. Recognize Response-shaped denials across constructor realms so all shared document/asset/claim access guards remain effective under the Node adapter. Added a regression and live foreign-session check.

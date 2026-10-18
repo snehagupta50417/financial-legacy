@@ -1,5 +1,6 @@
 "use client";
 import { claimDestination } from "@shared/handoff";
+import { DocumentVerification } from "./document-verification";
 import { SEARCH_LABEL, type SearchOutcome } from "@shared/guided-search";
 
 import Link from "next/link";
@@ -178,6 +179,7 @@ export function DocDetail({ d, c, stacked }: { d: Doc; c: Case; stacked?: boolea
       </div>
       <details className="text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer py-2">File details</summary><p className="break-all">{d.name}</p></details>
       <SourceToRecord doc={d} asset={a} />
+      {c.backendId && <DocumentVerification key={d.id} d={d} c={c} />}
       {d.state === "processing" && <Card role="status"><p className="font-medium">Reading this document…</p><Hint>Reading and extracting the document. Synthetic data only.</Hint></Card>}
       {d.state === "unreadable" && <Card><p className="font-medium">Keeper couldn’t read this file.</p><Hint>The text was too blurred. Try a clearer photo or the original PDF. </Hint></Card>}
       {d.state === "password" && <Card><p className="font-medium">This PDF is password-protected.</p><Hint>Keeper never asks for passwords. Remove the protection in your PDF viewer and add the unlocked copy.</Hint></Card>}

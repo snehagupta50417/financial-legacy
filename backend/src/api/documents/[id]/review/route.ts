@@ -1,3 +1,4 @@
+import { documentProgress } from "@server/domain/document-progress";
 import { z } from "zod";
 import { documentAccess, isDenied } from "@server/core/access";
 import { errorResponse, parseJson } from "@server/core/http";
@@ -43,7 +44,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         doc.id
       );
     }
-    return Response.json(result);
+    let progress;
+    try { progress = await documentProgress(doc.id, true); } catch { /* Saved review remains valid. */ }
+    return Response.json({ ...result, progress, ...(!progress ? { progressError: "Review saved. Retry preparation from the document." } : {}) });
   } catch (e) {
     if (e instanceof ReviewError) return errorResponse(400, e.message);
     throw e;

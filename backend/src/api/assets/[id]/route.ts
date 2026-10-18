@@ -1,3 +1,4 @@
+import { documentProgress } from "@server/domain/document-progress";
 import { z } from "zod";
 import { db } from "@server/db";
 import { assetAccess, isDenied } from "@server/core/access";
@@ -59,5 +60,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const updated = await db.assetRecord.findUniqueOrThrow({ where: { id: asset.id }, include: { observations: true } });
-  return Response.json({ asset: maskAsset(legacyCase, updated, updated.observations) });
+  let progress;
+  if (body.action === "confirm" && updated.sourceDocumentId) {
+    try { progress = await documentProgress(updated.sourceDocumentId, true, updated.id); } catch { /* Confirmation remains saved. */ }
+  }
+  return Response.json({ asset: maskAsset(legacyCase, updated, updated.observations), progress });
 }

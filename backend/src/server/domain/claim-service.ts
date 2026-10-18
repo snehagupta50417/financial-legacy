@@ -297,7 +297,13 @@ export async function startClaim(caseId: string, assetId: string): Promise<Claim
   if (asset.evidenceStatus === "potential_match") throw new ClaimError("Confirm this holding first — it is still a possible match.");
   const existing = await db.claim.findFirst({ where: { assetId } });
   if (existing) return existing;
-  const claim = await db.claim.create({ data: { caseId, assetId } });
+  let claim;
+  try { claim = await db.claim.create({ data: { id: "draft_" + assetId, caseId, assetId } }); }
+  catch (error) {
+    const prior = await db.claim.findFirst({ where: { caseId, assetId } });
+    if (prior) return prior;
+    throw error;
+  }
   await event(claim.id, "created", `Claim started for ${asset.institution}.`, "family");
   await logEvent(caseId, "claim", `Claim started for ${asset.institution}`, "user", claim.id);
   return claim;

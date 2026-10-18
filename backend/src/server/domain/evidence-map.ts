@@ -14,7 +14,7 @@ export async function evidenceMap(caseId: string): Promise<EvidenceMap> {
     db.assetRecord.findMany({ where: { caseId }, include: { observations: { orderBy: { createdAt: "asc" }, take: 100 } }, orderBy: { id: "asc" }, take: 100 }),
     db.documentRecord.findMany({ where: { caseId }, include: { fields: { orderBy: { ordinal: "asc" }, take: 100, include: { history: { orderBy: { createdAt: "asc" }, take: 10 } } } }, orderBy: { id: "asc" }, take: 100 }),
     db.claim.findMany({ where: { caseId }, include: { packs: { orderBy: { version: "desc" }, take: 10 } }, orderBy: { id: "asc" }, take: 100 }),
-    db.caseEvent.findMany({ where: { caseId, eventType: "discovery" }, orderBy: { createdAt: "asc" }, take: 200 }),
+    db.caseEvent.findMany({ where: { caseId, eventType: { in: ["guided_search", "discovery"] } }, orderBy: { createdAt: "asc" }, take: 200 }),
   ]);
   const nodes: EvidenceNode[] = [{ id: "case:" + c.id, kind: "case", label: "Case evidence", status: c.gateReached }];
   const edges: EvidenceMap["edges"] = [], warnings: EvidenceMap["warnings"] = [];

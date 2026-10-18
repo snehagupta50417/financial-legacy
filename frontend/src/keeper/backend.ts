@@ -1,3 +1,4 @@
+import type { DocumentProgress } from "@shared/document-progress";
 import type { GuidedSearchResult } from "@shared/guided-search";
 import { api, ApiError } from "@/lib/client";
 import type { CaseWorkspace } from "@shared/types";
@@ -169,16 +170,25 @@ export async function backendAction(prev: AppState, action: Action): Promise<App
   switch (action.t) {
     case "asset.add": await api.post("/api/assets", { caseId: c.backendId, institution: action.institution, category: serverCategory[action.category], maskedRef: action.ref }); break;
     case "asset.edit": await api.patch("/api/assets/" + action.id, { institution: action.patch.institution, holderName: action.patch.owner, nomineeStatus: action.patch.nomination, maskedRef: action.patch.ref }); break;
-    case "asset.confirm": await api.patch("/api/assets/" + action.id, { action: "confirm" }); break;
+    case "asset.confirm": {
+      const result = await api.patch<{ progress?: DocumentProgress }>("/api/assets/" + action.id, { action: "confirm" });
+      if (result.progress) addReply(result.progress.summary, { card: { type: result.progress.next.type, id: result.progress.next.id } });
+      break;
+    }
     case "asset.remove": await api.patch("/api/assets/" + action.id, { action: "dismiss" }); break;
     case "asset.dup": await api.patch("/api/assets/" + action.id, { action: action.merge ? "same_holding" : "different_holding" }); break;
     case "doc.upload": {
       const form = new FormData(); form.set("caseId", c.backendId!); form.set("file", action.file);
-      try { const r = await api.upload<{ document: { id: string } }>("/api/documents", form); c.focus = { type: "doc", id: r.document.id }; } catch (error) { if (error instanceof ApiError && error.status === 403 && !c.gate?.discoveryUnlocked) throw new Error("Identity checks are not connected. Your document is kept here for retry."); throw error; } break;
+      try { const r = await api.upload<{ document: { id: string }; progress?: DocumentProgress }>("/api/documents", form); c.focus = { type: "doc", id: r.document.id }; addReply(r.progress?.summary || "Your document is saved. Open it to review the extracted details and remaining checks.", { card: { type: "doc", id: r.document.id } }); } catch (error) { if (error instanceof ApiError && error.status === 403 && !c.gate?.discoveryUnlocked) throw new Error("Identity checks are not connected. Your document is kept here for retry."); throw error; } break;
     }
     case "doc.sample": throw new Error("Example documents are available in the example workspace.");
     case "doc.ready": return s;
-    case "doc.field": await api.put("/api/documents/" + action.docId + "/review", { decisions: [{ fieldId: action.fieldId, decision: action.value !== undefined ? "corrected" : action.reviewed === false ? "rejected" : "accepted", value: action.value }] }); break;
+    case "doc.field": {
+      const result = await api.put<{ progress?: DocumentProgress; progressError?: string }>("/api/documents/" + action.docId + "/review", { decisions: [{ fieldId: action.fieldId, decision: action.value !== undefined ? "corrected" : action.reviewed === false ? "rejected" : "accepted", value: action.value }] });
+      if (result.progress && result.progress.steps.find(step => step.key === "review")?.state === "done") addReply(result.progress.summary, { card: { type: result.progress.next.type, id: result.progress.next.id } });
+      if (result.progressError) addReply(result.progressError);
+      break;
+    }
     case "task.toggle": if (action.id.startsWith("followup:")) { const t = c.uiTasks?.find(t => t.id === action.id); if (t) t.state = t.state === "done" ? "open" : "done"; await saveUi(c); c.tasks = c.tasks.map(old => old.id === t?.id ? t : old); return s; } await api.patch("/api/tasks/" + action.id, { status: c.tasks.find(t => t.id === action.id)?.state === "done" ? "ready" : "completed" }); break;
     case "claim.start": { const r = await api.post<{ claim: ClaimView }>("/api/claims", { caseId: c.backendId, assetId: action.assetId }); c.focus = { type: "claim", id: r.claim.id }; break; }
     case "claim.edit": {

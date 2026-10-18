@@ -908,3 +908,7 @@ Returning conversations show a concise case-derived briefing, open-claim and unr
 
 ### Bounded case agent (FL-01, FL-02, FL-12, FL-27)
 A user may delegate case preparation once. Keeper checkpoints source inspection, identifies unresolved evidence, and refreshes existing claim drafts without repeated prompting. Progress persists across restarts and resumes when the conversation returns. Each checkpoint rechecks case access and frozen state; leases fence concurrent execution. Users can pause or recheck a completed run. The agent never confirms holdings, accepts document fields, changes entitlement, approves, submits or records financial outcomes. It pauses with a specific review target when human input is needed; a prepared run is not a resolved case.
+
+
+### Document-to-claim continuity (FL-06, FL-07, FL-12, FL-27)
+Uploaded documents expose a concrete progress checklist: extraction, critical-field review, holding confirmation, authority, claim preparation and external institution verification. After reviewed supporting evidence and explicit holding confirmation for a death case, Keeper idempotently prepares a claim draft and may link the reviewed source policy to its exact requirement. It never accepts fields, confirms holdings, grants authority, accepts declarations, approves or submits on the user’s behalf. Post-review preparation failures must preserve the saved review and expose retry. Each upload/review/confirmation produces an accurate saved conversation update and next record.
