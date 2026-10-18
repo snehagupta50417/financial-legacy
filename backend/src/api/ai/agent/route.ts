@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   const timer = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS ?? 45_000));
   let text: string;
   try {
-    text = await provider.generate({ system: AGENT_SYSTEM + languageNote(languageName(body.language)), messages: turns, json: true, temperature: 0.3 }, controller.signal);
+    text = await provider.generate({ system: AGENT_SYSTEM + languageNote(languageName(body.language)), messages: turns, json: true, temperature: 0.4, fast: true }, controller.signal);
   } catch {
     return Response.json({ error: "The assistant is temporarily unavailable. Your case data is unaffected.", code: "ai_unavailable" }, { status: 503 });
   } finally {

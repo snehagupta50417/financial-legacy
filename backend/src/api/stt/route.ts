@@ -1,6 +1,6 @@
 import { requireSession, unauthorized } from "@server/core/session";
 import { hasAiConsent } from "@server/core/ai-consent";
-import { aiRateLimit } from "@server/core/rate-limit";
+import { takeToken } from "@server/core/rate-limit";
 import { sarvamConfigured, SarvamError, transcribe } from "@server/speech/sarvam";
 
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -14,8 +14,7 @@ const MAX_BYTES = 8 * 1024 * 1024;
 export async function POST(req: Request) {
   const session = await requireSession(req);
   if (!session) return unauthorized();
-  const limited = aiRateLimit(session.id);
-  if (limited) return limited;
+  if (!takeToken(`stt:${session.id}`, 60)) return Response.json({ error: "Speech in your language is busy right now.", code: "stt_quota" }, { status: 429 });
   if (!(await hasAiConsent(session.id))) return Response.json({ error: "Turn on AI help to use speech in your language.", code: "ai_consent_required" }, { status: 403 });
   if (!sarvamConfigured()) return Response.json({ error: "Speech in your language is not set up here.", code: "stt_unavailable" }, { status: 503 });
 

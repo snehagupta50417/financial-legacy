@@ -123,10 +123,28 @@ export function stopSpeaking() {
 /** A new call tries Gemini's voice again, even if an earlier one was unavailable. */
 export const resetKeeperVoice = () => { geminiVoiceWorks = true; };
 
+/** First sentence on its own, so the first audio can start sooner; the rest follows. */
+export function splitForSpeech(text: string): string[] {
+  const parts = text.match(/[^.!?\u0964]+[.!?\u0964]+["')\]]*\s*|[^.!?\u0964]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [text];
+  return parts.length <= 1 ? [text] : [parts[0], parts.slice(1).join(" ")];
+}
+
+async function fetchSpeech(text: string, signal: AbortSignal): Promise<Blob | null> {
+  try {
+    const res = await fetch("/api/ai/speak", { method: "POST", headers: { "content-type": "application/json", "x-session-id": getSessionId() }, body: JSON.stringify({ text: text.slice(0, 600) }), signal });
+    if (!res.ok) { geminiVoiceWorks = false; return null; }
+    return await res.blob();
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Keeper's voice. With `gemini` it asks the backend for Gemini's natural voice (free key, same opt-in as
- * every other model call) and plays it; if that is unavailable, over quota, or slow to fail, it falls back
- * to the browser's own voice, so a call never goes silent. `onEnd` fires once, when speech finishes.
+ * Keeper's voice. By default it uses the browser's own voice, which starts at once, because a conversation
+ * dies in a few seconds of silence. With `gemini` (the "Natural voice" choice) it asks the backend for
+ * Gemini's voice (free key, same opt-in as every other model call): that sounds better but takes a few
+ * seconds, so the first sentence is requested on its own and the rest is fetched alongside it. If it is
+ * unavailable or over quota, the browser's voice takes over, so a call never goes silent. `onEnd` fires once.
  */
 export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: boolean; lang?: string } = { gemini: false }) {
   if (!opts.gemini || !geminiVoiceWorks || typeof window === "undefined") return speak(text, onEnd, opts.lang);
@@ -135,18 +153,19 @@ export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: bo
   const finish = () => { if (!done) { done = true; onEnd?.(); } };
   const ctrl = new AbortController();
   voiceAbort = ctrl;
-  void (async () => {
-    try {
-      const res = await fetch("/api/ai/speak", { method: "POST", headers: { "content-type": "application/json", "x-session-id": getSessionId() }, body: JSON.stringify({ text: text.slice(0, 600) }), signal: ctrl.signal });
-      if (!res.ok) { geminiVoiceWorks = false; throw new Error("voice unavailable"); }
-      const url = URL.createObjectURL(await res.blob());
-      const a = new Audio(url);
-      audio = a;
-      a.onended = () => { URL.revokeObjectURL(url); audio = null; finish(); };
-      a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(text, finish, opts.lang); };
-      await a.play();
-    } catch {
-      if (!ctrl.signal.aborted) speak(text, finish, opts.lang);
-    }
-  })();
+  const parts = splitForSpeech(text);
+  const clips = parts.map((p) => fetchSpeech(p, ctrl.signal));
+  const play = async (i: number): Promise<void> => {
+    const blob = await clips[i];
+    if (ctrl.signal.aborted) return;
+    if (!blob) return speak(parts.slice(i).join(" "), finish, opts.lang);
+    const url = URL.createObjectURL(blob);
+    const a = new Audio(url);
+    audio = a;
+    const next = () => { URL.revokeObjectURL(url); audio = null; if (i + 1 < parts.length) void play(i + 1); else finish(); };
+    a.onended = next;
+    a.onerror = () => { URL.revokeObjectURL(url); audio = null; speak(parts.slice(i + 1).join(" ") || " ", finish, opts.lang); };
+    try { await a.play(); } catch { if (!ctrl.signal.aborted) speak(parts.slice(i).join(" "), finish, opts.lang); }
+  };
+  void play(0);
 }

@@ -18,6 +18,10 @@ export class GeminiProvider implements AiProvider {
   private models: string[];
 
   readonly embeddingModel: string;
+  /** Models that said their daily/minute quota is used up, and until when: skipped so a turn does not wait on them. */
+  private cooling = new Map<string, number>();
+  /** Models that rejected a thinking setting, so we stop sending it. */
+  private noThinking = new Set<string>();
   private embedDims: number;
 
   constructor(opts: {
@@ -50,8 +54,15 @@ export class GeminiProvider implements AiProvider {
       };
     });
 
+    // A call turn must answer in a second or two, so it skips extended thinking and may use a lighter model
+    // (GEMINI_AGENT_MODEL, default gemini-flash-lite-latest), falling back to the usual chain.
+    const agentModel = process.env.GEMINI_AGENT_MODEL || "gemini-flash-lite-latest";
+    const chain = req.fast ? [agentModel, ...this.models.filter((m) => m !== agentModel)] : this.models;
     let lastError: unknown = new Error("No Gemini model configured");
-    for (const model of this.models) {
+    const now = Date.now();
+    const ready = chain.filter((m) => (this.cooling.get(m) ?? 0) <= now);
+    for (const model of ready.length ? ready : chain) {
+      let thinkingOff = !!req.fast && !this.noThinking.has(model);
       for (let attempt = 0; attempt < 2; attempt++) {
         if (signal.aborted) throw lastError;
         try {
@@ -62,16 +73,24 @@ export class GeminiProvider implements AiProvider {
               systemInstruction: req.system,
               ...(req.json ? { responseMimeType: "application/json" } : {}),
               ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
+              ...(req.fast ? { maxOutputTokens: 700 } : {}),
+              ...(thinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
               abortSignal: signal,
             },
           });
           return res.text ?? "";
         } catch (e) {
           lastError = e;
+          const msg = e instanceof Error ? e.message : String(e);
+          // Some models reject a thinking setting (sometimes only as a bare 400): remember it and retry plain.
+          if (thinkingOff && /thinking|INVALID_ARGUMENT|"code":\s*400/i.test(msg)) { this.noThinking.add(model); thinkingOff = false; attempt = -1; continue; }
+          // Quota used up: don't retry this model, and don't try it again for a few minutes.
+          if (/"code":\s*429|RESOURCE_EXHAUSTED/.test(msg)) { this.cooling.set(model, Date.now() + 5 * 60_000); break; }
           const kind = classify(e);
           if (kind === "fatal") throw e;
           if (kind === "next_model") break;
           if (attempt === 0) await sleep(800, signal);
+          else if (kind === "retry") this.cooling.set(model, Date.now() + 30_000); // failed twice: rest it briefly
         }
       }
     }

@@ -100,7 +100,9 @@ export async function POST(req: Request) {
   let cls: ClassifiedSituation | null = null;
   let aiDegraded = false;
   const allowed = await hasAiConsent(session.id);
-  const res = allowed ? await completeJson<ClassifiedSituation>(
+  // `fast`: the voice agent opens the case from the first sentence with the quick rules and does the real
+  // understanding itself, instead of waiting for a second slow model call before it can reply.
+  const res = allowed && !body?.fast ? await completeJson<ClassifiedSituation>(
     SYSTEM,
     `User message: ${message}${priorContext}`,
     (raw) => {
@@ -284,7 +286,8 @@ export async function POST(req: Request) {
     ? `\nWorking assumptions (please correct me if wrong): ${cls.assumptions.slice(0, 3).join("; ")}.`
     : "";
 
-  const replyRes = allowed ? await completeWithHistory(
+  // `fast` callers (the voice agent) write their own reply, so no second model call is made for one here.
+  const replyRes = allowed && !body?.fast ? await completeWithHistory(
     `You are Financial Legacy's intake companion. Tone: calm, empathetic, precise, never salesy. Acknowledge the user's situation in 2-4 sentences, state the journey type you opened, and surface the most important next step. Never invent facts, balances, or eligibility. Never promise outcomes. If the situation involves a death, express brief, sincere condolence first.`,
     // history is newest-first: take the 6 most recent turns, oldest first
     history.slice(0, 6).reverse().map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),

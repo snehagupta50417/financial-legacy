@@ -4,7 +4,7 @@ import { requireSession, unauthorized } from "@server/core/session";
 import { hasAiConsent } from "@server/core/ai-consent";
 import { parseJson } from "@server/core/http";
 import { redactIdentifiers } from "@server/core/masking";
-import { aiRateLimit } from "@server/core/rate-limit";
+import { takeToken } from "@server/core/rate-limit";
 
 const Body = z.object({ text: z.string().trim().min(1).max(600) });
 
@@ -18,8 +18,8 @@ export async function POST(req: Request) {
   if (!session) return unauthorized();
   const body = await parseJson(req, Body);
   if (body instanceof Response) return body;
-  const limited = aiRateLimit(session.id);
-  if (limited) return limited;
+  // Its own, higher limit: a lively call asks for a voice line every turn, in pieces.
+  if (!takeToken(`speak:${session.id}`, 90)) return Response.json({ error: "Keeper's voice is busy. The browser voice will take over.", code: "ai_unavailable" }, { status: 429 });
   if (!(await hasAiConsent(session.id))) return Response.json({ error: "Turn on AI help to hear Keeper's voice.", code: "ai_consent_required" }, { status: 403 });
   const provider = getProvider();
   if (!provider?.speak) return Response.json({ error: "Keeper's voice is not available right now.", code: "ai_unavailable" }, { status: 503 });

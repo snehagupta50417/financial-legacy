@@ -656,6 +656,8 @@ export type Action =
   | { t: "newThread" }
   | { t: "switchThread"; id: string }
   | { t: "send"; text: string; voice?: boolean }
+  /** Make sure this conversation has a saved case, opening it from what the person just said. Changes nothing else. */
+  | { t: "case.ensure"; text: string }
   /** One turn of the voice agent: what the person said and what Keeper said back. Changes nothing else. */
   | { t: "agent.turn"; user: string; reply: string; voice?: boolean; card?: Message["card"]; note?: boolean }
   | { t: "choose"; id: string; label: string }

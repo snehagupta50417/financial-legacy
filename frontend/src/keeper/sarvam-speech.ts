@@ -15,7 +15,7 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   "mr-IN": "Marathi", "od-IN": "Odia", "pa-IN": "Punjabi", "ta-IN": "Tamil", "te-IN": "Telugu",
 };
 
-export interface EndpointerOptions { threshold?: number; speechMs?: number; silenceMs?: number; maxMs?: number; noSpeechMs?: number }
+export interface EndpointerOptions { threshold?: number; maxThreshold?: number; calibrateMs?: number; speechMs?: number; silenceMs?: number; maxMs?: number; noSpeechMs?: number }
 export type Verdict = "continue" | "stop" | "no-speech";
 
 /**
@@ -24,7 +24,11 @@ export type Verdict = "continue" | "stop" | "no-speech";
  * a quiet room gives up instead of recording forever.
  */
 export function makeEndpointer(o: EndpointerOptions = {}) {
-  const { threshold = 0.02, speechMs = 160, silenceMs = 1200, maxMs = 25_000, noSpeechMs = 9000 } = o;
+  // `threshold` is the quietest speech we trust. In a noisy room it rises (3x the noise floor, never above
+  // `maxThreshold`), because the floor is measured over the first `calibrateMs` before speech is judged.
+  const { threshold: minThreshold = 0.012, maxThreshold = 0.05, calibrateMs = 400, speechMs = 160, silenceMs = 1200, maxMs = 25_000, noSpeechMs = 9000 } = o;
+  let threshold = minThreshold;
+  let floor = Infinity;
   let start: number | null = null;
   let voicedSince: number | null = null;
   let lastVoiced = 0;
@@ -34,6 +38,12 @@ export function makeEndpointer(o: EndpointerOptions = {}) {
     /** One loudness reading (0 to 1) taken at time `now` (ms). */
     push(level: number, now: number): Verdict {
       if (start === null) start = now;
+      if (now - start < calibrateMs) {
+        floor = Math.min(floor, level);
+        threshold = Math.min(maxThreshold, Math.max(minThreshold, floor * 3));
+        // Nothing counts as speech while the room is being measured, unless it is clearly loud.
+        if (level < Math.max(threshold, 0.05)) return "continue";
+      }
       if (level >= threshold) {
         if (voicedSince === null) voicedSince = now;
         lastVoiced = now;
@@ -50,13 +60,14 @@ export function makeEndpointer(o: EndpointerOptions = {}) {
 const noop = () => () => {};
 const canRecord = () => typeof window !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined";
 
-export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota") => void } = {}): SpeechInput {
+export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota") => void } = {}): SpeechInput & { level: number } {
   const supported = useSyncExternalStore(noop, canRecord, () => false);
   const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<VoiceError>(null);
   const [language, setLanguage] = useState<string | null>(null);
+  const [level, setLevel] = useState(0);
   const token = useRef(0);
   const recorder = useRef<MediaRecorder | null>(null);
   const release = useRef<() => void>(() => {});
@@ -83,6 +94,8 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
     if (mine !== token.current) { stream.getTracks().forEach((t) => t.stop()); return; }
 
     const ctx = new AudioContext();
+    // A context made outside a click can start suspended, which reads as silence. Wake it.
+    void ctx.resume().catch(() => {});
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 1024;
     ctx.createMediaStreamSource(stream).connect(analyser);
@@ -97,7 +110,9 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
       analyser.getFloatTimeDomainData(samples);
       let sum = 0;
       for (const v of samples) sum += v * v;
-      const verdict = endpointer.push(Math.sqrt(sum / samples.length), performance.now());
+      const rms = Math.sqrt(sum / samples.length);
+      setLevel(Math.min(4, Math.round(rms * 40)));
+      const verdict = endpointer.push(rms, performance.now());
       if (verdict !== "continue") { verdictRef.current = verdict; if (mr.state === "recording") mr.stop(); }
     }, 80);
     release.current = () => { clearInterval(timer); stream.getTracks().forEach((t) => t.stop()); void ctx.close().catch(() => {}); if (mr.state === "recording") { mr.ondataavailable = null; mr.onstop = null; mr.stop(); } };
@@ -106,7 +121,7 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
       const spoke = endpointer.spoke;
       cleanup();
       if (mine !== token.current) return;
-      setListening(false);
+      setListening(false); setLevel(0);
       if (!spoke) { setError("no-speech"); return; }
       setInterim("…");
       try {
@@ -133,7 +148,7 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
   /** Finish now: whatever was said so far is sent. */
   const stop = useCallback(() => { verdictRef.current = "stop"; if (recorder.current?.state === "recording") recorder.current.stop(); }, []);
   /** Throw this turn away. */
-  const clear = useCallback(() => { token.current++; cleanup(); setListening(false); setText(""); setInterim(""); setLanguage(null); }, [cleanup]);
+  const clear = useCallback(() => { token.current++; cleanup(); setListening(false); setLevel(0); setText(""); setInterim(""); setLanguage(null); }, [cleanup]);
 
-  return { supported, listening, text, setText, interim, error, start: () => { void start(); }, stop, clear, finalDelay: 120, language };
+  return { supported, listening, text, setText, interim, error, start: () => { void start(); }, stop, clear, finalDelay: 120, language, level };
 }

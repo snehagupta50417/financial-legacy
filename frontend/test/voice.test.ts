@@ -1,6 +1,6 @@
 // Keeper's voice must never leave a call silent: Gemini's voice when it works, the browser's when it doesn't.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetKeeperVoice, speakKeeper, stopSpeaking } from "@/keeper/voice";
+import { resetKeeperVoice, speakKeeper, splitForSpeech, stopSpeaking } from "@/keeper/voice";
 
 let spoken: string[] = [];
 let fetched = 0;
@@ -13,6 +13,16 @@ beforeEach(() => {
   resetKeeperVoice();
 });
 afterEach(() => { vi.unstubAllGlobals(); stopSpeaking(); });
+
+describe("splitForSpeech", () => {
+  it("puts the first sentence on its own so the first audio can start sooner", () => {
+    expect(splitForSpeech("I'm so sorry for your loss. Take your time. Do you have his death certificate?")).toEqual(["I'm so sorry for your loss.", "Take your time. Do you have his death certificate?"]);
+  });
+  it("leaves one sentence alone, and splits Hindi at the danda", () => {
+    expect(splitForSpeech("Okay, that helps")).toEqual(["Okay, that helps"]);
+    expect(splitForSpeech("मुझे बहुत दुख है। क्या आपके पास प्रमाणपत्र है?")).toHaveLength(2);
+  });
+});
 
 describe("speakKeeper", () => {
   it("uses the browser's voice when Gemini's voice is not asked for, and ends once", () => {
