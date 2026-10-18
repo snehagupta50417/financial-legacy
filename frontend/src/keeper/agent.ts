@@ -67,12 +67,14 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const phaseRef = useRef<Phase>("idle");
   const origin = useRef(captureScope(peekState()));
   const alive = useRef(true);
+  const requestController = useRef<AbortController | null>(null);
   const current = () => alive.current && matchesScope(peekState(), origin.current);
   type SavedTurn = Extract<Parameters<typeof dispatch>[0], { t: "agent.turn" }>;
   const [unsaved, setUnsaved] = useState<SavedTurn | null>(null);
   const unsavedRef = useRef<SavedTurn | null>(null);
   const saveTurn = async (turn: SavedTurn) => {
     if (!current() || !origin.current) return false;
+    turn = { ...turn, turnId: turn.turnId ?? crypto.randomUUID() };
     let ok = false;
     try { ok = (await Promise.resolve(dispatch(turn, origin.current))) !== false; } catch { /* Retry preserves the turn. */ }
     if (!current()) return false;
@@ -160,7 +162,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
       switch (a.type) {
         case "open": await send({ t: "focus", focus: { type: a.card, id: a.id } }); break;
         case "remember": await send({ t: "fact.edit", key: a.key, value: a.value }); break;
-        case "look_up": answer = await api.post<AskReply>("/api/ai/ask", { caseId, question: a.question }); break;
+        case "look_up": answer = await api.post<AskReply>("/api/ai/ask", { caseId, question: a.question }, { signal: requestController.current?.signal }); break;
         case "add_asset": await send({ t: "asset.add", institution: a.institution, category: a.category, ref: a.ref ?? "" }); break;
         case "confirm_asset": await send({ t: "asset.confirm", id: a.assetId }); break;
         case "start_claim": await send({ t: "claim.start", assetId: a.assetId }); break;
@@ -202,7 +204,6 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
 
   const applyTurn = async (text: string, voice: boolean, turn: Turn, caseId: string, closing: boolean) => {
     if (turn.language) { langRef.current = turn.language; setLanguage(turn.language); }
-    history.current = [...history.current, { role: "user" as const, text }, { role: "keeper" as const, text: turn.say }].slice(-10);
     const auto = turn.actions.filter((a) => !a.confirm);
     const needYes = turn.actions.filter((a) => a.confirm);
     let answer: AskReply | undefined;
@@ -211,6 +212,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     for (const a of auto) { if (!current()) return; const r = await run(a, caseId); (r.ok ? completed : failed).push(a.label); if (r.answer) answer = r.answer; }
     if (!current()) return;
     const actualReply = executionReply(turn.say, completed, failed);
+    history.current = [...history.current, { role: "user" as const, text }, { role: "keeper" as const, text: actualReply }].slice(-10);
     const card = auto.find((a) => a.type === "open") as Extract<AgentAction, { type: "open" }> | undefined;
     const threadText = actualReply + (answer ? "\n\n" + plainCopy(answer.answer) + sourcesBlock(answer) : "");
     const spokenText = actualReply + (answer ? " " + plainCopy(answer.answer) : "");
@@ -230,6 +232,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     if (!text || busy.current || !current()) return;
     if (unsavedRef.current) { setNotice("Save the previous turn first using Retry saving this turn."); return; }
     busy.current = true;
+    requestController.current = new AbortController();
     if (heard) { langRef.current = heard; setLanguage(heard); }
     try {
       spRef.current.clear(); stopSpeaking(); setNotice(null); setChoices([]);
@@ -284,7 +287,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
       if (!aiBlocked.current && s?.session?.mode === "signin" && caseId) {
         const stepRef = addStep("info", "Understanding with Gemini", "running");
         try {
-          const turn = await api.post<Turn>("/api/ai/agent", { caseId, threadId: origin.current?.threadId, utterance: text, history: history.current.map(m => ({ ...m, text: m.text.slice(0, 800) })), ...(langRef.current ? { language: langRef.current } : {}) });
+          const turn = await api.post<Turn>("/api/ai/agent", { caseId, threadId: origin.current?.threadId, utterance: text, history: history.current.map(m => ({ ...m, text: m.text.slice(0, 800) })), ...(langRef.current ? { language: langRef.current } : {}) }, { signal: requestController.current?.signal });
           if (!current() || phaseRef.current === "ended") return;
           markStep(stepRef, "done", "Understood"); setMode("ai");
           confused.current = 0;
@@ -349,7 +352,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
         setAiReason(r.available ? null : r.reason === "consent" ? "consent" : "not_configured");
       }).catch(() => {});
     }
-    return () => { alive.current = false; phaseRef.current = "ended"; clearTimeout(greet); if (!passive) { spRef.current.clear(); stopSpeaking(); } };
+    return () => { alive.current = false; requestController.current?.abort(); phaseRef.current = "ended"; clearTimeout(greet); if (!passive) { spRef.current.clear(); stopSpeaking(); } };
   }, []);
 
   /** One tap to allow AI help, so a first call is not sent to Settings. */

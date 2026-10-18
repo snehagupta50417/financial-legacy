@@ -1,4 +1,5 @@
 "use client";
+import { claimDestination } from "@shared/handoff";
 import { SEARCH_LABEL, type SearchOutcome } from "@shared/guided-search";
 
 import Link from "next/link";
@@ -234,6 +235,7 @@ export function ClaimDetail({ cl, c }: { cl: Claim; c: Case }) {
   const edit = (e: Parameters<typeof editClaim>[2]) => dispatch({ t: "claim.edit", id: cl.id, edit: e });
   const locked = !!cl.submitted;
   const ap = cl.approval;
+  const destination = claimDestination(a.category, a.institution, plan.procedure?.sourceUrl);
   const handoff = `${a.institution}. ${plan.label ?? "claim package"}\nDocuments: ${plan.items.filter((i) => cl.have[i.id]).map((i) => i.label).join("; ")}\nSubmit: ${plan.procedure?.whereToSubmit ?? "Ask the institution where to submit."}`;
   return (
     <div className="space-y-5">
@@ -336,7 +338,8 @@ export function ClaimDetail({ cl, c }: { cl: Claim; c: Case }) {
 
       {(ap?.state === "approved" || cl.submitted) && <OfficialHandoff
         title={a.institution + " · claim handoff"}
-        url={a.category === "bank" && /^(State Bank of India|SBI)$/i.test(a.institution) ? "https://sbi.bank.in/web/personal-banking/information-services/deceased-settlement" : a.category === "insurance" && /^(LIC|LIC of India|Life Insurance Corporation of India)$/i.test(a.institution) ? "https://licindia.in/en/web/guest/claims-settlement-requirements" : plan.procedure?.sourceUrl}
+        url={destination.url}
+        institutionSpecific={destination.institutionSpecific}
         instruction={plan.procedure?.whereToSubmit ?? "Contact the institution to confirm its current submission channel and required documents."}
       />}
       {cl.submitted && <FollowUpChoice key={cl.id} c={c} target={"claim:" + cl.id} resolved={!!cl.outcome && !["partially_settled", "unresolved_dispute"].includes(cl.outcome.kind) && !cl.backend?.remainderTracked} />}

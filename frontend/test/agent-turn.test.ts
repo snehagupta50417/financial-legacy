@@ -18,3 +18,13 @@ describe("agent.turn in the Keeper engine", () => {
     expect(c1.tasks).toEqual(c0.tasks);
   });
 });
+
+
+it("FL-02 retries saving a turn without duplicating a previously saved exchange", () => {
+  const initial = freshState("Synthetic tester", "sample");
+  const action = { t: "agent.turn" as const, turnId: "synthetic-retry-id", user: "Synthetic question", reply: "Synthetic answer" };
+  const once = reduce(initial, action), twice = reduce(once, action);
+  const c = twice.cases[twice.activeCase];
+  const messages = c.threads.find(t => t.id === c.activeThread)!.messages;
+  expect(messages.filter(m => m.id.startsWith("synthetic-retry-id:"))).toHaveLength(2);
+});

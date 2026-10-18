@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sampleState } from "@/keeper/sample";
+import { nextWork } from "@/keeper/presentation";
 import { freshState, reduce } from "@/keeper/engine";
 import { captureScope, executionReply, matchesScope } from "@/keeper/turn-scope";
 
@@ -43,4 +45,32 @@ describe("FL-01 / FL-02 case-bound execution", () => {
     expect(after.cases[after.activeCase].facts.goal?.value).not.toBe("Must not run");
     expect(backendAction).toHaveBeenCalledTimes(1);
   });
+  it("keeps a failed save retryable and does not report it as persisted", async () => {
+    const state = freshState("Synthetic tester", "signin");
+    const values = new Map([["keeper.demo.v1", JSON.stringify(state)]]);
+    vi.stubGlobal("localStorage", { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) });
+    let fail = true;
+    vi.doMock("@/keeper/backend", () => ({ backendAction: async (current, action) => { if (fail) throw new Error("Synthetic save failure"); return reduce(current, action); } }));
+    const store = await import("@/keeper/store");
+    const turn = { t: "agent.turn" as const, turnId: "synthetic-save-retry", user: "Synthetic question", reply: "Synthetic answer" };
+    const scope = captureScope(state)!;
+    expect(await store.dispatch(turn, scope)).toBe(false);
+    expect(store.getBackendStatus().error).toBe("Synthetic save failure");
+    fail = false;
+    expect(await store.dispatch(turn, scope)).toBe(true);
+    const c = store.peekState()!.cases[state.activeCase];
+    expect(c.threads[0].messages.filter(m => m.id.startsWith("synthetic-save-retry:"))).toHaveLength(2);
+  });
+
+  it("keeps partial settlements and unresolved disputes in the next-step workflow", () => {
+    const state = sampleState("Synthetic tester", "sunita"); const c = state.cases[state.activeCase];
+    const claim = c.claims[0];
+    expect(claim).toBeDefined();
+    claim.outcome = { kind: "partially_settled", at: new Date().toISOString(), note: "Synthetic partial result" };
+    expect(nextWork(c)?.text).toContain("remaining amount");
+    claim.outcome.kind = "unresolved_dispute";
+    expect(nextWork(c)?.text).toContain("unresolved dispute");
+    expect(nextWork(c)?.card.id).toBe(claim.id);
+  });
+
 });

@@ -453,3 +453,66 @@
 .keeper-followup-choice { margin-top: 14px; background: #fffdf6; border-color: #e4decc; }
 .keeper-followup-choice button { font-size: 12px; }
 .keeper-followup-queue { background: #eef3e6; padding: 16px 18px; }
+
+
+/* App motion: short, state-driven, and fully optional. */
+.keeper-route { animation: keeper-route-enter 240ms cubic-bezier(.2,.7,.2,1) both; }
+.keeper-message-enter { animation: keeper-message-arrive 320ms cubic-bezier(.16,1,.3,1) both; transform-origin: bottom left; }
+.keeper-message-enter-user { animation-name: keeper-user-arrive; transform-origin: bottom right; }
+.keeper-thinking { display: inline-flex; align-items: center; gap: 9px; align-self: flex-start; padding: 12px 17px; border: 1px solid #e0e7d6; border-radius: 14px; background: #f3f7ed; color: #657858; font-size: 12px; animation: keeper-message-arrive 220ms ease-out both; }
+.keeper-thinking > svg { color: #779467; }
+.keeper-thinking-dots { display: inline-flex; align-items: center; gap: 4px; height: 17px; margin-left: 3px; }
+.keeper-thinking-dots i { width: 4px; height: 4px; border-radius: 50%; background: #829b70; animation: keeper-think 1.25s ease-in-out infinite; }
+.keeper-thinking-dots i:nth-child(2) { animation-delay: 140ms; }
+.keeper-thinking-dots i:nth-child(3) { animation-delay: 280ms; }
+.keeper-app .keeper-brand svg path { stroke-dasharray: 70; stroke-dashoffset: 0; animation: keeper-draw 800ms 100ms ease-out backwards; }
+.keeper-app .keeper-nav a[aria-current="page"] svg { animation: keeper-icon-arrive 240ms ease-out both; }
+.keeper-app .keeper-starter { animation: keeper-message-arrive 420ms cubic-bezier(.16,1,.3,1) both; }
+.keeper-app .keeper-starter:nth-child(2) { animation-delay: 70ms; }
+.keeper-app .keeper-starter:nth-child(3) { animation-delay: 140ms; }
+.keeper-app .keeper-welcome-symbol { animation: keeper-symbol-arrive 600ms cubic-bezier(.16,1,.3,1) both; }
+.keeper-app aside[aria-label="Details panel"] > div { animation: keeper-panel-enter 250ms cubic-bezier(.2,.7,.2,1) both; }
+.keeper-app [data-slot="sheet-content"] { animation-duration: 230ms; }
+.keeper-app [data-step-state="done"] { animation: keeper-step-done 420ms ease-out both; }
+.keeper-app [data-step-state="failed"] { animation: keeper-message-arrive 220ms ease-out both; }
+.keeper-app .keeper-claim-timeline li[aria-current="step"] > span.relative { animation: keeper-stage-arrive 450ms ease-out both; }
+.keeper-app .keeper-claim-timeline li > span { transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease; }
+.keeper-app .keeper-followup-choice { transition: border-color 250ms ease, background-color 250ms ease; }
+.keeper-app .keeper-followup-choice[data-tracking="active"] { background: #f0f6e8; border-color: #c9dabb; }
+.keeper-app .keeper-followup-choice h3 { transition: color 200ms ease; }
+.keeper-app .keeper-followup-queue, .keeper-app .keeper-handoff { animation: keeper-message-arrive 300ms ease-out both; }
+.keeper-app details[open] > :not(summary) { animation: keeper-disclose 190ms ease-out; }
+.keeper-app .keeper-composer-surface { transition: border-color 180ms ease, box-shadow 220ms ease, background-color 220ms ease; }
+.keeper-app .keeper-composer-surface > button[type="submit"]:not(:disabled) { animation: keeper-send-ready 260ms ease-out both; }
+@supports (interpolate-size: allow-keywords) {
+  .keeper-app .keeper-message-column details { interpolate-size: allow-keywords; }
+  .keeper-app .keeper-message-column details::details-content { height: 0; opacity: 0; overflow: clip; transition: height 230ms ease, opacity 160ms ease, content-visibility 230ms allow-discrete; }
+  .keeper-app .keeper-message-column details[open]::details-content { height: auto; opacity: 1; }
+  .keeper-app .keeper-message-column details[open] > :not(summary) { animation: none; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .keeper-app .keeper-bubble button:hover > svg:last-child, .keeper-app .keeper-official-link:hover > svg, .keeper-app .keeper-followup-queue button:hover > svg { transform: translateX(3px); }
+  .keeper-app .keeper-bubble button svg, .keeper-app .keeper-official-link svg, .keeper-app .keeper-followup-queue button svg { transition: transform 170ms ease; }
+  .keeper-app .keeper-composer-surface > button[type="button"]:hover { box-shadow: 0 3px 8px #81633312; }
+  .keeper-app .keeper-starter:hover > svg:first-child { transform: rotate(-8deg); transition: transform 180ms ease; }
+  .keeper-app .keeper-nav a:not([aria-current="page"]):hover { transform: translateX(2px); }
+}
+@keyframes keeper-route-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes keeper-message-arrive { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes keeper-user-arrive { from { opacity: 0; transform: translateY(7px) translateX(4px); } to { opacity: 1; transform: none; } }
+@keyframes keeper-think { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-4px); opacity: 1; } }
+@keyframes keeper-draw { from { stroke-dashoffset: 70; } to { stroke-dashoffset: 0; } }
+@keyframes keeper-icon-arrive { from { opacity: .4; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes keeper-symbol-arrive { from { opacity: 0; transform: translateY(8px) rotate(-16deg) scale(.9); } to { opacity: 1; transform: rotate(-7deg) scale(1); } }
+@keyframes keeper-panel-enter { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+@keyframes keeper-step-done { from { background-color: #dcebcf; } to { background-color: transparent; } }
+@keyframes keeper-stage-arrive { from { box-shadow: 0 0 0 6px #bbceaa00; transform: scale(.88); } 55% { box-shadow: 0 0 0 5px #bbceaa66; } to { box-shadow: 0 0 0 0 #bbceaa00; transform: scale(1); } }
+@keyframes keeper-disclose { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@keyframes keeper-send-ready { from { transform: scale(.88); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .keeper-app *, .keeper-app *::before, .keeper-app *::after, .keeper-app details::details-content { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .keeper-app .keeper-route, .keeper-app .keeper-message-enter { opacity: 1; transform: none; }
+  .keeper-app .keeper-thinking-dots i { opacity: .7; transform: none; }
+  .keeper-app .keeper-bubble button:hover > svg:last-child, .keeper-app .keeper-official-link:hover > svg, .keeper-app .keeper-followup-queue button:hover > svg, .keeper-app .keeper-starter:hover > svg:first-child, .keeper-app .keeper-nav a:hover { transform: none; }
+  html:has(.keeper-app) { scroll-behavior: auto; }
+}

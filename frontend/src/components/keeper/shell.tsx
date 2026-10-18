@@ -110,7 +110,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main id="content" className={cn("relative min-h-0 min-w-0 flex-1", path === "/app" ? "overflow-hidden" : "scroll-soft overflow-y-auto")}>{backend.error && <div className="absolute inset-x-3 top-2 z-40 mx-auto max-w-2xl rounded-xl border border-line bg-paper/95 px-4 py-2 text-sm shadow-sm" role={backend.error ? "alert" : "status"}>{backend.error}{backend.error && <button className="ml-3 underline" onClick={refreshBackend}>Retry</button>}</div>}{children}</main>
+      <main id="content" className={cn("relative min-h-0 min-w-0 flex-1", path === "/app" ? "overflow-hidden" : "scroll-soft overflow-y-auto")}>{backend.error && <div className="absolute inset-x-3 top-2 z-40 mx-auto max-w-2xl rounded-xl border border-line bg-paper/95 px-4 py-2 text-sm shadow-sm" role={backend.error ? "alert" : "status"}>{backend.error}{backend.error && <button className="ml-3 underline" onClick={refreshBackend}>Retry</button>}</div>}<div key={path} className="keeper-route h-full min-h-0">{children}</div></main>
 
       {/* Mobile bottom navigation */}
       <nav aria-label="Sections" className="keeper-mobile-nav grid grid-cols-5 border-t border-line bg-paper lg:hidden">
