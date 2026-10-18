@@ -17,6 +17,7 @@ export default defineConfig({
     include: ["test/**/*.test.ts"],
     globalSetup: ["test/integration/global-setup.ts"],
     env: {
+      AUTH_MODE: "demo",
       DATABASE_URL: `file:${path.resolve(__dirname, "test/.tmp/test.db")}`,
       GEMINI_API_KEY: "",
       GOOGLE_CLOUD_PROJECT: "",

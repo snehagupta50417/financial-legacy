@@ -662,6 +662,7 @@ export type Action =
   | { t: "agent.turn"; user: string; reply: string; voice?: boolean; card?: Message["card"]; note?: boolean }
   | { t: "choose"; id: string; label: string }
   | { t: "focus"; focus: Case["focus"] }
+  | { t: "followup.set"; target: string; enabled: boolean; nextCheckOn: string | null }
   | { t: "fact.edit"; key: string; value: string | null }
   | { t: "asset.add"; institution: string; category: Category; ref: string }
   | { t: "asset.edit"; id: string; patch: Partial<Pick<Asset, "institution" | "owner" | "nomination">> & { ref?: string } }
@@ -676,7 +677,7 @@ export type Action =
   | { t: "contact.add"; name: string; relation: string }
   | { t: "contact.toggle"; id: string; key: keyof Case["contacts"][number]["sees"] }
   | { t: "family.set"; instructions?: string; cadence?: string; reviewed?: boolean }
-  | { t: "plan.record"; id: string; result: string }
+  | { t: "plan.record"; id: string; result: string; outcome?: import("@shared/guided-search").SearchOutcome; scope?: string; searchedAt?: string; requestId?: string }
   | { t: "claim.start"; assetId: string }
   | { t: "claim.edit"; id: string; edit: Parameters<typeof K.editClaim>[2] }
   | { t: "claim.request"; id: string }
@@ -716,6 +717,17 @@ function reduceState(prev: AppState, a: Action): AppState {
       if (a.id === "m:sample" && SAMPLE_HOOK.load) return SAMPLE_HOOK.load(s.session?.name ?? "Arjun Sharma", s.session?.persona);
       converse(s, { choice: a.id, label: a.label });
       break;
+    case "followup.set": {
+      const [kind, ...parts] = a.target.split(":"); const id = parts.join(":");
+      const target = kind === "claim" ? c.claims.find(x => x.id === id) : kind === "search" ? c.plan.find(x => x.id === id && x.type === "guided") : null;
+      if (!target || (a.nextCheckOn && (!/^\d{4}-\d{2}-\d{2}$/.test(a.nextCheckOn) || Number.isNaN(Date.parse(a.nextCheckOn)) || new Date(a.nextCheckOn).toISOString().slice(0, 10) !== a.nextCheckOn))) break;
+      c.followUps = { ...c.followUps, [a.target]: { enabled: a.enabled, nextCheckOn: a.nextCheckOn, updatedAt: iso() } };
+      const label = kind === "claim" ? "this claim" : "this official search";
+      const text = a.enabled ? `We’ll keep ${label} in your follow-up list${a.nextCheckOn ? "; review on " + a.nextCheckOn : ""}. Come back with the institution’s update; Keeper does not check the portal automatically.` : `Follow-up paused for ${label}. Your records are still saved.`;
+      th?.messages.push(msg("note", text, { card: { type: kind === "claim" ? "claim" : "plan", ...(kind === "claim" ? { id } : {}) } }));
+      logActivity(c, "confirmed", text);
+      break;
+    }
     case "focus": c.focus = a.focus; break;
     case "fact.edit": {
       if (a.value === null) { delete c.facts[a.key]; logActivity(c, "confirmed", `You removed what Keeper knew about “${a.key.replace(/_/g, " ")}”.`); }

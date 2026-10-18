@@ -17,3 +17,5 @@ async function transact<T>(mode: IDBTransactionMode, work: (store: IDBObjectStor
 export const keepFile = (id: string, file: File) => transact("readwrite", store => store.put(file, id));
 export const readFile = (id: string) => transact<File | undefined>("readonly", store => store.get(id));
 export const forgetFile = (id: string) => transact("readwrite", store => store.delete(id));
+
+export const forgetAllFiles = () => transact("readwrite", store => store.clear());

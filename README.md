@@ -65,6 +65,10 @@ Read in this order. Each document follows the one above it; if they disagree, th
 | [docs/](docs/README.md) | Pre-Pilot documents: free-tier plan, Google Cloud setup, threat model, privacy (DPDP) assessment, AI evaluation plan, source-by-source validation matrix, feasibility and compliance |
 | [DECISIONS.md](DECISIONS.md) | Implementation decisions, newest last |
 
+## Hosted synthetic MVP setup
+
+Google sign-in, account-scoped data deletion and dated guided-search outcomes are implemented and tested locally. Hosted PostgreSQL generation and Cloud Run source packaging are ready. A Supabase Free project and Google Cloud project configuration are still required before claiming a deployed MVP. Follow [docs/HOSTED_MVP_SETUP.md](docs/HOSTED_MVP_SETUP.md). Startup never initialises the database automatically; use `npm run db:setup --prefix backend` explicitly for new environments.
+
 ## Running it
 
 Two small services and one shared folder (Node ≥ 22):

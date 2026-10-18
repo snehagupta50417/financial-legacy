@@ -345,3 +345,13 @@ Keep the existing composition and visual identity. Quieter copy, fewer repeated 
 - **One thing at a time.** The first screens show one idea each. A new conversation is a single welcome: the microphone, a short greeting, three situations to start from. The details panel stays closed until the person opens it (Details button, remembered).
 - **Explore an example = "See how Keeper works" (`/welcome`).** Pick a situation, then watch one turn of the loop, one screen per beat (listen, understand, act, ask first, close the loop), with fictional people and a visible "Example · fictional people" label. Skip is always available. It ends in the example workspace, another story, or the person's own start.
 - The progress rail is the same five stages as the voice agent screen, so the example teaches the real behaviour.
+
+
+### Keeper workspace visual refinement — 18 October 2026
+
+Retain the ivory, moss and apricot identity with a quieter sage navigation surface, paper conversation canvas, fine borders and restrained elevation. Serif display type anchors the welcome screen; compact sans-serif labels, source metadata and clear role labels establish hierarchy in ongoing conversations. The composer is a floating two-row surface with attachment, voice and send controls. Navigation retains all existing routes and truthful evidence labels. Mobile uses a compact identity bar, independent conversation scrolling and safe-area-aware bottom navigation. Respect reduced motion and visible keyboard focus; no new service or feature dependency.
+
+
+### Landing page polish and motion — 18 October 2026
+
+Keep the one-pager’s three journeys and honest coverage limits. Refine the hero with large editorial typography, an explicitly simulated case preview and supporting evidence card. Use finite staggered entrances, hover elevation, story-panel transitions and once-only section reveals. Content remains visible without JavaScript; reduced motion disables reveals, transforms, smooth scrolling and decorative animation. No invented testimonials, metrics, integrations or security certifications.

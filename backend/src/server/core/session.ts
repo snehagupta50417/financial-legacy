@@ -1,30 +1,23 @@
 import { db } from "@server/db";
+import { accessToken, authRequired, sameOrigin, verifiedUser } from "./supabase-auth";
 
-/**
- * Demo-grade identity: the client generates a stable random session key
- * (stored in localStorage) and sends it as the x-session-id header.
- * Every query in the app is scoped by sessionId, so one visitor can never
- * read or mutate another visitor's cases by guessing IDs.
- *
- * A production deployment would replace this with NextAuth credentials /
- * OAuth; the ownership checks would work identically on a real userId.
- */
+/** Hosted identity is verified by Supabase. Browser IDs are only for local synthetic demos. */
 export async function requireSession(req: Request) {
-  const sessionId = req.headers.get("x-session-id");
-  if (!sessionId || sessionId.length < 8 || sessionId.length > 128) {
-    return null;
+  let sessionId: string;
+  if (authRequired()) {
+    if (!req.headers.has("authorization") && !["GET", "HEAD", "OPTIONS"].includes(req.method) && !sameOrigin(req)) return null;
+    const user = await verifiedUser(accessToken(req));
+    if (!user) return null;
+    const expectedAccount = req.headers.get("x-keeper-account");
+    if (expectedAccount && expectedAccount !== user.id) return null;
+    sessionId = "supabase:" + user.id;
+  } else {
+    const id = req.headers.get("x-session-id");
+    if (!id || id.length < 8 || id.length > 128 || id.startsWith("supabase:")) return null;
+    sessionId = id;
   }
-  const session = await db.session.upsert({
-    where: { id: sessionId },
-    update: {},
-    create: { id: sessionId },
-  });
-  return session;
+  return db.session.upsert({ where: { id: sessionId }, update: {}, create: { id: sessionId } });
 }
-
 export function unauthorized() {
-  return Response.json(
-    { error: "Missing or invalid session. Start a new journey from the home page." },
-    { status: 401 }
-  );
+  return Response.json({ error: "Sign in to access your Keeper records.", code: "unauthorized" }, { status: 401 });
 }

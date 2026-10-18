@@ -59,6 +59,7 @@ export function useSpeech(): SpeechInput {
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<VoiceError>(null);
   const rec = useRef<Rec | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
 
   useEffect(() => () => { if (rec.current) { rec.current.onresult = null; rec.current.onerror = null; rec.current.onend = null; rec.current.abort(); } }, []);
 
@@ -69,7 +70,8 @@ export function useSpeech(): SpeechInput {
     window.speechSynthesis?.cancel(); // interruption: Keeper stops talking when you start
     setError(null);
     const r = new C();
-    r.lang = lang || "en-IN";
+    r.lang = lang || navigator.language || "en-IN";
+    setLanguage(r.lang);
     r.continuous = true;
     r.interimResults = true;
     r.onresult = (e) => {
@@ -90,7 +92,7 @@ export function useSpeech(): SpeechInput {
 
   const stop = useCallback(() => rec.current?.stop(), []);
   const clear = useCallback(() => { rec.current?.abort(); setText(""); setInterim(""); setListening(false); }, []);
-  return { supported, listening, text, setText, interim, error, start, stop, clear, finalDelay: 1400, language: null };
+  return { supported, listening, text, setText, interim, error, start, stop, clear, finalDelay: 1400, language };
 }
 
 /** Speaks `text`. `onEnd` fires exactly once when it finishes, is cut off, or can't be spoken at all. */
@@ -102,7 +104,11 @@ export function speak(text: string, onEnd?: () => void, lang?: string) {
   const clean = text.replace(/\s+/g, " ");
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(clean);
-  u.lang = lang || "en-IN";
+  u.lang = lang || navigator.language || "en-IN";
+  const voices = window.speechSynthesis.getVoices();
+  const prefix = u.lang.split("-")[0].toLowerCase();
+  const voice = voices.find(v => v.lang.toLowerCase() === u.lang.toLowerCase()) ?? voices.find(v => v.lang.split("-")[0].toLowerCase() === prefix);
+  if (voice) u.voice = voice;
   // Some browsers have no voice installed and never fire an event: don't leave the conversation waiting on one.
   u.onstart = () => { clearTimeout(watchdog); watchdog = setTimeout(finish, 6000 + clean.length * 110); };
   u.onend = finish; u.onerror = finish;
@@ -129,9 +135,9 @@ export function splitForSpeech(text: string): string[] {
   return parts.length <= 1 ? [text] : [parts[0], parts.slice(1).join(" ")];
 }
 
-async function fetchSpeech(text: string, signal: AbortSignal): Promise<Blob | null> {
+async function fetchSpeech(text: string, signal: AbortSignal, language?: string): Promise<Blob | null> {
   try {
-    const res = await fetch("/api/ai/speak", { method: "POST", headers: { "content-type": "application/json", "x-session-id": getSessionId() }, body: JSON.stringify({ text: text.slice(0, 600) }), signal });
+    const res = await fetch("/api/ai/speak", { method: "POST", headers: { "content-type": "application/json", "x-session-id": getSessionId() }, body: JSON.stringify({ text: text.slice(0, 600), ...(language ? { language } : {}) }), signal });
     if (!res.ok) { geminiVoiceWorks = false; return null; }
     return await res.blob();
   } catch {
@@ -154,7 +160,7 @@ export function speakKeeper(text: string, onEnd?: () => void, opts: { gemini: bo
   const ctrl = new AbortController();
   voiceAbort = ctrl;
   const parts = splitForSpeech(text);
-  const clips = parts.map((p) => fetchSpeech(p, ctrl.signal));
+  const clips = parts.map((p) => fetchSpeech(p, ctrl.signal, opts.lang));
   const play = async (i: number): Promise<void> => {
     const blob = await clips[i];
     if (ctrl.signal.aborted) return;

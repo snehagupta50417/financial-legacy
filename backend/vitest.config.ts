@@ -14,6 +14,7 @@ export default defineConfig({
     include: ["test/**/*.test.ts"],
     globalSetup: ["test/global-setup.ts"],
     env: {
+      AUTH_MODE: "demo",
       DATABASE_URL: `file:${path.resolve(__dirname, "test/.tmp/test.db")}`,
       // Tests never call a real model unless LIVE_AI=1 is set explicitly.
       GEMINI_API_KEY: process.env.LIVE_AI ? (process.env.GEMINI_API_KEY ?? "") : "",

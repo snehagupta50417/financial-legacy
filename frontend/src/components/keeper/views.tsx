@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CATEGORY_LABEL } from "@/keeper/catalog";
 import { OUTCOME_LABEL, claimStep, CLAIM_STEPS } from "@/keeper/claims";
-import { dispatch, setPrefs, useKeeper, attachDocument } from "@/keeper/store";
+import { dispatch, setPrefs, useKeeper, attachDocument, deleteKeeperData } from "@/keeper/store";
 import type { Activity, Case, Category } from "@/keeper/types";
 import { documentTitle } from "@/keeper/presentation";
 import { formatDay, money } from "@/keeper/util";
@@ -164,16 +164,19 @@ export function ActivityView() {
 export function SettingsView() {
   const { state, c } = useKeeper();
   const router = useRouter();
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const out = useSpeechOutSupport();
   const rec = useRecognitionSupport();
   if (!state || !c) return null;
   return (
     <Page c={c} title="Settings" sub="Account, access, consent, privacy and sessions.">
       <div className="space-y-4">
-        <Card><h2 className="font-semibold">Account</h2><p className="mt-1">{state.session?.name}</p><Hint>This browser session keeps your progress. Secure account sign-in is not available yet.</Hint></Card>
+        <Card><h2 className="font-semibold">Account</h2><p className="mt-1">{state.session?.name}</p><Hint>Your current account or local demo keeps your progress. Hosted sign-in uses Google when configured.</Hint></Card>
         <Card><h2 className="font-semibold">Access and consent</h2><ul className="mt-2 space-y-1 text-[0.95rem]"><li>Guided searches permission: <b>{c.facts.consent?.value ?? "not asked yet"}</b></li><li>Trusted contacts: <b>{c.contacts.length}</b>. access is a preview. Sharing is not connected.</li></ul>{state.session?.mode === "signin" && <AiPermission />}</Card>
         <Card><h2 className="font-semibold">Demo data</h2><p className="mt-1 text-[0.95rem]">{state.session?.mode === "signin" ? "Want to see what a full record looks like? Add a demo case. It is labelled “(demo)” and easy to remove." : "You are looking at the example workspace. Everything in it is made up."}</p>{state.session?.mode === "signin" ? <DemoScenarios /> : <div className="mt-3 flex flex-wrap gap-2"><Btn variant="quiet" onClick={() => dispatch({ t: "reset" })}>Reset example</Btn><Link href="/welcome" className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-5 text-[0.95rem] hover:bg-secondary">Take the guided tour</Link></div>}</Card>
-        <Card><h2 className="font-semibold">Privacy</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] text-ink/85"><li>{state.session?.mode === "signin" ? "Your case is saved. Keeper does not submit to institutions." : "The example workspace stays in this browser."}</li><li>Account references are masked.</li><li>Keeper never asks for passwords, PINs or OTPs, and doesn’t ask about health.</li></ul></Card>
+        <Card><h2 className="font-semibold">Privacy</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] text-ink/85"><li>{state.session?.mode === "signin" ? "Your case is saved. Keeper does not submit to institutions." : "The example workspace stays in this browser."}</li><li>Account references are masked.</li><li>Keeper never asks for passwords, PINs or OTPs, and doesn’t ask about health.</li></ul>{state.session?.mode === "signin" && <div className="mt-4"><p className="text-sm">Delete all your Keeper cases, conversations, extracted document data and search results. This cannot be undone. Your Google account and sign-in provider account remain.</p><label className="mt-3 block text-sm">Type DELETE to confirm<input aria-label="Confirm data deletion" className="ml-2 rounded border p-2" value={deleteText} onChange={e => setDeleteText(e.target.value)} /></label><Btn variant="danger" disabled={deleteText !== "DELETE" || deleting} onClick={async () => { setDeleting(true); setDeleteError(""); const ok = await deleteKeeperData(); if (ok) router.push("/signin"); else { setDeleting(false); setDeleteError("Deletion could not be completed. Please try again."); } }}>{deleting ? "Deleting…" : "Delete my Keeper data"}</Btn>{deleteError && <p role="alert">{deleteError}</p>}</div>}</Card>
         <Card><h2 className="font-semibold">Voice</h2><p className="mt-1 text-[0.95rem]">Speech recognition: <b>{rec ? "available in this browser" : "not available. type instead"}</b>. Spoken replies: <b>{out ? "available" : "not available"}</b>.</p>
           {out && <label className="mt-2 flex min-h-11 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#526653]" checked={state.speakReplies} onChange={(e) => setPrefs({ speakReplies: e.target.checked })} />Read Keeper’s replies aloud</label>}
           <Hint>The microphone only turns on when you tap it. Keeper stores no audio. Chrome and Edge send audio to their speech service.</Hint></Card>

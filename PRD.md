@@ -848,3 +848,28 @@ None of these blocks the MVP built on sample data. Each must be decided, with a 
 - `backend/prisma/schema.prisma` and Zod types — exact data formats
 - Official sources: see the research table in §8.2 and the source-by-source matrix in [docs/SOURCE_VALIDATION.md](docs/SOURCE_VALIDATION.md)
 - Pre-Pilot documents: [threat model](docs/THREAT_MODEL.md) · [privacy assessment](docs/PRIVACY_ASSESSMENT.md) · [AI evaluation plan](docs/AI_EVALUATION.md)
+
+
+### Conversational and language acceptance (FL-01, FL-02)
+
+Keeper follows the person's latest language and script, including mixed-language speech and Romanised text, and respects a request to change language. Conversation may continue without a checklist or repeated intake questions. Calls offer automatic language detection or an explicit choice. Speech recognition covers the provider's documented 22 Indian languages plus English; other listed languages use browser recognition where available. Text conversation and spoken-output availability are distinct: the UI must not promise microphone or voice support for every language. The user's approval remains necessary for consequential changes in every language.
+
+
+### Synthetic hosted MVP acceptance (FL-02, FL-10, FL-19, FL-23, FL-45)
+
+Hosted cases belong to a server-verified Supabase Auth account (Google provider); browser session IDs are permitted only in explicit local demo mode. Google identity establishes account access, never financial authority. Guided official searches save dated, scoped, self-reported outcomes (possible match, no match, partly checked, blocked, failed), keep previous outcomes, and never upgrade asset evidence automatically. Users can delete all Keeper application records after typing DELETE; this does not delete their Google account or the separate authentication-provider identity. Hosted storage uses external PostgreSQL; local SQLite remains a development option. Public deployment stays blocked until hosted database and authentication configuration are complete.
+
+
+### Conversation workspace acceptance (FL-01, FL-02, FL-10)
+
+The written conversation is the default workspace; calling remains one action away. Saved case memory is visible with its source and can be corrected through existing deterministic controls. Contextual review cards link to document excerpts, possible holdings and claim requirements without implying verification. Action execution displays actual running, completed and failed states. Switching cases or threads resets transient agent state while retaining each saved transcript and draft. The message list scrolls independently so the composer remains available on small screens. Sample-mode suggestions remain explicitly simulated; real-account suggestions use the same conversational agent as typed input.
+
+
+### Official handoff and continuity (FL-02, FL-10)
+
+Discovery and claim preparation show a named official destination and explain whether the next action is an online search, official instructions, or submission at a branch. External links open separately, transmit no case identifiers, and never mark a search or claim submitted. After a recorded search result or claim submission, ask whether to keep the item in the loop. Save the user’s opt-in and optional review date per case/item; allow pausing and resuming. The conversation displays active follow-ups and links back to the correct review view. Tracking means in-app continuity based on recorded updates, not automatic portal polling or external notifications. Canonical claim outcomes remain the only way to close claims; partial settlement and unresolved disputes remain open.
+
+
+### Agent execution reliability (FL-01, FL-02, FL-10)
+
+Every conversational action is bound to the case and thread that initiated it. Late replies and queued actions must not execute in a newly selected context. Unmount invalidates outstanding turns. Execution failures replace success-sounding model prose with actual completed/failed results. Conversation persistence is awaited; an unsaved turn remains visible with an explicit retry and blocks later turns until saved. The assistant receives saved, scoped follow-up choices and dates as untrusted case data; it must not imply automatic monitoring.

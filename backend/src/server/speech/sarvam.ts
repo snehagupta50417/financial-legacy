@@ -10,11 +10,9 @@ const ENDPOINT = "https://api.sarvam.ai/speech-to-text";
 export const sarvamConfigured = () => !!process.env.SARVAM_API_KEY;
 
 /** Languages Sarvam's speech model recognises, by BCP-47 code. */
-export const LANGUAGES: Record<string, string> = {
-  "en-IN": "English", "hi-IN": "Hindi", "bn-IN": "Bengali", "gu-IN": "Gujarati", "kn-IN": "Kannada", "ml-IN": "Malayalam",
-  "mr-IN": "Marathi", "od-IN": "Odia", "pa-IN": "Punjabi", "ta-IN": "Tamil", "te-IN": "Telugu",
-};
-export const languageName = (code?: string | null): string | null => (code ? LANGUAGES[code] ?? null : null);
+export { SPEECH_LANGUAGES as LANGUAGES } from "@shared/languages";
+import { SPEECH_LANGUAGES as LANGUAGES, CONVERSATION_LANGUAGES } from "@shared/languages";
+export const languageName = (code?: string | null): string | null => (code ? CONVERSATION_LANGUAGES[code] ?? null : null);
 
 export type SarvamFailure = "not_configured" | "rejected" | "quota" | "failed";
 export class SarvamError extends Error {
@@ -30,8 +28,9 @@ export async function transcribe(audio: Uint8Array, mime: string, signal: AbortS
   if (!key) throw new SarvamError("not_configured");
   const form = new FormData();
   form.set("file", new Blob([audio as BlobPart], { type: mime }), `speech.${extOf(mime)}`);
-  form.set("model", process.env.SARVAM_STT_MODEL || "saarika:v2.5");
+  form.set("model", process.env.SARVAM_STT_MODEL || "saaras:v3");
   form.set("language_code", language);
+  if ((process.env.SARVAM_STT_MODEL || "saaras:v3").startsWith("saaras:")) form.set("mode", "codemix");
   let res: Response;
   try {
     res = await fetch(ENDPOINT, { method: "POST", headers: { "api-subscription-key": key }, body: form, signal });

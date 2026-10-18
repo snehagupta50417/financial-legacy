@@ -78,6 +78,6 @@ describe("languages", () => {
   it("names every language the backend recognises, in English", () => {
     expect(LANGUAGE_NAMES["hi-IN"]).toBe("Hindi");
     expect(LANGUAGE_NAMES["ta-IN"]).toBe("Tamil");
-    expect(Object.keys(LANGUAGE_NAMES)).toHaveLength(11);
+    expect(Object.keys(LANGUAGE_NAMES)).toHaveLength(23);
   });
 });

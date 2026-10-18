@@ -1,4 +1,5 @@
 "use client";
+import { SEARCH_LABEL, type SearchOutcome } from "@shared/guided-search";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -13,6 +14,7 @@ import { cap, formatDay, money } from "@/keeper/util";
 import { QUESTION_TEXT } from "@shared/claim-path";
 import { cn } from "@/lib/utils";
 import { Btn, Card, EvidenceBadge, FactBadge, Hint, Pill } from "./ui";
+import { FollowUpChoice, OfficialHandoff } from "./follow-up";
 import { BackendAccess, BackendPackDownload } from "./backend-access";
 import { SourceToRecord, ClaimTimeline, DuplicateComparison, ContactScope, FamilyConnections } from "./task-visuals";
 
@@ -332,6 +334,12 @@ export function ClaimDetail({ cl, c }: { cl: Claim; c: Case }) {
         )}
       </Card>
 
+      {(ap?.state === "approved" || cl.submitted) && <OfficialHandoff
+        title={a.institution + " · claim handoff"}
+        url={a.category === "bank" && /^(State Bank of India|SBI)$/i.test(a.institution) ? "https://sbi.bank.in/web/personal-banking/information-services/deceased-settlement" : a.category === "insurance" && /^(LIC|LIC of India|Life Insurance Corporation of India)$/i.test(a.institution) ? "https://licindia.in/en/web/guest/claims-settlement-requirements" : plan.procedure?.sourceUrl}
+        instruction={plan.procedure?.whereToSubmit ?? "Contact the institution to confirm its current submission channel and required documents."}
+      />}
+      {cl.submitted && <FollowUpChoice key={cl.id} c={c} target={"claim:" + cl.id} resolved={!!cl.outcome && !["partially_settled", "unresolved_dispute"].includes(cl.outcome.kind) && !cl.backend?.remainderTracked} />}
       {cl.submitted && (
         <Card>
           <H>Submission and follow-up</H>
@@ -451,6 +459,7 @@ const TYPE_LABEL: Record<PlanSource["type"], string> = { uploaded: "Uploaded-rec
 
 export function PlanView({ c }: { c: Case }) {
   const [rec, setRec] = useState<Record<string, string>>({});
+  const [scopes, setScopes] = useState<Record<string, string>>({});
   if (!c.plan.length) return <Card><H>Discovery plan</H><Hint>Tell Keeper about your situation under “Find my assets” and it will build a plan here.</Hint></Card>;
   return (
     <div className="space-y-3">
@@ -459,13 +468,16 @@ export function PlanView({ c }: { c: Case }) {
         <Card key={p.id}>
           <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{p.label}</p><p className="text-[0.82rem] text-muted-foreground">{TYPE_LABEL[p.type]}</p></div><Pill tone={p.state === "ready" ? "ok" : p.state === "awaiting_consent" || p.state === "needs_info" ? "warn" : p.state === "completed" ? "moss" : "plain"}>{PLAN_STATE[p.state]}</Pill></div>
           {p.note !== "This source is not connected." && <p className="mt-2 text-[0.92rem] text-ink/80">{p.note}</p>}
-          {p.result && <p className="mt-2 rounded-lg bg-secondary p-2 text-[0.9rem]">{p.result}</p>}
-          {p.type === "guided" && p.state === "ready" && (
+          {p.history && p.history.length > 1 && <details className="mt-2"><summary>Earlier search outcomes ({p.history.length - 1})</summary>{p.history.slice(1).map((entry, i) => <p key={i} className="mt-2 text-sm">{entry}</p>)}</details>}
+          {p.result && <><p className="mt-2 rounded-lg bg-secondary p-2 text-[0.9rem]">{p.result}</p><FollowUpChoice key={p.id} c={c} target={"search:" + p.id} /></>}
+          {p.type === "guided" && ["ready", "completed"].includes(p.state) && (
             <div className="mt-3 space-y-2">
-              {p.url && <a className="inline-flex items-center gap-1 text-moss underline underline-offset-4" target="_blank" rel="noopener noreferrer" href={p.url}>Open the official site<ExternalLink className="h-3.5 w-3.5" aria-hidden /></a>}
+              {p.url && <a className="inline-flex items-center gap-1 text-moss underline underline-offset-4" target="_blank" rel="noopener noreferrer" href={p.url}>Continue on the official site<ExternalLink className="h-3.5 w-3.5" aria-hidden /></a>}
+              <p className="text-sm text-muted-foreground">Run the search there, then return here. What did you find?</p>
               <div className="flex flex-wrap gap-2">
-                <select aria-label={`What you found on ${p.label}`} className={cn(inputCls, "w-auto")} value={rec[p.id] ?? ""} onChange={(e) => setRec({ ...rec, [p.id]: e.target.value })}><option value="">After you search, record what happened…</option><option value="found">I found a possible match</option><option value="none">It found nothing</option><option value="blocked">I couldn’t search (needed details I don’t have)</option></select>
-                <Btn variant="quiet" disabled={!rec[p.id]} onClick={() => dispatch({ t: "plan.record", id: p.id, result: rec[p.id] === "found" ? `You found a possible match on ${new Date().toLocaleDateString("en-IN")}. Add it as an asset to review.` : rec[p.id] === "none" ? `No match on this site for the details you gave (${new Date().toLocaleDateString("en-IN")}). This doesn’t mean nothing exists elsewhere.` : `You couldn’t complete this search on ${new Date().toLocaleDateString("en-IN")}. it needed details you don’t have yet.` })}>Save</Btn>
+                <select aria-label={`What you found on ${p.label}`} className={cn(inputCls, "w-auto")} value={rec[p.id] ?? ""} onChange={(e) => setRec({ ...rec, [p.id]: e.target.value })}><option value="">Record the outcome…</option>{Object.entries(SEARCH_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+                <input aria-label={`Search scope for ${p.label}`} className={inputCls} placeholder="What you checked (use synthetic details; no full identifiers)" maxLength={500} value={scopes[p.id] || ""} onChange={e => setScopes({ ...scopes, [p.id]: e.target.value })} />
+                <Btn variant="quiet" disabled={!rec[p.id] || (scopes[p.id] || "").trim().length < 3} onClick={() => dispatch({ t: "plan.record", id: p.id, outcome: rec[p.id] as SearchOutcome, scope: scopes[p.id].trim(), searchedAt: new Date().toISOString(), requestId: crypto.randomUUID(), result: `${SEARCH_LABEL[rec[p.id] as SearchOutcome]}. Scope: ${scopes[p.id]}. Self-reported; this search does not cover other sources.` })}>Save search result</Btn>
               </div>
             </div>
           )}

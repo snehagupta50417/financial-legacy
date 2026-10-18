@@ -34,6 +34,9 @@ const Message = z.object({
 });
 
 export const KeeperUiBody = z.object({
+  followUps: z.record(z.string().regex(/^(claim|search):[^\s]{1,100}$/), z.object({
+    enabled: z.boolean(), nextCheckOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value, "Invalid review date").nullable(), updatedAt: z.string().datetime(),
+  })).refine(value => Object.keys(value).length <= 100, "Too many follow-ups").optional(),
   uiTasks: z
     .array(
       z.object({

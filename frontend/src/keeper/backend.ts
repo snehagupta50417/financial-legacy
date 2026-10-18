@@ -1,3 +1,4 @@
+import type { GuidedSearchResult } from "@shared/guided-search";
 import { api, ApiError } from "@/lib/client";
 import type { CaseWorkspace } from "@shared/types";
 import type { ClaimView } from "@shared/contracts";
@@ -8,12 +9,12 @@ import { relKey } from "./claims";
 import { JOURNEY_LABEL } from "./catalog";
 import { nextWork, plainCopy } from "./presentation";
 
-type Ui = Pick<Case, "facts" | "threads" | "activeThread" | "contacts" | "family" | "plan" | "uiTasks">;
+type Ui = Pick<Case, "facts" | "threads" | "activeThread" | "contacts" | "family" | "plan" | "uiTasks" | "followUps">;
 const serverCategory = { bank: "bank_deposit", mutual_fund: "mutual_fund", insurance: "insurance", retirement: "provident_fund", other: "other" };
 const category = (c: string): Category => /bank/.test(c) ? "bank" : c === "mutual_fund" ? "mutual_fund" : c === "insurance" ? "insurance" : c === "provident_fund" ? "retirement" : "other";
 const message = (role: Message["role"], text: string, extra: Partial<Message> = {}): Message => ({ id: uid(), role, text, ts: iso(), ...extra });
 const active = (c: Case) => c.threads.find(t => t.id === c.activeThread) || c.threads[0];
-const uiOf = (c: Case): Ui => ({ uiTasks: c.uiTasks || [], facts: c.facts, threads: c.threads, activeThread: c.activeThread, contacts: c.contacts, family: c.family, plan: c.plan });
+const uiOf = (c: Case): Ui => ({ followUps: c.followUps || {}, uiTasks: c.uiTasks || [], facts: c.facts, threads: c.threads, activeThread: c.activeThread, contacts: c.contacts, family: c.family, plan: c.plan });
 export async function saveUi(c: Case) { if (c.backendId) await api.put("/api/cases/" + c.backendId + "/keeper", uiOf(c)); }
 
 export function projectWorkspace(ws: CaseWorkspace, name: string, previous?: Case, stored?: Ui | null, claimViews: ClaimView[] = [], texts: Record<string, string> = {}): Case {
@@ -65,6 +66,13 @@ export async function loadCase(id: string, name: string, previous?: Case): Promi
   const claims = await Promise.all(ws.claims.map(c => api.get<{ claim: ClaimView }>("/api/claims/" + c.id).then(r => r.claim)));
   const textPairs = await Promise.all(ws.documents.map(d => api.get<{ document: { text: string | null } }>("/api/documents/" + d.id).then(r => [d.id, r.document.text || ""] as const)));
   const c = projectWorkspace(ws, name, previous, previous ? null : saved.ui, claims, Object.fromEntries(textPairs));
+  if (ws.gate.discoveryUnlocked) {
+    const search = await api.get<{ results: GuidedSearchResult[] }>("/api/cases/" + id + "/searches");
+    for (const source of c.plan) {
+      const results = search.results.filter(result => result.sourceUrl === source.url);
+      if (results.length) { source.result = results[0].summary; source.history = results.map(result => result.summary); source.state = ["possible_match", "no_match"].includes(results[0].outcome) ? "completed" : "ready"; }
+    }
+  }
   if (!previous && !saved.ui) {
     const history = await api.get<{ messages: { id: string; role: string; text: string; at: string }[] }>("/api/cases/" + id + "/messages");
     active(c).messages = history.messages.map(m => ({ id: m.id, role: m.role === "user" ? "user" : "keeper", text: m.text, ts: m.at }));
@@ -137,7 +145,17 @@ export async function backendAction(prev: AppState, action: Action): Promise<App
     }
     await saveUi(c); return s;
   }
-  if (["focus", "newThread", "switchThread", "agent.turn", "fact.edit", "contact.add", "contact.toggle", "family.set", "plan.record"].includes(action.t)) {
+  if (action.t === "plan.record") {
+    const source = c.plan.find(p => p.id === action.id);
+    if (!source?.url || source.type !== "guided" || !action.outcome || !action.scope) throw new Error("Choose an outcome and describe the search scope first.");
+    await ensure();
+    await api.post("/api/cases/" + c.backendId + "/searches", {
+      sourceUrl: source.url, outcome: action.outcome, scope: action.scope,
+      searchedAt: action.searchedAt || iso(), requestId: action.requestId || crypto.randomUUID(),
+    });
+    await refresh(); await saveUi(c); return s;
+  }
+  if (["followup.set", "focus", "newThread", "switchThread", "agent.turn", "fact.edit", "contact.add", "contact.toggle", "family.set"].includes(action.t)) {
     s = reduce(s, action); c = s.cases[s.activeCase];
     if (!["focus", "switchThread", "newThread"].includes(action.t)) await ensure();
     if (action.t === "fact.edit" && ["name", "relation"].includes(action.key)) await api.patch("/api/cases/" + c.backendId, { [action.key === "name" ? "assetHolderName" : "relationship"]: action.value });

@@ -25,6 +25,7 @@ export interface GenerateRequest {
   images?: AiImage[];
   /** Ask the model for a single JSON object. */
   json?: boolean;
+  responseJsonSchema?: Record<string, unknown>;
   temperature?: number;
   /** A live conversation turn: answer fast. No extended thinking, and a short reply. */
   fast?: boolean;
@@ -39,7 +40,7 @@ export interface AiProvider {
   /** Unit-length vectors, one per text, for semantic search. Optional: search falls back to keywords. */
   embed?(texts: string[], kind: EmbedKind, signal: AbortSignal): Promise<number[][]>;
   /** Natural speech for a line of text, as a WAV file. Optional: the browser's own voice is the fallback. */
-  speak?(text: string, signal: AbortSignal): Promise<Buffer>;
+  speak?(text: string, signal: AbortSignal, language?: string): Promise<Buffer>;
   /** Identifies the embedding space; stored vectors from another model are recomputed. */
   readonly embeddingModel?: string;
 }

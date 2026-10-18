@@ -10,10 +10,7 @@ import { stopSpeaking, type SpeechInput, type VoiceError } from "./voice";
  * useSpeech) so the call can use either. Audio is sent for that one turn and is not kept.
  */
 
-export const LANGUAGE_NAMES: Record<string, string> = {
-  "en-IN": "English", "hi-IN": "Hindi", "bn-IN": "Bengali", "gu-IN": "Gujarati", "kn-IN": "Kannada", "ml-IN": "Malayalam",
-  "mr-IN": "Marathi", "od-IN": "Odia", "pa-IN": "Punjabi", "ta-IN": "Tamil", "te-IN": "Telugu",
-};
+export { SPEECH_LANGUAGES as LANGUAGE_NAMES } from "@shared/languages";
 
 export interface EndpointerOptions { threshold?: number; maxThreshold?: number; calibrateMs?: number; speechMs?: number; silenceMs?: number; maxMs?: number; noSpeechMs?: number }
 export type Verdict = "continue" | "stop" | "no-speech";
@@ -78,7 +75,7 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
   const cleanup = useCallback(() => { release.current(); release.current = () => {}; recorder.current = null; }, []);
   useEffect(() => () => { token.current++; cleanup(); }, [cleanup]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (hint?: string) => {
     token.current++;
     const mine = token.current;
     cleanup();
@@ -126,6 +123,7 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
       setInterim("…");
       try {
         const form = new FormData();
+        if (hint) form.set("language", hint);
         form.set("audio", new Blob(chunks, { type: mr.mimeType || "audio/webm" }), "speech.webm");
         const r = await api.upload<{ transcript: string; language: string | null }>("/api/stt", form);
         if (mine !== token.current) return;
@@ -150,5 +148,5 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
   /** Throw this turn away. */
   const clear = useCallback(() => { token.current++; cleanup(); setListening(false); setLevel(0); setText(""); setInterim(""); setLanguage(null); }, [cleanup]);
 
-  return { supported, listening, text, setText, interim, error, start: () => { void start(); }, stop, clear, finalDelay: 120, language, level };
+  return { supported, listening, text, setText, interim, error, start: (lang?: string) => { void start(lang); }, stop, clear, finalDelay: 120, language, level };
 }

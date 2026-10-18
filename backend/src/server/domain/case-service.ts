@@ -1,3 +1,4 @@
+import { readSearchResult } from "./guided-search";
 import { db } from "@server/db";
 import type { CaseWorkspace } from "@shared/types";
 import { canDiscover, canSeeFullAsset } from "@server/core/gate-engine";
@@ -180,7 +181,7 @@ export async function getWorkspacePayload(
     events: c.events.filter((e) => e.eventType !== "keeper_ui").map((e) => ({
       id: e.id,
       eventType: e.eventType,
-      description: e.description,
+      description: e.eventType === "guided_search" ? (unlocked ? readSearchResult(e.description)?.summary || "Guided search result recorded" : "Guided search result saved; identity checks are required to view details.") : e.description,
       actor: e.actor,
       createdAt: e.createdAt.toISOString(),
     })),

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as stt } from "@api/stt/route";
 import { GET as availability, POST as agent } from "@api/ai/agent/route";
 import { FixtureProvider, setProvider } from "@server/ai";
-import { languageNote } from "@server/ai/agent";
+import { languageNote, scriptNote } from "@server/ai/agent";
 import { redactIdentifiers, toAsciiDigits } from "@server/core/masking";
 import { db } from "@server/db";
 import { languageName, SarvamError, transcribe } from "@server/speech/sarvam";
@@ -32,6 +32,16 @@ const audioReq = (sid: string, opts: { size?: number; type?: string; omit?: bool
   return new Request("http://localhost/api/stt", { method: "POST", headers: { "x-session-id": sid }, body: form });
 };
 
+describe("FL-01 reply script", () => {
+  it("uses the latest native script even after Romanised conversation", () => {
+    for (const [text, script] of [["தமிழில் பேசுங்கள்", "Tamil"], ["বাংলায় বলুন", "Bengali"], ["हिंदी में बोलिए", "Devanagari"], ["اردو", "Arabic"]]) {
+      expect(scriptNote(text)).toContain(script);
+      expect(scriptNote(text)).toContain("not Latin transliteration");
+    }
+    expect(scriptNote("haan aaram se baat karo")).toBe("");
+  });
+});
+
 describe("digits in Indian scripts", () => {
   it("become ASCII digits so redaction can see them", () => {
     expect(toAsciiDigits("खाता १२३४५६७८९०१२ और ௧௨௩௪")).toBe("खाता 123456789012 और 1234");
@@ -55,7 +65,7 @@ describe("transcribe", () => {
     expect(calls[0].url).toBe("https://api.sarvam.ai/speech-to-text");
     expect(calls[0].headers["api-subscription-key"]).toBe(KEY);
     expect(calls[0].form.get("language_code")).toBe("unknown"); // let the model detect it
-    expect(calls[0].form.get("model")).toMatch(/^saarika/);
+    expect(calls[0].form.get("model")).toBe("saaras:v3");
     expect((calls[0].form.get("file") as File).name).toBe("speech.webm");
   });
 
@@ -64,6 +74,16 @@ describe("transcribe", () => {
     expect((await transcribe(new Uint8Array(10), "audio/wav", new AbortController().signal)).language).toBeNull();
     expect(languageName("ta-IN")).toBe("Tamil");
     expect(languageName("nope")).toBeNull();
+  });
+
+  it("FL-01 preserves all 23 supported language codes and mixed-language transcription", async () => {
+    const { SPEECH_LANGUAGES } = await import("@shared/languages");
+    expect(Object.keys(SPEECH_LANGUAGES)).toHaveLength(23);
+    for (const code of Object.keys(SPEECH_LANGUAGES)) {
+      sarvamReply(200, { transcript: "Synthetic transcript", language_code: code });
+      expect((await transcribe(new Uint8Array(10), "audio/wav", new AbortController().signal)).language).toBe(code);
+      expect(calls.at(-1)?.form.get("mode")).toBe("codemix");
+    }
   });
 
   it("maps failures to reasons the app can act on", async () => {

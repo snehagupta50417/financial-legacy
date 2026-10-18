@@ -1,3 +1,5 @@
+> 18 October 2026: the synthetic hosted MVP now targets Supabase Free PostgreSQL plus Supabase Google Auth. See [HOSTED_MVP_SETUP.md](HOSTED_MVP_SETUP.md). The code is prepared; a Supabase project and hosted acceptance checks are still required. No paid plan or external resource was provisioned by this change.
+
 # Free-Tier Plan
 
 | | |

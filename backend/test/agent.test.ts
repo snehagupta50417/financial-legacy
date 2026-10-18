@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { GET as availability, POST as agent } from "@api/ai/agent/route";
 import { FixtureProvider, setProvider } from "@server/ai";
-import { agentContext, readModelTurn, vetActions } from "@server/ai/agent";
+import { agentContext, snapshotText, readModelTurn, vetActions } from "@server/ai/agent";
 import { db } from "@server/db";
 
 const owner = "agent-owner-session";
@@ -73,6 +73,12 @@ describe("vetting what the model proposes", () => {
     const t = readModelTurn({ say: `**Done** — your account ${NUMBER} is noted.`, actions: [] }, ctx())!;
     expect(t.say).not.toMatch(/[—*]/);
     expect(t.say).not.toContain(NUMBER);
+  });
+
+  it("FL-01 keeps a usable reply when optional language metadata is malformed", () => {
+    const turn = readModelTurn({ say: "ہم آرام سے بات کر سکتے ہیں۔", language: "ur-Arab-PK", actions: [] }, ctx());
+    expect(turn?.say).toContain("ہم");
+    expect(turn?.language).toBe("ur-PK");
   });
 
   it("rejects a reply with no spoken text", () => {
@@ -154,6 +160,41 @@ describe("POST /api/ai/agent", () => {
     expect(((await res.json()) as { code: string }).code).toBe("ai_unusable");
   });
 
+  it("FL-01 repairs an invalid reply once while preserving context and action vetting", async () => {
+    const { sid, caseId } = await makeCase();
+    let attempts = 0;
+    const provider = new FixtureProvider(() => ++attempts === 1 ? '{"say":null}' : JSON.stringify({ say: "You felt overwhelmed. We can take our time.", actions: [{ type: "wire_money" }] }));
+    setProvider(provider);
+    const res = await agent(post(sid, { caseId, utterance: "Why did I want to talk first?", history: [{ role: "user", text: "I feel overwhelmed." }] }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).actions).toEqual([]);
+    expect(provider.calls).toHaveLength(2);
+    expect(provider.calls[1].messages).toEqual(provider.calls[0].messages);
+    expect(provider.calls[0].responseJsonSchema).toBeDefined();
+  });
+
+  it("FL-02 accepts an earlier 800-character utterance in conversation history", async () => {
+    const { sid, caseId } = await makeCase();
+    setProvider(reply({ say: "I remember.", actions: [] }));
+    expect((await agent(post(sid, { caseId, utterance: "What did I say?", history: [{ role: "user", text: "x".repeat(800) }] }))).status).toBe(200);
+  });
+
+  it("FL-02 recovers the saved active conversation when a reopened call has no client history", async () => {
+    const { sid, caseId } = await makeCase();
+    await db.legacyCase.update({ where: { id: caseId }, data: { keeperUi: JSON.stringify({
+      facts: {}, uiTasks: [], contacts: [], plan: [], activeThread: "thread-one",
+      family: { instructions: "", reviewedAt: null, cadence: null },
+      threads: [{ id: "thread-one", title: "Synthetic", journey: null, pending: null, messages: [
+        { id: "m1", role: "user", text: "I have bank statements and an insurance policy.", ts: new Date().toISOString() },
+      ] }],
+    }) } });
+    const provider = reply({ say: "Bank statements and an insurance policy.", actions: [] });
+    setProvider(provider);
+    const res = await agent(post(sid, { caseId, utterance: "What records did I mention?" }));
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(provider.calls[0].messages)).toContain("bank statements and an insurance policy");
+  });
+
   it("reports an outage as unavailable, leaving the case untouched", async () => {
     const { sid, caseId } = await makeCase();
     setProvider(new FixtureProvider(() => { throw new Error("overloaded"); }));
@@ -182,5 +223,23 @@ describe("GET /api/ai/agent (is the planner on?)", () => {
   });
   it("needs a session", async () => {
     expect((await availability(new Request("http://localhost/api/ai/agent"))).status).toBe(401);
+  });
+});
+
+
+describe("case-owned conversational context", () => {
+  it("rejects a thread outside the current case", async () => {
+    const c = await makeCase(); setProvider(reply({ say: "Synthetic reply", actions: [], listen: true, finish: false }));
+    const response = await agent(post(c.sid, { caseId: c.caseId, threadId: "foreign-thread", utterance: "Hello" }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("thread_changed");
+  });
+  it("includes saved follow-ups without exposing protected discovery labels", () => {
+    const input = { claims: [{ id: "c1", assetId: "a1", status: "institution_review" }], ui: { plan: [{ id: "portal", label: "Synthetic official source" }], followUps: { "claim:c1": { enabled: true, nextCheckOn: "2026-11-20" }, "search:portal": { enabled: false, nextCheckOn: null }, "claim:foreign": { enabled: true, nextCheckOn: null } } } };
+    const text = snapshotText(ctx(input));
+    expect(text).toContain("HDFC Bank claim: tracking; review=2026-11-20");
+    expect(text).toContain("Synthetic official source: paused");
+    expect(text).not.toContain("claim:foreign");
+    expect(snapshotText(ctx({ ...input, unlocked: false, assets: [] }))).not.toContain("Synthetic official source");
   });
 });

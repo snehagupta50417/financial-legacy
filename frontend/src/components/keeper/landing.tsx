@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Mic, Paperclip } from "lucide-react";
+import { ArrowRight, Check, Mic, Paperclip, Sparkles, ShieldCheck, Search, Heart, FileCheck2 } from "lucide-react";
 import { Wordmark, FamilyScene, Pill, Btn, ChatBubble } from "./ui";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ const NAV = [
 
 function Header() {
   return (
-    <header className="sticky top-0 z-30 border-b border-line/70 bg-ivory/90 backdrop-blur">
+    <header className="landing-header sticky top-0 z-30 border-b border-line/70 bg-ivory/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-3">
         <Wordmark />
         <nav aria-label="Main" className="hidden items-center gap-7 text-[0.95rem] lg:flex">
@@ -40,19 +40,20 @@ function Bubble({ who, children }: { who: "you" | "keeper"; children: React.Reac
 
 function DemoWindow() {
   return (
-    <div className="settle overflow-hidden rounded-[1.4rem] border border-line bg-paper shadow-[0_30px_60px_-30px_rgba(36,40,36,0.35)]" aria-label="Example conversation with Keeper">
+    <div className="landing-demo settle overflow-hidden rounded-[1.4rem] border border-line bg-paper shadow-[0_30px_60px_-30px_rgba(36,40,36,0.35)]" aria-label="Example conversation with Keeper">
       <div className="flex items-center justify-between border-b border-line bg-secondary/60 px-4 py-2.5">
-        <div className="flex items-center gap-1.5" aria-hidden><i className="h-2.5 w-2.5 rounded-full bg-[#d9cfba]" /><i className="h-2.5 w-2.5 rounded-full bg-[#d9cfba]" /><i className="h-2.5 w-2.5 rounded-full bg-[#d9cfba]" /></div>
-        <Pill tone="warn">Example conversation</Pill>
+        <div className="landing-demo-brand"><Sparkles className="h-4 w-4" aria-hidden /><span>Keeper<span className="landing-demo-subtitle">Your case, connected</span></span></div>
+        <Pill tone="warn">Simulated example</Pill>
       </div>
       <div className="grid md:grid-cols-[minmax(0,1fr)_13rem]">
-        <div className="space-y-3 p-4 md:p-5">
-          <div className="text-[0.8rem] font-medium text-muted-foreground">Family estate</div>
+        <div className="landing-demo-messages space-y-3 p-4 md:p-5">
+          <div className="text-[0.8rem] font-medium text-muted-foreground">A place to start. A plan to follow.</div>
           <Bubble who="you">My father passed away. We know about his bank account, but not his investments.</Bubble>
           <Bubble who="keeper">Would you like to start with the bank claim or look for investments?</Bubble>
           <div className="flex flex-wrap gap-2" aria-label="Suggested replies">
             {["Start the bank claim", "Look for investments"].map((c) => <span key={c} className="inline-flex min-h-10 items-center rounded-full border border-moss/40 bg-moss-soft px-4 text-[0.9rem] font-medium">{c}</span>)}
           </div>
+          <div className="landing-demo-evidence"><FileCheck2 aria-hidden /><span>Bank account noted<small>Self-declared · Authority still needs review</small></span><Check aria-hidden /></div>
           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-3xl border border-line bg-ivory p-1.5 pl-4">
             <span className="min-w-0 flex-1 truncate text-[0.9rem] text-muted-foreground">Type, or tap the microphone…</span>
             <Paperclip className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -74,27 +75,29 @@ function DemoWindow() {
 
 function Hero() {
   return (
-    <section className="paper-grain relative overflow-hidden">
+    <section className="landing-hero paper-grain relative overflow-hidden">
+      <div className="landing-orbit landing-orbit-one" aria-hidden /><div className="landing-orbit landing-orbit-two" aria-hidden />
       <div className="mx-auto grid max-w-[1180px] items-center gap-12 px-5 pb-14 pt-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:pb-20 lg:pt-10">
         <div>
-          <p className="eyebrow settle">Financial discovery · Preparation · Claims</p>
+          <p className="eyebrow settle"><span className="landing-eyebrow-dot" aria-hidden /> YOUR FINANCIAL LIFE, CONNECTED</p>
           <h1 className="display settle mt-4 text-[clamp(2.4rem,5vw,3.9rem)]">
-            Know what you own.<br /><span className="italic text-moss">Help your family know what comes next.</span>
+            Find what’s yours.<br /><span className="italic text-moss">Plan for who matters.</span>
           </h1>
           <p className="settle mt-4 max-w-[34rem] text-[1.08rem] leading-relaxed text-ink/80">
-            Find forgotten assets, prepare for your family, or work through a claim. Start with a conversation.
+            Accounts, investments, policies. A lifetime of details, brought together through one conversation. Find forgotten assets, prepare for family, or take the next step on a claim.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/signin" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-apricot px-7 font-semibold text-ink hover:bg-[#dd9566]">Get started <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            <Link href="/signin" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-apricot px-7 font-semibold text-ink hover:bg-[#dd9566]">Start your conversation <ArrowRight className="h-4 w-4" aria-hidden /></Link>
             <a href="#stories" className="inline-flex min-h-12 items-center rounded-full border border-ink/25 bg-paper px-7 font-semibold hover:bg-secondary">See Keeper in action</a>
           </div>
-          <ul className="mt-7 grid gap-3 text-[0.92rem] sm:grid-cols-3" aria-label="Three things Keeper helps with">
-            {[["Find my assets", "Find records you have lost track of."], ["Prepare for my family", "Keep records and instructions together."], ["After a death", "Prepare claims, one institution at a time."]].map(([t, d]) => (
-              <li key={t} className="border-t-2 border-apricot pt-3"><strong className="block font-semibold">{t}</strong><span className="text-ink/70">{d}</span></li>
+          <p className="landing-hero-note"><ShieldCheck aria-hidden />You review the evidence. You stay in control.</p>
+          <ul className="landing-journey-links mt-7 grid gap-3 text-[0.92rem] sm:grid-cols-3" aria-label="Three things Keeper helps with">
+            {[["Find my assets", "Find records you have lost track of."], ["Prepare for my family", "Keep records and instructions together."], ["After a death", "Prepare claims, one institution at a time."]].map(([t, d], n) => (
+              <li key={t} className="border-t-2 border-apricot pt-3">{n === 0 ? <Search aria-hidden /> : n === 1 ? <Heart aria-hidden /> : <FileCheck2 aria-hidden />}<strong className="block font-semibold">{t}</strong><span className="text-ink/70">{d}</span></li>
             ))}
           </ul>
         </div>
-        <DemoWindow />
+        <div className="landing-demo-wrap"><div className="landing-demo-caption"><span aria-hidden>✧</span> One assistant. Every step.</div><DemoWindow /><div className="landing-demo-footnote"><span className="landing-mini-wave" aria-hidden>{Array.from({length: 5}, (_, i) => <i key={i} />)}</span>Type it. Say it. Take it one step at a time.</div></div>
       </div>
     </section>
   );
@@ -163,6 +166,7 @@ function Stories() {
   // The nav links "Find assets", "Prepare for family" and "Claims" open the matching story.
   useEffect(() => {
     const onHash = () => { const n = STORIES.findIndex((t) => t.anchor === location.hash.slice(1)); if (n >= 0) setI(n); };
+    onHash();
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -286,7 +290,7 @@ function Control() {
 
 const FAQ: [string, string][] = [
   ["Can I use Keeper while I’m alive?", "Yes. You can discover forgotten accounts, or organise what you have so it’s easy to find later."],
-  ["Is it for end-of-life preparation?", "Yes, without needing a medical reason. Keeper helps you record assets, documents, nominations, trusted contacts and practical instructions. and doesn’t ask about health."],
+  ["Is it for end-of-life preparation?", "Yes, without needing a medical reason. Keeper helps you record assets, documents, nominations, trusted contacts and practical instructions, without asking about health."],
   ["Can it help after someone dies?", "Yes. It helps authorised family members, nominees or executors organise the case, find possible assets, understand each institution’s requirements and prepare claim documents."],
   ["Can I start a claim for an asset I already know about?", "Yes. You don’t have to search first. Tell Keeper which asset, and it starts that claim directly."],
   ["Can Keeper find every asset?", "No. It can analyse documents you upload and guide you through official searches. A search that finds nothing only covers that source and the details you gave."],
@@ -329,14 +333,28 @@ function FinalCta() {
 }
 
 export default function Landing() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!root.current || !window.IntersectionObserver || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const sections = root.current.querySelectorAll("main > section:not(:first-child)");
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) if (entry.isIntersecting) {
+        entry.target.classList.add("landing-revealed");
+        observer.unobserve(entry.target);
+      }
+    }, { threshold: 0.06 });
+    sections.forEach(section => { section.classList.add("landing-reveal"); observer.observe(section); });
+    return () => { observer.disconnect(); sections.forEach(section => section.classList.remove("landing-reveal")); };
+  }, []);
   return (
-    <div>
+    <div ref={root} className="keeper-landing">
+      <div className="landing-scroll-progress" aria-hidden />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-ivory">Skip to content</a>
       <Header />
       <main id="main">
         <Hero /><Problem /><Introduction /><Stories /><How /><WhatYouGet /><Coverage /><Control /><Faq /><FinalCta />
       </main>
-      <footer className="border-t border-line bg-paper"><div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 py-8 text-[0.9rem] text-muted-foreground"><Wordmark /><span>© keeper · Not legal or financial advice.</span><Btn variant="quiet" className="min-h-10 px-4 text-[0.85rem]" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Back to top</Btn></div></footer>
+      <footer className="border-t border-line bg-paper"><div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 py-8 text-[0.9rem] text-muted-foreground"><Wordmark /><span>© keeper · Not legal or financial advice.</span><Btn variant="quiet" className="min-h-10 px-4 text-[0.85rem]" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}>Back to top</Btn></div></footer>
     </div>
   );
 }
