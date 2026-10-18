@@ -165,6 +165,13 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
                 <div className="mt-3"><Btn onClick={() => void agent.allowAi()}>Allow AI help</Btn></div>
               </div>
             )}
+            {agent.aiReason && agent.aiReason !== "consent" && !ringing && (
+              <div role="note" aria-label="Keeper is in basic mode" className="w-full rounded-2xl border border-apricot/60 bg-[#fbf1e8] p-4 text-left">
+                <p className="font-semibold">Keeper is in basic mode right now</p>
+                <p className="mt-1 text-[0.9rem]">{agent.aiReason === "example" ? "In the example, Keeper follows a script, so it can’t hold a real conversation. To talk freely, open the sign-in page, choose “Continue to Keeper”, and make sure Keeper’s AI key is set up." : "Keeper follows a simple script until it has an AI key, so it can’t talk with you freely or understand you properly. To switch it on, stop the app, run this in the project folder, then start the app again:"}</p>
+                {agent.aiReason === "not_configured" && <code className="mt-2 block rounded-lg bg-ink px-3 py-2 text-[0.85rem] text-ivory">npm run set-key</code>}
+              </div>
+            )}
             {!sp.supported && <p role="status" className="w-full rounded-xl border border-line bg-secondary p-3 text-[0.93rem]">{VOICE_ERROR_TEXT.unsupported} You can type from the keyboard button, and Keeper will answer out loud.</p>}
             {sp.error && sp.error !== "no-speech" && <p role="alert" className="flex w-full gap-2 rounded-xl border border-apricot/60 bg-[#fbf1e8] p-3 text-[0.93rem]"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{VOICE_ERROR_TEXT[sp.error]}</p>}
             {notice && !agent.consentNeeded && <p role="status" className="w-full rounded-xl border border-line bg-secondary p-3 text-[0.88rem]">{notice}</p>}

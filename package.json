@@ -7,7 +7,7 @@
     "set-key": "node backend/scripts/set-key.mjs gemini",
     "set-sarvam-key": "node backend/scripts/set-key.mjs sarvam",
     "setup": "npm run install:all && npm run db:push --prefix backend",
-    "dev": "concurrently -n api,web -c yellow,cyan --kill-others-on-fail \"npm run dev --prefix backend\" \"wait-on -t 60000 http-get://localhost:4000/api/health && npm run dev --prefix frontend\"",
+    "dev": "node scripts/check-keys.mjs && concurrently -n api,web -c yellow,cyan --kill-others-on-fail \"npm run dev --prefix backend\" \"wait-on -t 60000 http-get://localhost:4000/api/health && npm run dev --prefix frontend\"",
     "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix frontend",
     "test": "npm test --prefix backend && npm test --prefix frontend",
     "build": "npm run build --prefix backend && npm run build --prefix frontend"

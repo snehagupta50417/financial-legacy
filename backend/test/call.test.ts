@@ -6,7 +6,7 @@ import { POST as agent } from "@api/ai/agent/route";
 import { GET as listHandoffs, POST as requestHuman } from "@api/cases/[id]/handoff/route";
 import { FixtureProvider, setProvider } from "@server/ai";
 import { pcmToWav } from "@server/ai/gemini";
-import { agentContext, readModelTurn } from "@server/ai/agent";
+import { AGENT_SYSTEM, agentContext, readModelTurn } from "@server/ai/agent";
 import { db } from "@server/db";
 
 const NUMBER = "123456789012";
@@ -69,6 +69,17 @@ describe("Keeper's voice", () => {
     setProvider(Object.assign(new FixtureProvider(() => "{}"), { speak: async () => Buffer.alloc(4) }));
     expect((await speak(req(sid, { text: "   " }))).status).toBe(400);
     expect((await speak(req(sid, { text: "x".repeat(601) }))).status).toBe(400);
+  });
+});
+
+describe("Keeper sounds like a person on a call", () => {
+  it("is told to react first, keep turns short, ask one thing at a time and not greet twice", () => {
+    expect(AGENT_SYSTEM).toMatch(/phone call/);
+    expect(AGENT_SYSTEM).toMatch(/reacting to what they just said/);
+    expect(AGENT_SYSTEM).toMatch(/under 35 words/);
+    expect(AGENT_SYSTEM).toMatch(/exactly ONE question/);
+    expect(AGENT_SYSTEM).toMatch(/Do not greet them again/);
+    expect(AGENT_SYSTEM).not.toMatch(/under 45 words/);
   });
 });
 
