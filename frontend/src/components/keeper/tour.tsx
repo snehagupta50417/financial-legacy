@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, CircleSlash, Loader2, Volume2, VolumeX } from "lucide-react";
 import { dispatch } from "@/keeper/store";
-import { STORIES, storyFor, type Beat, type Story } from "@/keeper/tour";
+import { PERSONAS, personaById, type Persona } from "@/keeper/personas";
+import { storyFor, type Beat, type Story } from "@/keeper/tour";
 import { speak, stopSpeaking } from "@/keeper/voice";
 import { cn } from "@/lib/utils";
 import { LoopRail, Orb } from "./agent-mode";
+import { PersonaSummary } from "./persona-card";
 import { Btn, Wordmark } from "./ui";
 
 /** Plays a timer-driven reveal. `ms` is 1 when the person prefers reduced motion. */
@@ -104,6 +106,7 @@ function CloseBeat({ beat, onReady }: { beat: Extract<Beat, { kind: "close" }>; 
 }
 
 function Stage({ story, onPick, onExit }: { story: Story; onPick: () => void; onExit: (to: "workspace" | "mine") => void }) {
+  const persona = personaById(story.persona);
   const [i, setI] = useState(0);
   const [ready, setReady] = useState(false);
   const [aloud, setAloud] = useState(false);
@@ -132,7 +135,7 @@ function Stage({ story, onPick, onExit }: { story: Story; onPick: () => void; on
       </div>
       <div className="flex-1">
         <p className="mb-3 text-[0.8rem] font-semibold uppercase tracking-wider text-moss" aria-live="polite">{label}</p>
-        {beat.kind === "user" && <UserBeat key={i} beat={beat} who={story.who} onReady={markReady} />}
+        {beat.kind === "user" && <UserBeat key={i} beat={beat} who={`${persona.name}, ${persona.age}, ${persona.city}`} onReady={markReady} />}
         {beat.kind === "understood" && <UnderstoodBeat key={i} beat={beat} onReady={markReady} />}
         {beat.kind === "act" && <ActBeat key={i} beat={beat} onReady={markReady} />}
         {beat.kind === "confirm" && <ConfirmBeat key={i} beat={beat} onReady={markReady} />}
@@ -158,11 +161,12 @@ function Stage({ story, onPick, onExit }: { story: Story; onPick: () => void; on
 export default function Tour() {
   const router = useRouter();
   const params = useSearchParams();
-  const [story, setStory] = useState<Story | null>(() => storyFor(params.get("story") ?? "") ?? null);
+  const [story, setStory] = useState<Story | null>(() => storyFor(params.get("persona") ?? "") ?? null);
 
-  const exit = (to: "workspace" | "mine") => {
+  const exit = (to: "workspace" | "mine", persona?: Persona) => {
     stopSpeaking();
-    if (to === "workspace") { dispatch({ t: "signIn", name: "Asha Rao", mode: "sample" }); router.push("/app"); }
+    const who = persona ?? personaById(story?.persona);
+    if (to === "workspace") { dispatch({ t: "signIn", name: who.name, mode: "sample", persona: who.id }); router.push("/app"); }
     else router.push("/signin");
   };
 
@@ -179,23 +183,23 @@ export default function Tour() {
       {!story ? (
         <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-5 pb-12">
           <div className="settle">
-            <h1 className="display text-[2.3rem] leading-tight sm:text-[2.7rem]">See how Keeper works.</h1>
-            <p className="mt-3 text-[1.08rem] text-ink/80">Pick a situation. You’ll watch Keeper handle one turn, step by step. It takes about a minute. Nothing here is real.</p>
+            <h1 className="display text-[2.3rem] leading-tight sm:text-[2.7rem]">Who would you like to follow?</h1>
+            <p className="mt-3 text-[1.08rem] text-ink/80">Everything you see in the example belongs to one made-up person. Pick one. You’ll watch Keeper help them with one turn, then open their workspace. It takes about a minute.</p>
           </div>
           <ul className="space-y-3">
-            {STORIES.map((s, i) => (
-              <li key={s.journey} className="settle" style={{ animationDelay: `${0.15 + i * 0.1}s` }}>
-                <button onClick={() => setStory(s)} className="group flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl border border-moss/40 bg-paper px-5 py-4 text-left hover:bg-moss-soft">
-                  <span><span className="block text-[1.08rem] font-semibold">{s.title}</span><span className="block text-[0.93rem] text-muted-foreground">{s.blurb}</span></span>
+            {PERSONAS.map((p, i) => (
+              <li key={p.id} className="settle" style={{ animationDelay: `${0.15 + i * 0.1}s` }}>
+                <button onClick={() => setStory(storyFor(p.id) ?? null)} className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-moss/40 bg-paper px-5 py-4 text-left hover:bg-moss-soft">
+                  <PersonaSummary p={p} />
                   <ArrowRight className="h-5 w-5 shrink-0 text-moss transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </button>
               </li>
             ))}
           </ul>
-          <p className="text-[0.88rem] text-muted-foreground">Prefer to look around yourself? <button className="underline underline-offset-4" onClick={() => exit("workspace")}>Open the example workspace</button>. <Link href="/signin" className="ml-1 underline underline-offset-4">Back</Link></p>
+          <p className="text-[0.88rem] text-muted-foreground">Prefer to look around yourself? <button className="underline underline-offset-4" onClick={() => exit("workspace")}>Open {PERSONAS[0].name}’s workspace</button>. <Link href="/signin" className="ml-1 underline underline-offset-4">Back</Link></p>
         </main>
       ) : (
-        <main className="flex flex-1 flex-col"><Stage key={story.journey} story={story} onPick={() => setStory(null)} onExit={exit} /></main>
+        <main className="flex flex-1 flex-col"><Stage key={story.persona} story={story} onPick={() => setStory(null)} onExit={(to) => exit(to)} /></main>
       )}
     </div>
   );

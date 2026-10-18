@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { FileText, History, Layers, MessageCircle, Plus, ScrollText, Settings2, Users } from "lucide-react";
 import { connectBackend, refreshBackend, useBackendStatus, dispatch, useKeeper } from "@/keeper/store";
 import { cn } from "@/lib/utils";
+import { PersonaChip } from "./persona-chip";
 import { Btn, Wordmark } from "./ui";
 
 const NAV = [
@@ -48,6 +49,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop navigation */}
       <aside className="scroll-soft hidden w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-line bg-paper px-4 py-5 lg:flex" aria-label="Keeper navigation">
         <Wordmark href="/app" />
+        <PersonaChip />
         {caseSelect()}
         <Btn variant="ink" className="w-full" onClick={() => { dispatch({ t: "newThread" }); router.push("/app"); }}><Plus className="h-4 w-4" aria-hidden />New conversation</Btn>
         <nav aria-label="Sections" className="flex flex-col gap-0.5">
@@ -77,6 +79,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Wordmark href="/app" />
         <div className="flex min-w-0 flex-1 justify-end gap-2">
           {caseSelect("min-w-0 max-w-[13rem] flex-1")}
+          <PersonaChip variant="mobile" />
           <details className="relative self-end">
             <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-ivory" aria-label="More"><Settings2 className="h-5 w-5" aria-hidden /></summary>
             <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-line bg-paper p-2 shadow-lg">

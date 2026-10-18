@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { DEMO_SCENARIOS } from "@/keeper/demo";
 import { addDemoCase, removeDemoCases, useBackendStatus, useKeeper } from "@/keeper/store";
+import { PersonaSummary } from "./persona-card";
 import { Btn } from "./ui";
 
 /** Every demo case is labelled "(demo)" and can be removed; real cases are never touched. */
@@ -18,10 +19,10 @@ export function DemoScenarios() {
   return (
     <div className="mt-3 space-y-2">
       <ul className="space-y-2">
-        {DEMO_SCENARIOS.map((s) => (
-          <li key={s.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper px-4 py-3">
-            <span className="min-w-0"><span className="block font-semibold">{s.title}</span><span className="block text-[0.88rem] text-muted-foreground">{s.blurb} {s.has}</span></span>
-            <Btn variant="quiet" className="min-h-10 shrink-0" disabled={busy} onClick={() => void add(s.key)}>{adding === s.key ? "Adding…" : "Add demo"}</Btn>
+        {DEMO_SCENARIOS.map(({ key, persona }) => (
+          <li key={key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper px-4 py-3">
+            <span className="min-w-0 flex-1"><PersonaSummary p={persona} compact /></span>
+            <Btn variant="quiet" className="min-h-10 shrink-0" disabled={busy} onClick={() => void add(key)}>{adding === key ? "Adding…" : "Add " + persona.name.split(" ")[0] + "’s demo"}</Btn>
           </li>
         ))}
       </ul>

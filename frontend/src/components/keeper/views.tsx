@@ -122,7 +122,7 @@ export function ClaimsView() {
             <button key={x.id} onClick={() => setSel(x.id)} aria-current={cl?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", cl?.id === x.id ? "border-ink" : "border-line")}>
               <p className="font-semibold">{a.institution}</p><p className="text-[0.85rem] text-muted-foreground">{CATEGORY_LABEL[a.category]}</p>
               <div className="mt-2 flex flex-wrap gap-1.5"><Pill tone={x.outcome ? "ok" : "warn"}>{x.outcome ? OUTCOME_LABEL[x.outcome.kind] : `Now: ${st.label}`}</Pill>{x.submitted && <Pill>Ref {x.submitted.ref}</Pill>}</div>
-              {x.nextFollowUp && !x.outcome && <p className="mt-2 text-[0.85rem] text-ink/70">Next follow-up: {formatDay(x.nextFollowUp)}</p>}
+              {x.nextFollowUp && !x.outcome && <p className={cn("mt-2 text-[0.85rem]", +new Date(x.nextFollowUp) < Date.now() ? "font-semibold text-[#9a4f1e]" : "text-ink/70")}>{+new Date(x.nextFollowUp) < Date.now() ? "Follow-up overdue since " : "Next follow-up: "}{formatDay(x.nextFollowUp)}</p>}
             </button>); })}
           {unstarted.map((a) => (
             <div key={a.id} className="rounded-2xl border border-dashed border-line p-4"><p className="font-semibold">{a.institution}</p><p className="text-[0.85rem] text-muted-foreground">No claim started</p><Btn variant="ink" className="mt-2 min-h-10" onClick={() => dispatch({ t: "claim.start", assetId: a.id })}>Start a claim</Btn></div>

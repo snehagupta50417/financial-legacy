@@ -164,6 +164,8 @@ export interface PlanSource {
 export interface Case {
   /** A demo case seeded for this account (synthetic people, real public reference data). */
   demo?: boolean;
+  /** Which backend demo scenario this case came from, so it can show its persona. */
+  demoKey?: string;
   uiTasks?: Task[];
   backendId?: string;
   gate?: CaseWorkspace["gate"];
@@ -190,6 +192,8 @@ export interface Case {
 export interface Session {
   mode: "sample" | "signin";
   name: string;
+  /** Which example persona this workspace belongs to (sample mode). See personas.ts. */
+  persona?: string;
 }
 
 export interface AppState {
