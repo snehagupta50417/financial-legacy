@@ -298,3 +298,7 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Deploy:** two Cloud Run services from source (backend first, then the frontend built with `BACKEND_URL`). Both fit the free tier, but each API call is a request to both services, so the 2M monthly requests last about half as long (docs/CLOUD_SETUP.md).
 - **Open:** the backend is public (as the API was); restricting it to the web app, and a shared store for rate limits, are still to decide. The backend has no ESLint yet; `tsc` covers it.
 - Also: ESLint now ignores the git-ignored `frontend/artifacts/`.
+
+## One command runs both services — 18 Oct 2026
+
+- A root `package.json` (`concurrently`, `wait-on`; dev tooling only) adds `npm run dev`, which starts `backend/` on :4000, waits for `/api/health`, then starts `frontend/` on :3000, plus `setup`, `typecheck`, `test` and `build` that cover both. The services stay separate packages; the connection between them is still the frontend's `/api/*` rewrite to `BACKEND_URL`.
