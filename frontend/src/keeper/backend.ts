@@ -132,7 +132,7 @@ export async function backendAction(prev: AppState, action: Action): Promise<App
     }
     await saveUi(c); return s;
   }
-  if (["focus", "newThread", "switchThread", "fact.edit", "contact.add", "contact.toggle", "family.set", "plan.record"].includes(action.t)) {
+  if (["focus", "newThread", "switchThread", "agent.turn", "fact.edit", "contact.add", "contact.toggle", "family.set", "plan.record"].includes(action.t)) {
     s = reduce(s, action); c = s.cases[s.activeCase];
     if (!["focus", "switchThread", "newThread"].includes(action.t)) await ensure();
     if (action.t === "fact.edit" && ["name", "relation"].includes(action.key)) await api.patch("/api/cases/" + c.backendId, { [action.key === "name" ? "assetHolderName" : "relationship"]: action.value });

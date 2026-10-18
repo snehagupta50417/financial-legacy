@@ -154,3 +154,8 @@
 @keyframes keeper-wave { from { transform: scaleY(.55); } to { transform: scaleY(1); } }
 .keeper-wave i { animation: keeper-wave .7s ease-in-out infinite alternate; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) { .keeper-wave i { animation: none !important; transform: none; } }
+
+/* Voice agent orb: soft rings that grow while Keeper listens or speaks. */
+@keyframes keeper-ring { from { transform: scale(1); opacity: .9; } to { transform: scale(1.55); opacity: 0; } }
+.keeper-ring { animation: keeper-ring 1.8s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .keeper-ring { animation: none !important; opacity: .35; } }

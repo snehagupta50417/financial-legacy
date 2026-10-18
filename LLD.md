@@ -159,7 +159,7 @@ frontend/
       connectors/             (Later) base.ts · mock/* · real/*
     lib/                      client-shared only: client.ts (fetch + session header) · types.ts · utils.ts · field-review.ts · journey.ts (six-step journey, action cards, legacy gaps) · start-message.ts · starters.ts
     components/
-      keeper/                 landing, signin, shell, conversation (+ voice mode), panel (what Keeper knows, asset, document review, claim, family, discovery plan), views, ui
+      keeper/                 landing, signin, shell, conversation (+ voice agent screen), panel (what Keeper knows, asset, document review, claim, family, discovery plan), views, ui
     keeper/                   client-side demo engine: types · engine (assistant + reducer) · claims · sample · store (localStorage) · voice · catalog · util
       ui/                     stock shadcn components
   test/                       Vitest unit and route tests (test/.tmp holds the test database)
@@ -805,3 +805,7 @@ The existing landing, sign-in, shell, conversation, voice controls, views and pa
 `presentation.ts` consolidates fragmented assistant turns and selects a next step from saved task/claim/document state. The original interviewer supplies focused information gathering; `backend.ts` projects authoritative server records and preserves self-reported context and follow-ups. UI metadata never grants a gate or evidence status. `attachments.ts` uses native IndexedDB for recoverable selected-file uploads; JSON metadata is scoped to its thread. Personal and example drafts use separate local caches.
 
 `hasAiConsent` is checked before generation and semantic embedding; retrieval can explicitly use keyword-only mode. Consent is also required for image AI, drafting and checklist generation. No database schema change. The production authentication, identity-provider connections, institution connectors, sharing/release and direct submission remain unavailable. Personal protected-record operations remain gated; the UI explains unavailable checks rather than passing them through a mock provider.
+
+### Voice agent — 18 Oct 2026
+
+`src/keeper/agent.ts` (client loop), `src/components/keeper/agent-mode.tsx` (screen), `src/server/ai/agent.ts` (prompt, schema, vetting), `POST/GET /api/ai/agent`. Per turn: the browser sends the utterance and the last few turns (identifiers redacted again on the server) with the case id; the server checks ownership, the AI opt-in and the rate limit, builds a snapshot from what the person may see (nothing below the discovery gate; masked holdings), asks Gemini for one JSON object `{say, actions, listen, finish}`, and returns only vetted actions with a `confirm` flag. The browser runs automatic actions through the normal `dispatch` (same owner-gated APIs as the buttons), holds the rest until a yes, records the turn with `agent.turn`, speaks the reply with the browser voice and listens again. Errors map to codes (`ai_consent_required` 403, `ai_unavailable` 503, `ai_unusable` 502) and the client falls back to the built-in interviewer.

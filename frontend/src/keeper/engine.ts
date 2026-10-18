@@ -656,6 +656,8 @@ export type Action =
   | { t: "newThread" }
   | { t: "switchThread"; id: string }
   | { t: "send"; text: string; voice?: boolean }
+  /** One turn of the voice agent: what the person said and what Keeper said back. Changes nothing else. */
+  | { t: "agent.turn"; user: string; reply: string; voice?: boolean; card?: Message["card"]; note?: boolean }
   | { t: "choose"; id: string; label: string }
   | { t: "focus"; focus: Case["focus"] }
   | { t: "fact.edit"; key: string; value: string | null }
@@ -702,6 +704,12 @@ function reduceState(prev: AppState, a: Action): AppState {
     case "newThread": { const t = newThread(); const work = nextWork(c); c.threads.unshift(t); c.activeThread = t.id; t.messages.push(msg("keeper", work?.text || WELCOME_NEW, { ...(work ? { card: work.card } : {}), choices: work ? [{ id: "m:resume", label: "Continue" }, { id: "m:something", label: "Something else" }] : START_CHOICES })); break; }
     case "switchThread": if (c.threads.some((t) => t.id === a.id)) c.activeThread = a.id; break;
     case "send": converse(s, { text: a.text, voice: a.voice }); break;
+    case "agent.turn": {
+      if (!th) break;
+      th.messages.push(msg("user", a.user, { voice: a.voice }), msg(a.note ? "note" : "keeper", a.reply, a.card ? { card: a.card } : {}));
+      if (a.card) c.focus = a.card;
+      break;
+    }
     case "choose":
       if (a.id === "m:sample" && SAMPLE_HOOK.load) return SAMPLE_HOOK.load(s.session?.name ?? "Asha Rao");
       converse(s, { choice: a.id, label: a.label });

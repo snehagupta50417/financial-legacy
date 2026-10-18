@@ -75,11 +75,20 @@ export function useSpeech() {
   return { supported, listening, text, setText, interim, error, start, stop, clear };
 }
 
-export function speak(text: string) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+/** Speaks `text`. `onEnd` fires exactly once when it finishes, is cut off, or can't be spoken at all. */
+export function speak(text: string, onEnd?: () => void) {
+  let done = false;
+  let watchdog: ReturnType<typeof setTimeout> | undefined;
+  const finish = () => { if (!done) { done = true; clearTimeout(watchdog); onEnd?.(); } };
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return finish();
+  const clean = text.replace(/\s+/g, " ");
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/\s+/g, " "));
+  const u = new SpeechSynthesisUtterance(clean);
   u.lang = "en-IN";
+  // Some browsers have no voice installed and never fire an event: don't leave the conversation waiting on one.
+  u.onstart = () => { clearTimeout(watchdog); watchdog = setTimeout(finish, 6000 + clean.length * 110); };
+  u.onend = finish; u.onerror = finish;
+  watchdog = setTimeout(finish, 4000);
   window.speechSynthesis.speak(u);
 }
 export const stopSpeaking = () => typeof window !== "undefined" && window.speechSynthesis?.cancel();

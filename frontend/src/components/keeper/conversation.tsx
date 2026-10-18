@@ -2,18 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, FileText, Info, Mic, MicOff, Paperclip, Send, Square, Volume2 } from "lucide-react";
+import { ArrowRight, FileText, Info, Mic, Paperclip, Send } from "lucide-react";
 import { STARTERS } from "@/keeper/catalog";
 import type { DocVariant } from "@/keeper/engine";
 import { dispatch, setPrefs, useKeeper, useBackendStatus, saveConversationDraft, attachDocument, retryAttachment, removeAttachment } from "@/keeper/store";
 import type { Choice, Message } from "@/keeper/types";
-import { speak, stopSpeaking, useSpeech, useSpeechOutSupport, VOICE_ERROR_TEXT } from "@/keeper/voice";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { speak } from "@/keeper/voice";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Panel } from "./panel";
+import { AgentMode } from "./agent-mode";
 import { Btn, ChatBubble } from "./ui";
-import { ListeningWave } from "./task-visuals";
 import { nextWork, plainCopy } from "@/keeper/presentation";
 
 const JOURNEY_PARAM: Record<string, string> = { discover: "Find my assets", prepare: "Prepare for my family", claim: "Get help after a death" };
@@ -52,70 +51,6 @@ function Bubble({ m, onOpen, current }: { current?: boolean; m: Message; onOpen:
       <MessageText text={m.text} />
       {m.card && <button onClick={() => onOpen(m.card!.type, m.card!.id)} className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-line bg-ivory px-4 text-left text-[0.92rem] font-semibold hover:bg-secondary"><span className="flex items-center gap-2"><FileText className="h-4 w-4 text-moss" aria-hidden />{CARD_LABEL[m.card.type]}</span><ArrowRight className="h-4 w-4 text-moss" aria-hidden /></button>}
     </ChatBubble>
-  );
-}
-
-function VoiceMode({ open, onClose, onTyping }: { open: boolean; onClose: () => void; onTyping: (t: string) => void }) {
-  const { state, c, th } = useKeeper();
-  const sp = useSpeech();
-  const canSpeak = useSpeechOutSupport();
-  const [consent, setConsent] = useState(false);
-  const last = th?.messages.filter((m) => m.role !== "user").at(-1);
-  const gathered = c ? Object.values(c.facts).filter((f) => f.value).slice(-4) : [];
-  const begin = () => { if (state?.voiceDisclosed) sp.start(); else setConsent(true); };
-  const send = () => { const t = (sp.text + " " + sp.interim).trim(); if (!t) return; sp.stop(); const result = dispatch({ t: "send", text: t, voice: true }); if (result) void result.then(ok => { if (ok) sp.clear(); }); else sp.clear(); };
-  useEffect(() => { if (!open) sp.clear(); }, [open, sp.clear]);
-  useEffect(() => () => { sp.clear(); stopSpeaking(); }, [c?.id, sp.clear]);
-  const close = () => { sp.clear(); stopSpeaking(); setConsent(false); onClose(); };
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="display text-[1.8rem]">Talk to Keeper</DialogTitle>
-          <DialogDescription>Case: <b>{c?.name}</b>. You choose when to listen. Keeper never listens in the background and stores no audio.</DialogDescription>
-        </DialogHeader>
-
-        {consent && (
-          <div role="alertdialog" aria-label="Before you use voice" className="rounded-2xl border border-apricot/60 bg-[#fbf1e8] p-4">
-            <p className="font-semibold">Before you use voice</p>
-            <p className="mt-1 text-[0.93rem]">Your browser turns speech into text. In Chrome and Edge, that means your audio is sent to the browser company’s speech service (for example Google or Microsoft). Keeper stores no audio. Review the transcript before sending.</p>
-            <div className="mt-3 flex flex-wrap gap-2"><Btn onClick={() => { setPrefs({ voiceDisclosed: true }); setConsent(false); sp.start(); }}>Continue with voice</Btn><Btn variant="quiet" onClick={() => { setConsent(false); onTyping(""); close(); }}>Use typing instead</Btn></div>
-          </div>
-        )}
-
-        {!sp.supported && <p role="status" className="rounded-xl border border-line bg-secondary p-3 text-[0.93rem]">{VOICE_ERROR_TEXT.unsupported}</p>}
-        {sp.error && <p role="alert" className="rounded-xl border border-apricot/60 bg-[#fbf1e8] p-3 text-[0.93rem]">{VOICE_ERROR_TEXT[sp.error]}</p>}
-
-        <div className="flex flex-col items-center gap-3 py-2">
-          <button onClick={sp.listening ? sp.stop : begin} disabled={!sp.supported} aria-pressed={sp.listening} className={cn("flex h-24 w-24 items-center justify-center rounded-full bg-apricot text-ink disabled:opacity-40", sp.listening && "ring-2 ring-moss/30")} aria-label={sp.listening ? "Pause listening" : "Start listening"}>
-            {sp.listening ? <Square className="h-8 w-8" aria-hidden /> : sp.supported ? <Mic className="h-9 w-9" aria-hidden /> : <MicOff className="h-9 w-9" aria-hidden />}
-          </button>
-          {sp.listening && <ListeningWave />}
-          <p role="status" aria-live="polite" className="text-[0.95rem] font-medium">{sp.listening ? "Listening… tap to pause" : sp.supported ? "Tap the microphone to start" : "Voice isn’t available here"}</p>
-        </div>
-
-        <label className="block"><span className="text-[0.85rem] font-medium text-muted-foreground">Transcript. edit before sending</span>
-          <textarea value={sp.text + (sp.interim ? ` ${sp.interim}` : "")} onChange={(e) => sp.setText(e.target.value)} readOnly={sp.listening} rows={3} placeholder="Your words appear here. You can also type." className="mt-1 w-full rounded-xl border border-input bg-paper p-3" />
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <Btn onClick={send} disabled={!(sp.text + sp.interim).trim()}><Send className="h-4 w-4" aria-hidden />Send to Keeper</Btn>
-          <Btn variant="quiet" onClick={() => { onTyping((sp.text + " " + sp.interim).trim()); close(); }}>Switch to typing</Btn>
-          <Btn variant="quiet" onClick={close}>End</Btn>
-        </div>
-
-        {last && (
-          <div className="rounded-2xl border border-line bg-ivory p-4" aria-live="polite">
-            <p className="text-[0.78rem] font-semibold uppercase tracking-wider text-moss">Keeper</p>
-            <p className="mt-1 whitespace-pre-wrap">{last.text}</p>
-            <div className="mt-3"><Chips choices={last.choices} pending={last.pending} onPick={(ch) => dispatch({ t: "choose", id: ch.id, label: ch.label })} /></div>
-          </div>
-        )}
-        {canSpeak && (
-          <label className="flex min-h-11 items-center gap-2 text-[0.93rem]"><input type="checkbox" className="h-5 w-5 accent-[#526653]" checked={!!state?.speakReplies} onChange={(e) => { setPrefs({ speakReplies: e.target.checked }); if (!e.target.checked) stopSpeaking(); }} /><Volume2 className="h-4 w-4" aria-hidden />Read Keeper’s replies aloud (uses your browser’s voice)</label>
-        )}
-        {gathered.length > 0 && <div className="rounded-xl border border-line p-3 text-[0.88rem]"><p className="font-semibold">What Keeper is gathering</p><ul className="mt-1 list-disc pl-5 text-ink/80">{gathered.map((f) => <li key={f.key}>{f.value} <span className="text-muted-foreground">· {f.source}</span></li>)}</ul></div>}
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -228,7 +163,7 @@ export default function Conversation() {
           <div className="mt-3"><Panel c={c} onContinue={() => { dispatch({ t: "choose", id: "m:resume", label: "Continue" }); setSheet(false); }} /></div>
         </SheetContent>
       </Sheet>
-      <VoiceMode open={voiceOpen} onClose={() => setVoiceOpen(false)} onTyping={(t) => { if (t) updateText(text ? text + " " + t : t); }} />
+      <AgentMode open={voiceOpen} onClose={() => setVoiceOpen(false)} onTyping={() => {}} />
     </div>
   );
 }
