@@ -831,3 +831,8 @@ The conversation page opens on a call screen; the written chat is a toggle (`kee
 - Guided search outcomes are structured, redacted append-only CaseEvents (guided_search_v1), keyed by request UUID; JourneyTask contains the latest completion evidence. APIs check owner, discovery gates, the case's official source and document ownership. Possible matches do not create verified holdings. Progress updates transactionally with the outcome.
 - DELETE /api/privacy/data requires explicit DELETE confirmation and deletes the current account's Keeper Session and its cascading records, plus unreferenced deceased-person rows owned through those cases. Other accounts and shared public reference sources remain. The separate authentication-provider identity and processor/backups are outside this application-data deletion.
 - Source-only Cloud Run staging copies each service with shared/ and excludes credentials and database files. The deployed runtime fails closed when PostgreSQL, private schema, hosted authentication or HTTPS app origin are missing.
+
+
+### Durable claim-review implementation
+
+ClaimWorkflow persists one row per claim with a cursor, JSON checkpoints, a revision, attempts, lease token/deadline and a review result. Workers claim rows by conditional update, checkpoint by matching lease token/revision, and recover expired leases. Each checkpoint rechecks the case discovery/freeze gate; pack preparation uses the existing canonical claim service. Retry replays safe review steps and never external submission. A local process timer and authenticated request-driven advancement share the same lease path. Public GETs are read-only. Schema setup is explicit, never automatic startup. Case/claim deletion cascades workflows.

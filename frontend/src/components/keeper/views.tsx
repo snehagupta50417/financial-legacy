@@ -40,7 +40,7 @@ function TalkButton({ label, id }: { label: string; id?: string }) {
 
 export function AssetsView() {
   const { c } = useKeeper();
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(() => c?.focus?.type === "asset" ? c.focus.id ?? null : null);
   const [f, setF] = useState({ institution: "", category: "bank" as Category, ref: "" });
   if (!c) return null;
   const a = c.assets.find((x) => x.id === sel) ?? c.assets[0];
@@ -78,7 +78,7 @@ export function AssetsView() {
 
 export function DocumentsView() {
   const { c, state } = useKeeper();
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(() => c?.focus?.type === "doc" ? c.focus.id ?? null : null);
   if (!c) return null;
   const d = c.docs.find((x) => x.id === sel) ?? c.docs[0];
   const kinds: ["statement" | "policy" | "folio" | "unreadable" | "password" | "duplicate", string][] = [["statement", "Bank statement"], ["policy", "Insurance policy"], ["folio", "Mutual fund statement"], ["unreadable", "Blurred scan"], ["password", "Password-protected PDF"], ["duplicate", "Copy of a document"]];
@@ -103,7 +103,7 @@ export function DocumentsView() {
 
 export function ClaimsView() {
   const { state, c } = useKeeper();
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(() => c?.focus?.type === "claim" ? c.focus.id ?? null : null);
   if (!c) return null;
   if (c.kind === "self") {
     return (

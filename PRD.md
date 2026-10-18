@@ -873,3 +873,10 @@ Discovery and claim preparation show a named official destination and explain wh
 ### Agent execution reliability (FL-01, FL-02, FL-10)
 
 Every conversational action is bound to the case and thread that initiated it. Late replies and queued actions must not execute in a newly selected context. Unmount invalidates outstanding turns. Execution failures replace success-sounding model prose with actual completed/failed results. Conversation persistence is awaited; an unsaved turn remains visible with an explicit retry and blocks later turns until saved. The assistant receives saved, scoped follow-up choices and dates as untrusted case data; it must not imply automatic monitoring.
+
+
+### Evidence map and durable claim review (FL-06–FL-10, FL-12–FL-16, FL-26–FL-29, FL-37)
+
+Each case has a source-backed evidence map joining holdings, documents, extracted fields, corrections, dated observations, recorded official searches and claims. Links express their actual provenance, never a guessed ownership match. Highlight duplicate candidates, rejected critical fields and conflicting dated observations for human review. The map respects ownership/discovery gates and masks protected asset values.
+
+A persistent claim-review workflow checkpoints evidence collection, reconciliation and canonical claim-pack preparation. One workflow per claim prevents duplicate concurrent runs. Leases permit safe recovery after process interruption; bounded retries expose failure and an explicit retry. Resume after changed evidence rechecks the workflow rather than trusting stale results. The worker never approves, submits, records a financial outcome, or upgrades evidence on its own. Completion of a review is distinct from resolution of the claim. Free-tier Cloud Run may suspend idle background work; returning to the app can advance saved work through an authenticated endpoint.

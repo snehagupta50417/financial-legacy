@@ -516,3 +516,14 @@
   .keeper-app .keeper-bubble button:hover > svg:last-child, .keeper-app .keeper-official-link:hover > svg, .keeper-app .keeper-followup-queue button:hover > svg, .keeper-app .keeper-starter:hover > svg:first-child, .keeper-app .keeper-nav a:hover { transform: none; }
   html:has(.keeper-app) { scroll-behavior: auto; }
 }
+
+.keeper-evidence, .keeper-durable-review { border: 1px solid #dce4d1; border-radius: 17px; padding: 20px; background: #f3f6ed; }
+.keeper-evidence-layout { display: grid; grid-template-columns: minmax(110px,.8fr) minmax(0,1.6fr); gap: 12px; }
+.keeper-evidence-list { max-height: 450px; overflow-y: auto; scrollbar-width: thin; }
+.keeper-evidence-node { display: block; width: 100%; min-height: 45px; border: 1px solid transparent; border-radius: 9px; padding: 8px; text-align: left; }
+.keeper-evidence-node[aria-pressed="true"] { background: #fffefa; border-color: #d4dfc7; box-shadow: 0 2px 6px #30452109; }
+.keeper-evidence-node:hover { background: #e9f0df; }
+.keeper-durable-review { background: #f8f5eb; border-color: #e6dfcd; }
+.keeper-checkpoint { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border: 1px solid #d9dfce; border-radius: 50%; background: #fffefa; color: #768169; }
+.keeper-checkpoint[data-done="true"] { background: #5c7750; color: #fff; border-color: #5c7750; }
+@media(max-width:480px) { .keeper-evidence, .keeper-durable-review { padding: 15px; } .keeper-evidence-layout { grid-template-columns: 1fr; } .keeper-evidence-list { display: flex; gap: 10px; max-height: 160px; } .keeper-evidence-list > div { min-width: 140px; } }

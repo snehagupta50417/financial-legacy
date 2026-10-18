@@ -57,6 +57,7 @@ model LegacyCase {
   // Keeper's saved conversation and draft state, as redacted JSON (domain/keeper-ui.ts). Not an audit record.
   keeperUi         String?
   handoffs         HandoffRequest[]
+  workflows        ClaimWorkflow[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }
@@ -245,6 +246,7 @@ model Claim {
   outcomeNote        String?
   outcomeDocumentId  String?
   remainderTracked   Boolean      @default(false)
+  workflow           ClaimWorkflow?
   packs              ClaimPack[]
   events             ClaimEvent[]
   createdAt          DateTime     @default(now())
@@ -405,5 +407,30 @@ model HandoffRequest {
   status     String     @default("requested")
   createdAt  DateTime   @default(now())
 
+  @@index([caseId])
+}
+
+
+// Durable review preparation only: never authority, approval, submission or settlement.
+model ClaimWorkflow {
+  id           String     @id @default(cuid())
+  caseId       String
+  case         LegacyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  claimId      String     @unique
+  claim        Claim      @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  status       String     @default("queued")
+  cursor       Int        @default(0)
+  revision     Int        @default(1)
+  attempts     Int        @default(0)
+  checkpoints  String     @default("[]")
+  result       String?
+  error        String?
+  leaseToken   String?
+  leaseUntil   DateTime?
+  nextRunAt    DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([status, nextRunAt])
   @@index([caseId])
 }
