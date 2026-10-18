@@ -43,7 +43,7 @@ export function AssetsView() {
   const [sel, setSel] = useState<string | null>(() => c?.focus?.type === "asset" ? c.focus.id ?? null : null);
   const [f, setF] = useState({ institution: "", category: "bank" as Category, ref: "" });
   if (!c) return null;
-  const a = c.assets.find((x) => x.id === sel) ?? c.assets[0];
+  const a = c.assets.find((x) => x.id === (c.focus?.type === "asset" ? c.focus.id : sel)) ?? c.assets[0];
   return (
     <Page c={c} wide title="Assets" sub="Review holdings and the evidence behind them.">
       <details className="mb-6 rounded-2xl border border-line bg-card" open={c.plan.length > 0}>
@@ -53,7 +53,7 @@ export function AssetsView() {
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-3">
           {c.assets.map((x) => (
-            <button key={x.id} onClick={() => setSel(x.id)} aria-current={a?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", a?.id === x.id ? "border-ink" : "border-line")}>
+            <button key={x.id} onClick={() => { setSel(x.id); dispatch({ t: "focus", focus: { type: "asset", id: x.id } }); }} aria-current={a?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", a?.id === x.id ? "border-ink" : "border-line")}>
               <p className="font-semibold">{x.institution}</p>
               <p className="text-[0.85rem] text-muted-foreground">{CATEGORY_LABEL[x.category]}{x.ref ? ` · ${x.ref}` : ""}</p>
               <div className="mt-2 flex flex-wrap gap-1.5"><EvidenceBadge e={x.evidence} />{x.amount && <Pill>{money(x.amount.value)} · dated {x.amount.asOf}</Pill>}{x.duplicateOf && <Pill tone="warn">Possible duplicate</Pill>}</div>
@@ -80,7 +80,7 @@ export function DocumentsView() {
   const { c, state } = useKeeper();
   const [sel, setSel] = useState<string | null>(() => c?.focus?.type === "doc" ? c.focus.id ?? null : null);
   if (!c) return null;
-  const d = c.docs.find((x) => x.id === sel) ?? c.docs[0];
+  const d = c.docs.find((x) => x.id === (c.focus?.type === "doc" ? c.focus.id : sel)) ?? c.docs[0];
   const kinds: ["statement" | "policy" | "folio" | "unreadable" | "password" | "duplicate", string][] = [["statement", "Bank statement"], ["policy", "Insurance policy"], ["folio", "Mutual fund statement"], ["unreadable", "Blurred scan"], ["password", "Password-protected PDF"], ["duplicate", "Copy of a document"]];
   return (
     <Page c={c} wide title="Documents" sub="Check extracted details against the source.">
@@ -88,7 +88,7 @@ export function DocumentsView() {
       <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
         <ul className="space-y-3">
           {c.docs.map((x) => (
-            <li key={x.id}><button onClick={() => setSel(x.id)} aria-current={d?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", d?.id === x.id ? "border-ink" : "border-line")}>
+            <li key={x.id}><button onClick={() => { setSel(x.id); dispatch({ t: "focus", focus: { type: "doc", id: x.id } }); }} aria-current={d?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", d?.id === x.id ? "border-ink" : "border-line")}>
               <p className="break-words font-semibold">{documentTitle(x.name)}</p><p className="text-[0.85rem] text-muted-foreground">{x.kind}</p>
               <div className="mt-2"><Pill tone={x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "ok" : "warn") : x.state === "processing" ? "plain" : "warn"}>{x.state === "ready" ? (x.fields.every((f) => f.reviewed) ? "Reviewed" : `${x.fields.filter((f) => !f.reviewed).length} to check`) : x.state === "processing" ? "Reading…" : x.state === "unreadable" ? "Couldn’t read" : x.state === "password" ? "Password-protected" : "Duplicate"}</Pill></div>
             </button></li>
@@ -112,14 +112,14 @@ export function ClaimsView() {
       </Page>
     );
   }
-  const cl = c.claims.find((x) => x.id === sel) ?? c.claims[0];
+  const cl = c.claims.find((x) => x.id === (c.focus?.type === "claim" ? c.focus.id : sel)) ?? c.claims[0];
   const unstarted = c.assets.filter((a) => a.confirmed && !c.claims.some((x) => x.assetId === a.id));
   return (
     <Page c={c} wide title="Claims" sub="One claim per institution, tracked on its own. Requirements come from official sources where available. Keeper prepares; you approve and submit.">
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-3">
           {c.claims.map((x) => { const a = c.assets.find((q) => q.id === x.assetId)!; const st = CLAIM_STEPS.find((s) => s.id === claimStep(c, x))!; return (
-            <button key={x.id} onClick={() => setSel(x.id)} aria-current={cl?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", cl?.id === x.id ? "border-ink" : "border-line")}>
+            <button key={x.id} onClick={() => { setSel(x.id); dispatch({ t: "focus", focus: { type: "claim", id: x.id } }); }} aria-current={cl?.id === x.id ? "true" : undefined} className={cn("block w-full rounded-2xl border bg-card p-4 text-left hover:bg-paper", cl?.id === x.id ? "border-ink" : "border-line")}>
               <p className="font-semibold">{a.institution}</p><p className="text-[0.85rem] text-muted-foreground">{CATEGORY_LABEL[a.category]}</p>
               <div className="mt-2 flex flex-wrap gap-1.5"><Pill tone={x.outcome ? "ok" : "warn"}>{x.outcome ? OUTCOME_LABEL[x.outcome.kind] : `Now: ${st.label}`}</Pill>{x.submitted && <Pill>Ref {x.submitted.ref}</Pill>}</div>
               {x.nextFollowUp && !x.outcome && <p className={cn("mt-2 text-[0.85rem]", +new Date(x.nextFollowUp) < Date.now() ? "font-semibold text-[#9a4f1e]" : "text-ink/70")}>{+new Date(x.nextFollowUp) < Date.now() ? "Follow-up overdue since " : "Next follow-up: "}{formatDay(x.nextFollowUp)}</p>}
