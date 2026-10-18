@@ -88,7 +88,7 @@ export function rate(results: CheckResult[]): Rating {
   const by = (k: CheckKey) => results.find((r) => r.check === k);
   const status = (k: CheckKey): CheckStatus => by(k)?.status ?? "incomplete";
   const flagged = (k: CheckKey) => status(k) === "flag";
-  const reasons = results.filter((r) => r.status === "flag").flatMap((r) => r.findings.map((f) => `${CHECK_LABEL[r.check]}: ${f.label}`));
+  const reasons = [...new Set(results.filter((r) => r.status === "flag").flatMap((r) => r.findings.map((f) => `${CHECK_LABEL[r.check]}: ${f.label}`)))];
   const unfinished = CHECKS.filter((k) => status(k) === "incomplete");
   const tail = unfinished.length ? ` ${unfinished.map((k) => CHECK_LABEL[k]).join(" and ")} could not be completed and needs a manual review.` : "";
 
