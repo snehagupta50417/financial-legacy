@@ -315,3 +315,7 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Removal:** `DELETE /api/cases/:id` removes a case only if it is a demo case and the caller owns it (403 for a real case, 404 for someone else's). "Remove demo cases" in Settings uses it. Real cases can still never be deleted through the API.
 - **Honesty:** demo data is always labelled as such; amounts are dated; claims in the example say "Nothing was sent". Empty pages now explain what the page is for.
 - Tests: `backend/test/demo-data.test.ts` (5) and `frontend/test/sample.test.ts` (7). The expectations in `keeper.test.ts` changed with the new example (it opens on the estate record).
+
+## One command runs both services — 18 Oct 2026
+
+- A root `package.json` (`concurrently`, `wait-on`; dev tooling only) adds `npm run dev`, which starts `backend/` on :4000, waits for `/api/health`, then starts `frontend/` on :3000, plus `setup`, `typecheck`, `test` and `build` that cover both. The services stay separate packages; the connection between them is still the frontend's `/api/*` rewrite to `BACKEND_URL`.

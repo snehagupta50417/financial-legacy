@@ -75,6 +75,28 @@ Two small services and one shared folder (Node ≥ 22):
 | [`frontend/`](frontend/) | The Keeper web app (Next.js). Forwards `/api/*` to the backend | http://localhost:3000 |
 | [`shared/`](shared/) | Types and pure claim rules both sides use. No runtime of its own | — |
 
+**Quickest way — both together.** From the repository root, once:
+
+```bash
+npm install
+```
+
+```bash
+npm run setup
+```
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+then, any time:
+
+```bash
+npm run dev
+```
+
+This starts the API on :4000, waits until it is healthy, then starts the web app on :3000 (which forwards `/api/*` to the API). Open http://localhost:3000. `npm run typecheck`, `npm test` and `npm run build` at the root run both services. Or run them one at a time:
+
 **1. Backend.** From `backend/`:
 
 ```bash
