@@ -1,3 +1,4 @@
+import { documentProgress } from "@server/domain/document-progress";
 import { hasAiConsent } from "@server/core/ai-consent";
 import { db } from "@server/db";
 import { caseAccess, isDenied } from "@server/core/access";
@@ -185,9 +186,11 @@ export async function POST(req: Request) {
       },
     });
     await logEvent(legacyCase.id, "document", `Extraction failed for "${file.name}": no readable text`, "ai", doc.id);
+    let progress;
+    try { progress = await documentProgress(doc.id); } catch { /* Upload is already saved. */ }
     const payload = await db.documentRecord.findUnique({ where: { id: doc.id } });
     return Response.json(
-      { document: payload && { ...payload, extractedFields: parseFieldsSafe(payload.extractedFields) }, extraction: null },
+      { document: payload && { ...payload, extractedFields: parseFieldsSafe(payload.extractedFields) }, extraction: null, progress },
       { status: 200 }
     );
   }
@@ -243,10 +246,13 @@ export async function POST(req: Request) {
     doc.id
   );
 
+  let progress;
+  try { progress = await documentProgress(doc.id); } catch { /* Upload is already saved. */ }
   const payload = await db.documentRecord.findUnique({ where: { id: doc.id } });
   return Response.json({
     document: payload && { ...payload, extractedFields: parseFieldsSafe(payload.extractedFields) },
     extraction: ex,
+    progress,
     cluesAdded,
   });
 }

@@ -18,7 +18,12 @@ export interface CaseAccess {
 }
 
 export function isDenied<T>(r: T | Response): r is Response {
-  return r instanceof Response;
+  // The Node HTTP adapter can replace global Response after a native response
+  // was constructed. Do not lose an access denial across constructor realms.
+  return r instanceof Response || (!!r && typeof r === "object" &&
+    typeof (r as unknown as Response).status === "number" &&
+    typeof (r as unknown as Response).headers?.get === "function" &&
+    typeof (r as unknown as Response).arrayBuffer === "function");
 }
 
 export function gateDenial(c: LegacyCase): Response | null {

@@ -20,6 +20,14 @@ async function fixture(entitled = true) {
   return { sid, c, doc, asset, field, claim };
 }
 describe("canonical evidence map", () => {
+  it("includes recorded guided searches without treating them as verified ownership", async () => {
+    const f = await fixture(); const id = crypto.randomUUID();
+    const result = { id, caseId: f.c.id, taskId: "synthetic-task", sourceUrl: "https://example.gov.in/search", sourceName: "Synthetic official source", outcome: "possible_match", scope: "Synthetic limited search", searchedAt: new Date().toISOString(), recordedAt: new Date().toISOString(), evidenceNote: "Synthetic only", summary: "Possible match", selfReported: true };
+    await db.caseEvent.create({ data: { caseId: f.c.id, eventType: "guided_search", actor: "user", description: JSON.stringify({ kind: "guided_search_v1", result }) } });
+    const map = await evidenceMap(f.c.id); const node = map.nodes.find(n => n.id === "search:" + id);
+    expect(node?.status).toBe("possible_match"); expect(node?.detail).toContain("does not establish ownership");
+    expect((await db.assetRecord.findUniqueOrThrow({ where: { id: f.asset.id } })).evidenceStatus).toBe("document_backed");
+  });
   it("connects source fields, correction history and claims without changing evidence", async () => {
     const f = await fixture(); const map = await evidenceMap(f.c.id);
     expect(map.edges).toContainEqual({ from: "doc:" + f.doc.id, to: "asset:" + f.asset.id, relation: "source_document" });
