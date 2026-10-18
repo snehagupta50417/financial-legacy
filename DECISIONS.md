@@ -371,3 +371,58 @@ Full authority to revamp the frontend from the one-pager's vision ("one capable 
 - **Listening (Sarvam):** the recogniser used for the first turn could differ from the one watched (a timer from before the engine was chosen); it now looks up the current one when it fires. The audio context is woken explicitly, the loudness threshold adapts to the room (a quiet laptop mic is heard, a steady noisy room is not mistaken for speech), the call shows live level bars and says "I can hear you", a turn where nothing was heard retries itself twice and says so, and a Sarvam failure falls straight back to listening with the browser's recogniser.
 - **Guard wording:** when the AI promises something the gates do not allow yet, its reply is replaced instead of having a contradicting sentence tacked on.
 - Tests: `backend/test/gemini-chain.test.ts` (6), more endpointer and voice tests. A dev probe, `backend/scripts/probe-model.mjs` (`node --env-file=.env scripts/probe-model.mjs <model>`), prints what a model says to a tiny request, without printing the key. Not tested: real microphone capture and how the voices sound.
+
+
+## Conversational turn reliability (FL-01, FL-02) — 18 Oct 2026
+
+- Reproduced intermittent `ai_unusable` responses during a three-turn synthetic conversation. The planner now requests a JSON Schema envelope and repairs an invalid response once within the original timeout. Runtime validation, ownership, consent, redaction and action gates still apply to every response.
+- Calls initialise their bounded history from the current saved thread. History accepts the same 800-character limit as an utterance, avoiding a valid long turn breaking the next request.
+- A transient failure preserves the user's words with an honest failure reply and tries AI on the next turn. It no longer disables AI for the call or sends the failed turn into the scripted interviewer. Repeated failures offer a human handoff. A reply arriving after the call ended does not execute its actions.
+- Validation: backend and frontend type checks; 31 focused backend planner/provider tests using an empty database created from the existing schema (Prisma's schema-engine startup fails in this sandbox); five consecutive live synthetic API turns passed with contextual recall. Browser verification after refresh also recalled records from a reopened call and answered the next turn naturally. The broader backend suite was stopped after remaining unresponsive; it is not claimed as passing. Microphone capture and audio quality require device testing.
+
+
+## Natural multilingual conversation (FL-01, FL-02) — 18 Oct 2026
+
+- Calls and signed-in written chat use the same conversational planner, with saved context and confirmation buttons for consequential actions. The prompt respects a wish to talk without a checklist, avoids repeated questions and formulaic apologies, and follows explicit language changes, mixed language and the latest script.
+- Shared speech-language catalogue: 22 Indian languages plus English. Sarvam Saaras v3 uses codemix mode and automatic detection per turn; manual language choices reach the recogniser. Additional world-language choices use browser speech, whose availability varies. Sources: https://docs.sarvam.ai/api-reference/speech-to-text/transcribe and https://docs.sarvam.ai/api/getting-started/models/saaras . Existing Saarika configuration was updated locally; credentials are untouched.
+- The planner returns the reply language; browser voice selection and Gemini speech requests use it. When a matching browser voice is absent, the opted-in call attempts Gemini speech. Automatic speech support is not promised for every world language. Explicit short yes/no confirmations work in multiple scripts; longer ambiguous responses still require clarification.
+- Validation includes catalogue and transcript-language tests for all 23 speech codes, script/confirmation regressions, and live synthetic language-switching conversations. Actual microphone accuracy and native-speaker speech quality still require device testing; UI labels and error messages remain English.
+
+- Final focused checks: 47 backend tests plus 9 frontend tests pass; both type checks and frontend lint pass. Live synthetic text checks exercised Hindi, Hinglish, Tamil, Telugu, Gujarati, Marathi, Bengali, Urdu and Spanish, with normal-chat browser verification in Hindi and Tamil. Native-script output, short language-code normalisation and a larger structured-reply token allowance address failures found during these checks. The development API needed an entry-point refresh to load dynamically imported route edits; the running API was refreshed. No claim is made that all world languages or all microphone/voice combinations have been tested.
+
+
+## Hosted synthetic MVP foundations — 18 Oct 2026 (FL-02, FL-10, FL-19, FL-23, FL-45)
+
+Supabase Free is the selected implementation target for PostgreSQL and Google sign-in. No external project, paid plan or deployment was created. Google OAuth uses Supabase's PKCE exchange; user tokens remain in HttpOnly cookies, and the backend verifies the user rather than trusting the browser ID. Google profile names/emails are not inserted into synthetic financial prompts.
+
+Search outcomes now have canonical dated, scoped history and idempotent request IDs, separate from editable UI notes and institutional verification. Deletion removes current-account application records and local drafts/attachments after confirmation, without pretending to delete Google identities or third-party copies. Production startup rejects ephemeral databases and unfinished auth configuration. Source staging preserves shared/ while excluding secrets and local data.
+
+Local schema/database files were preserved. The derived PostgreSQL schema validates, but connection, restore, hosted OAuth and Cloud Run checks remain blocked on Supabase project setup and the Google Cloud project ID. See docs/HOSTED_MVP_SETUP.md for concrete setup and acceptance checks.
+
+- Validation: 17 backend files / 182 tests passed with OCR excluded, followed by 12 focused hosted-MVP tests after the final ownership/deletion changes; all 10 frontend files / 60 tests passed, including the real-handler guided-search round trip. Both type checks, frontend lint and the production Next build passed. The PostgreSQL schema passes Prisma validation. Tests used fresh empty SQLite databases created from schema-only metadata to work around this sandbox's Prisma schema-engine startup error; no live financial data was copied. Real PostgreSQL and Google provider checks remain pending.
+- Live local HTTP probe used a separate synthetic test session: readiness true; first search save 201; retry 200 with one stored result; delete returned true; zero cases remained for that test session. Existing browser cases were not deleted. The OCR-download test was not run.
+
+
+### 2026-10-18: Conversation workspace (FL-01, FL-02, FL-10; MVP issues #10–#20)
+
+Use the existing case store, document review panels and guarded dispatch for conversational memory and contextual review. Show provenance rather than invented confidence percentages. Key the agent workspace by case and thread to isolate transient state. Default to text with an optional call, and show execution receipts separately from model prose. No new provider or dependency.
+
+
+### 2026-10-18: Refine the shared frontend design
+
+Use scoped workspace styles and existing fonts/icons for a consistent visual hierarchy across navigation, conversation and structured record screens. Preserve source/evidence labels and all guarded actions. No decorative external imagery or new dependencies.
+
+
+### 2026-10-18: Landing page animation
+
+Use CSS transforms/opacity and IntersectionObserver with progressive enhancement. Finite decorative animation avoids continuous motion controls; each section reveals once. Keep the preview explicitly simulated and retain all coverage and approval disclosures. No animation dependency.
+
+
+### 2026-10-18: Official handoffs and opt-in continuity
+
+Keep external search and submission user-controlled. Reuse curated source URLs; add verified SBI and LIC instructions as explicit handoff destinations, never automatic submission endpoints. Store per-item follow-up preference and review date in validated case UI state; no entitlement or claim status can be changed by this preference. Use canonical outcome controls for closure and surface active follow-ups in the conversation. In-app review dates do not imply background monitoring or notifications.
+
+
+### 2026-10-18: Bind agent execution and report durable results
+
+Guard conversational dispatch at invocation and again when queued work starts. Preserve the user’s selection when in-flight writes complete. Invalidate unmounted agent instances, and key the conversation by its stable thread ID so initial server case creation does not interrupt turn one. Await turn persistence and retain unsaved replies for explicit retry without re-running actions. Replace model prose when tool execution fails. Bind server history to the requested case-owned thread and supply validated saved follow-ups as data, respecting discovery visibility.

@@ -1,3 +1,4 @@
+import { GET as searchResults, POST as recordSearch } from "@api/cases/[id]/searches/route";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST as demo } from "@api/demo/route";
 import { POST as intake } from "@api/intake/route";
@@ -24,6 +25,7 @@ function installBrowser() {
     if (url === "/api/cases") return cases(req);
     if (url === "/api/intake") return intake(req);
     const id = url.split("/")[3];
+    if (url.endsWith("/searches")) return init?.method === "POST" ? recordSearch(req, params(id)) : searchResults(req, params(id));
     if (url.endsWith("/keeper")) return init?.method === "PUT" ? putUi(req, params(id)) : getUi(req, params(id));
     if (url.endsWith("/messages")) return messages(req, params(id));
     if (url.startsWith("/api/documents/")) return document(req, params(id));
@@ -52,6 +54,25 @@ describe("FL-06 / FL-07 / FL-27 existing Keeper UI backend bridge", () => {
     c = state.cases[caseId];
     expect(c.assets.find(a => a.id === holding.id)?.confirmed).toBe(true);
     expect((await db.assetRecord.findUniqueOrThrow({ where: { id: holding.id } })).discoveryStatus).toBe("confirmed");
+  });
+
+  it("FL-10 persists a guided result and its scope across a fresh browser state", async () => {
+    installBrowser();
+    let state = await hydrateBackend(freshState("Synthetic tester", "signin"));
+    let c = state.cases[state.activeCase];
+    const source = c.plan.find(p => p.type === "guided" && p.url);
+    expect(source).toBeDefined();
+    state = await backendAction(state, { t: "plan.record", id: source!.id, result: "Synthetic no match", outcome: "no_match", scope: "Synthetic bank deposits only", requestId: crypto.randomUUID(), searchedAt: new Date().toISOString() });
+    const target = "search:" + source!.id;
+    state = await backendAction(state, { t: "followup.set", target, enabled: true, nextCheckOn: "2026-11-20" });
+    const resumed = await hydrateBackend(freshState("Synthetic tester", "signin"));
+    c = resumed.cases[c.id];
+    expect(c.followUps?.[target]).toMatchObject({ enabled: true, nextCheckOn: "2026-11-20" });
+    expect(c.claims.some(cl => !!cl.submitted)).toBe(false);
+    state = await backendAction(resumed, { t: "followup.set", target, enabled: false, nextCheckOn: null });
+    const paused = await hydrateBackend(freshState("Synthetic tester", "signin"));
+    expect(paused.cases[c.id].followUps?.[target].enabled).toBe(false);
+    expect(c.plan.find(p => p.url === source!.url)?.result).toContain("Synthetic bank deposits only");
   });
 
   it("retains gate enforcement: hiding records and rejecting writes below discovery", async () => {

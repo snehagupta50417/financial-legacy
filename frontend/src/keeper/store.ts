@@ -1,5 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { matchesScope, type TurnScope } from "./turn-scope";
 import { api } from "@/lib/client";
 import { freshState, reduce, START_CHOICES, type Action } from "./engine";
 import { SAMPLE_VERSION, sampleState } from "./sample";
@@ -52,6 +53,7 @@ let queue: Promise<void> = Promise.resolve();
 let pending = 0;
 const pendingActions = new Set<string>();
 let connected = false;
+let deleting = false;
 const statusSnapshot = () => backendStatus;
 const serverStatus: BackendStatus = { busy: false, error: null };
 function status(next: BackendStatus) { backendStatus = next; listeners.forEach(l => l()); }
@@ -66,7 +68,12 @@ function enqueue(work: (current: AppState) => Promise<AppState>, key?: string) {
   queue = queue.then(async () => {
     const current = getSnapshot();
     if (token !== epoch || current?.session?.mode !== "signin") return;
-    try { const next = await work(current); if (token === epoch) { const latest = getSnapshot(); set({ ...next, drafts: latest?.drafts || next.drafts, attachments: latest?.attachments || next.attachments }); succeeded = true; } }
+    try { const next = await work(current); if (token === epoch) { const latest = getSnapshot(); const selectionChanged = latest && (latest.activeCase !== current.activeCase || latest.cases[latest.activeCase]?.activeThread !== current.cases[current.activeCase]?.activeThread);
+        if (selectionChanged && latest && next.cases[latest.activeCase]) {
+          next.activeCase = latest.activeCase;
+          for (const [id, record] of Object.entries(latest.cases)) if (next.cases[id]?.threads.some(t => t.id === record.activeThread)) { next.cases[id].activeThread = record.activeThread; next.cases[id].focus = record.focus; }
+        }
+        set({ ...next, drafts: latest?.drafts || next.drafts, attachments: latest?.attachments || next.attachments }); succeeded = true; } }
     catch (error) { if (token === epoch) status({ busy: pending > 1, error: error instanceof Error ? error.message : "Cannot reach Keeper. Please try again." }); }
   }).finally(() => { if (actionKey) pendingActions.delete(actionKey); if (token === epoch) { pending--; status({ ...backendStatus, busy: pending > 0 }); } });
   return queue.then(() => succeeded);
@@ -102,15 +109,17 @@ export function refreshBackend() { connected = false; connectBackend(); }
 export const getBackendStatus = () => backendStatus;
 export function useBackendStatus() { return useSyncExternalStore(subscribe, statusSnapshot, () => serverStatus); }
 
-export function dispatch(a: Action) {
+export function dispatch(a: Action, expected?: TurnScope) {
+  if (expected && !matchesScope(getSnapshot(), expected)) return Promise.resolve(false);
+  if (deleting && a.t !== "signOut") return Promise.resolve(false);
   const cur = getSnapshot();
-  if (a.t === "signOut") { for (const id of Object.keys(getSnapshot()?.attachments || {})) void import("./attachments").then(files => files.forgetFile(id)).catch(() => {}); epoch++; pending = 0; connected = false; localStorage.removeItem(PERSONAL_KEY); for (const id of ["arjun", "sunita", "rahul"]) localStorage.removeItem(EXAMPLE_KEY + "." + id); status({ busy: false, error: null }); return set(null); }
+  if (a.t === "signOut") { void import("@/lib/auth").then(auth => auth.signOutAccount()).catch(() => {}); for (const id of Object.keys(getSnapshot()?.attachments || {})) void import("./attachments").then(files => files.forgetFile(id)).catch(() => {}); epoch++; pending = 0; connected = false; localStorage.removeItem(PERSONAL_KEY); localStorage.removeItem("keeper.account"); for (const id of ["arjun", "sunita", "rahul"]) localStorage.removeItem(EXAMPLE_KEY + "." + id); status({ busy: false, error: null }); return set(null); }
   if (a.t === "signIn") { epoch++; pending = 0; connected = false; status({ busy: false, error: null }); const saved = read(a.mode === "sample" ? EXAMPLE_KEY + "." + (a.persona || "arjun") : PERSONAL_KEY); set(saved || (a.mode === "sample" ? sampleState(a.name, a.persona) : freshState(a.name, a.mode))); if (a.mode === "signin") connectBackend(); return; }
   if (!cur) return;
   if (cur.session?.mode === "signin") {
     if (a.t === "choose" && a.id === "m:sample") return set(sampleState(cur.session.name, cur.session.persona));
     if (a.t === "focus" || a.t === "switchThread") return set(reduce(cur, a));
-    return enqueue(async current => (await import("./backend")).backendAction(current, a), a.t === "doc.upload" ? a.t + ":" + a.file.name + ":" + a.file.size + ":" + a.file.lastModified : JSON.stringify(a));
+    return enqueue(async current => { if (expected && !matchesScope(current, expected)) throw new Error("Conversation changed. This action was not run."); return (await import("./backend")).backendAction(current, a); }, a.t === "doc.upload" ? a.t + ":" + a.file.name + ":" + a.file.size + ":" + a.file.lastModified : JSON.stringify(a));
   }
   let next = reduce(cur, a);
   for (const record of Object.values(next.cases)) for (const doc of record.docs) if (doc.state === "processing") next = reduce(next, { t: "doc.ready", id: doc.id });
@@ -172,3 +181,24 @@ export async function removeAttachment(id: string) {
 
 /** The current state, for async code that must read what a dispatch just produced. */
 export const peekState = () => getSnapshot();
+
+
+export async function deleteKeeperData() {
+  if (deleting) return false;
+  deleting = true;
+  try {
+    await queue;
+    status({ busy: true, error: null });
+    if (typeof indexedDB !== "undefined") {
+      const attachments = await import("./attachments");
+      await attachments.forgetAllFiles();
+    }
+    await api.delete("/api/privacy/data", { confirmation: "DELETE" });
+    localStorage.removeItem("finlegacy_session");
+    dispatch({ t: "signOut" });
+    return true;
+  } catch (error) {
+    status({ busy: false, error: error instanceof Error ? error.message : "Could not delete your data." });
+    return false;
+  } finally { deleting = false; }
+}

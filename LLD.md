@@ -822,3 +822,12 @@ The conversation page opens on a call screen; the written chat is a toggle (`kee
 ### Speech in Indian languages — 18 Oct 2026
 
 `backend/src/server/speech/sarvam.ts` (client for Sarvam speech to text, language names, failure reasons) and `POST /api/stt` (multipart audio, 8 MB limit, same AI opt-in and rate limit, 403 / 503 / 429 / 413 / 415 with codes the app acts on). `frontend/src/keeper/sarvam-speech.ts` records one turn with `MediaRecorder`, decides when the person has stopped (`makeEndpointer`: a blip is not speech, a pause after speech ends the turn, 25 s cap, give up on a silent room), sends it, and exposes the same `SpeechInput` shape as the browser recogniser (`useSpeech` in `voice.ts`), so `useAgent` can use either. The detected language is passed to `POST /api/ai/agent` as `language`, which appends a one-line reply-in-this-language note to the planner prompt.
+
+
+## Synthetic hosted MVP implementation update — 18 Oct 2026
+
+- Supabase Auth PKCE is implemented server-side through same-origin /api/auth routes, HttpOnly access/refresh cookies and state verification. Hosted ownership uses a user verified by Supabase for every request; browser session IDs remain only in local demo mode. Financial gates are separate.
+- The schema remains SQLite for local development. backend/scripts/database.mjs derives the PostgreSQL Prisma schema for hosted builds. The hosted URL must select the private keeper schema. Initial schema setup is explicit, never application startup. Provisioning, live PostgreSQL migration/restore checks and Google provider setup remain external prerequisites.
+- Guided search outcomes are structured, redacted append-only CaseEvents (guided_search_v1), keyed by request UUID; JourneyTask contains the latest completion evidence. APIs check owner, discovery gates, the case's official source and document ownership. Possible matches do not create verified holdings. Progress updates transactionally with the outcome.
+- DELETE /api/privacy/data requires explicit DELETE confirmation and deletes the current account's Keeper Session and its cascading records, plus unreferenced deceased-person rows owned through those cases. Other accounts and shared public reference sources remain. The separate authentication-provider identity and processor/backups are outside this application-data deletion.
+- Source-only Cloud Run staging copies each service with shared/ and excludes credentials and database files. The deployed runtime fails closed when PostgreSQL, private schema, hosted authentication or HTTPS app origin are missing.

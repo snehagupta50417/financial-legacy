@@ -72,8 +72,9 @@ export class GeminiProvider implements AiProvider {
             config: {
               systemInstruction: req.system,
               ...(req.json ? { responseMimeType: "application/json" } : {}),
+              ...(req.responseJsonSchema ? { responseJsonSchema: req.responseJsonSchema } : {}),
               ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
-              ...(req.fast ? { maxOutputTokens: 700 } : {}),
+              ...(req.fast ? { maxOutputTokens: req.responseJsonSchema ? 1400 : 700 } : {}),
               ...(thinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
               abortSignal: signal,
             },
@@ -98,13 +99,13 @@ export class GeminiProvider implements AiProvider {
   }
 
   /** Gemini text to speech. Returns raw 24 kHz mono PCM wrapped as WAV so any browser can play it. */
-  async speak(text: string, signal: AbortSignal): Promise<Buffer> {
+  async speak(text: string, signal: AbortSignal, language?: string): Promise<Buffer> {
     const res = await this.client.models.generateContent({
       model: process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts",
       contents: [{ role: "user", parts: [{ text }] }],
       config: {
         responseModalities: ["AUDIO"],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.GEMINI_TTS_VOICE || "Kore" } } },
+        speechConfig: { ...(language ? { languageCode: language } : {}), voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.GEMINI_TTS_VOICE || "Kore" } } },
         abortSignal: signal,
       },
     });

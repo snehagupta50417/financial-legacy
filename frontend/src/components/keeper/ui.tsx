@@ -102,5 +102,5 @@ export function FamilyScene({ variant = "table", className }: { variant?: "table
 
 /** Shared by the product conversation and its landing-page preview. */
 export function ChatBubble({ user, children, className }: { user?: boolean; children: React.ReactNode; className?: string }) {
-  return <div className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 leading-relaxed", user ? "ml-auto max-w-[85%] rounded-br-md bg-ink text-ivory" : "mr-auto max-w-[92%] rounded-bl-md bg-paper", className)}>{children}</div>;
+  return <div className={cn("keeper-bubble whitespace-pre-wrap rounded-2xl px-4 py-3 leading-relaxed", user ? "keeper-bubble-user ml-auto max-w-[85%] rounded-br-md bg-ink text-ivory" : "keeper-bubble-assistant mr-auto max-w-[92%] rounded-bl-md bg-paper", className)}>{children}</div>;
 }

@@ -7,3 +7,5 @@ prisma/db/*.bak
 test/.tmp
 *.log
 *.tsbuildinfo
+
+prisma/.generated/

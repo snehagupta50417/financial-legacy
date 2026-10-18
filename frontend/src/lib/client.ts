@@ -23,14 +23,26 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+let refresh: Promise<boolean> | null = null;
+let expectedAccount: string | null | undefined;
+function accountHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  if (expectedAccount === undefined) expectedAccount = window.localStorage.getItem("keeper.account");
+  return expectedAccount ? { "x-keeper-account": expectedAccount } : {};
+}
+async function request<T>(url: string, init?: RequestInit, retried = false): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: {
       ...(init?.headers ?? {}),
       "x-session-id": getSessionId(),
+      ...accountHeader(),
     },
   });
+  if (res.status === 401 && !retried) {
+    refresh ??= fetch("/api/auth/session", { cache: "no-store" }).then(r => r.ok).catch(() => false).finally(() => { refresh = null; });
+    if (await refresh) return request<T>(url, init, true);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError((data as { error?: string }).error || `Request failed (${res.status})`, res.status, (data as { code?: string }).code);
@@ -58,6 +70,6 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body ?? {}),
     }),
-  delete: <T>(url: string) => request<T>(url, { method: "DELETE" }),
+  delete: <T>(url: string, body?: unknown) => request<T>(url, { method: "DELETE", ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}) }),
   upload: <T>(url: string, form: FormData) => request<T>(url, { method: "POST", body: form }),
 };

@@ -81,7 +81,8 @@ describe("Keeper's voice", () => {
 describe("Keeper sounds like a person on a call", () => {
   it("is told to react first, keep turns short, ask one thing at a time and not greet twice", () => {
     expect(AGENT_SYSTEM).toMatch(/phone call/);
-    expect(AGENT_SYSTEM).toMatch(/reacting to what they just said/);
+    expect(AGENT_SYSTEM).toMatch(/Respond to what they actually mean/);
+    expect(AGENT_SYSTEM).toMatch(/without pushing for bank names, documents or a checklist/);
     expect(AGENT_SYSTEM).toMatch(/under 35 words/);
     expect(AGENT_SYSTEM).toMatch(/exactly ONE question/);
     expect(AGENT_SYSTEM).toMatch(/Do not greet them again/);

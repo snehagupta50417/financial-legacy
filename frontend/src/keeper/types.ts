@@ -159,6 +159,7 @@ export interface PlanSource {
   note: string;
   url?: string;
   result?: string; // what the user recorded, with its scope
+  history?: string[];
 }
 
 export interface Case {
@@ -167,6 +168,7 @@ export interface Case {
   /** Which backend demo scenario this case came from, so it can show its persona. */
   demoKey?: string;
   uiTasks?: Task[];
+  followUps?: Record<string, { enabled: boolean; nextCheckOn: string | null; updatedAt: string }>;
   backendId?: string;
   gate?: CaseWorkspace["gate"];
   proofs?: CaseWorkspace["proofs"];

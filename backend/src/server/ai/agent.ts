@@ -1,3 +1,4 @@
+import { normaliseLanguage } from "@shared/languages";
 import { z } from "zod";
 import type { AgentAction } from "@shared/contracts";
 import { redactIdentifiers } from "@server/core/masking";
@@ -28,6 +29,7 @@ const ProposedAction = z.discriminatedUnion("type", [
 
 export const ModelTurn = z.object({
   say: z.string().trim().min(1).max(600),
+  language: z.preprocess(normaliseLanguage, z.string().regex(/^[a-z]{2,3}-[A-Z]{2}$/).optional()),
   actions: z.array(z.unknown()).max(8).default([]),
   /** Keep the microphone open for the next thing the person says. */
   listen: z.boolean().default(true),
@@ -36,6 +38,25 @@ export const ModelTurn = z.object({
   /** Keeper could not follow, or the matter needs a person: offer to bring one in. */
   handoff: z.boolean().default(false),
 });
+
+// Generation constraints complement, never replace, runtime action vetting.
+export const AGENT_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    say: { type: "string", minLength: 1, maxLength: 600 },
+    language: { type: "string", pattern: "^[a-z]{2,3}-[A-Z]{2}$", description: "BCP-47 code for the language of the spoken reply, e.g. hi-IN or es-ES" },
+    actions: { type: "array", maxItems: 4, items: {
+      type: "object", properties: {
+        type: { type: "string", enum: ["open", "remember", "look_up", "add_asset", "confirm_asset", "start_claim", "complete_task"] },
+        card: { type: "string" }, id: { type: "string" }, key: { type: "string" }, value: { type: "string" },
+        question: { type: "string" }, institution: { type: "string" }, category: { type: "string" },
+        ref: { type: "string" }, assetId: { type: "string" }, taskId: { type: "string" },
+      }, required: ["type"],
+    } },
+    listen: { type: "boolean" }, finish: { type: "boolean" }, handoff: { type: "boolean" },
+  },
+  required: ["say", "language", "actions", "listen", "finish", "handoff"],
+};
 
 export type { AgentAction } from "@shared/contracts";
 
@@ -48,16 +69,21 @@ export interface AgentContext {
   claims: { id: string; assetId: string; status: string }[];
   facts: Record<string, string>;
   family: string;
+  followUps?: { target: string; label: string; nextCheckOn: string | null; enabled: boolean }[];
 }
 
 export const AGENT_SYSTEM = `You are Keeper, a calm voice assistant that helps a family in India keep track of financial assets: bank deposits, mutual funds, insurance and provident funds, for themselves or after a death. You talk, then act, then check back, like a careful assistant sitting beside them.
 
-You reply with ONE JSON object: {"say": string, "actions": Action[], "listen": boolean, "finish": boolean, "handoff": boolean}.
+You reply with ONE JSON object: {"say": string, "actions": Action[], "listen": boolean, "finish": boolean, "handoff": boolean, "language": "BCP-47 code of your reply"}.
 
 You are on a phone call. "say" is spoken aloud by a text to speech voice and shown on screen. Talk like a kind, unhurried person, not a form:
 - Use contractions and everyday words ("I'm", "that's", "let's"). No lists, markdown, emoji or em dash.
-- Start by reacting to what they just said, in a few words, like a person would ("Oh, I'm sorry.", "Okay, that helps.", "Right, that makes sense."). Do not greet them again after the first turn.
-- Keep each turn short: usually one or two sentences, under 35 words. Then stop and let them talk.
+- Respond to what they actually mean. Vary your wording; do not begin every turn with an apology or acknowledgement. Do not greet them again after the first turn.
+- This is a conversation, not an intake form. If they want to talk, listen and respond without pushing for bank names, documents or a checklist. Do not redirect every answer toward the next task. A short answer without a question is fine.
+- Never repeat a question they ignored or declined. Respect corrections and requests to slow down. Offer one practical next step only when they ask for one.
+- Match their latest language and script, including Romanised Hindi, Hinglish and other code switching. An explicit request to change language overrides a recogniser hint. Short replies like yes should retain the previous language. Never translate their words to English unless asked. Use natural local phrasing, not literal translations.
+- Return the BCP-47 language of your reply in language. You can converse in languages beyond the speech-recognition catalogue; do not claim that all languages have microphone or voice support.
+- Keep each turn short: usually one or two sentences, under 35 words. Then stop and let them talk. The word limit is a guide for concise speech, not a reason to omit what they asked.
 - Ask exactly ONE question, and only when you need it. Never ask two things at once. Never re-ask something you already know from the snapshot or earlier in the call.
 - Use their name or their situation back to them ("your father's PNB account") so they feel heard.
 - If they only say something small like "yes", "okay" or "hmm", answer just as briefly and move the conversation along.
@@ -82,10 +108,23 @@ Hard rules:
 - If, after two tries, you still can't tell what the problem is, or the person asks for a human, or it is a legal, dispute or distressing matter you should not handle alone, set "handoff" true and say plainly that you'd like to bring in a person. Never pretend a person is already on the line, and never promise how fast one will respond.
 - If the person says they are done, set "finish" true and make "say" a brief summary of what changed and the single next step. Otherwise "finish" false. Set "listen" false only when you finish.`;
 
+/** Keep a previous Romanised turn from changing the script of the latest message. */
+export function scriptNote(text: string): string {
+  const scripts: [RegExp, string][] = [
+    [/\p{Script=Tamil}/u, "Tamil"], [/\p{Script=Bengali}/u, "Bengali"], [/\p{Script=Telugu}/u, "Telugu"],
+    [/\p{Script=Kannada}/u, "Kannada"], [/\p{Script=Malayalam}/u, "Malayalam"], [/\p{Script=Gujarati}/u, "Gujarati"],
+    [/\p{Script=Gurmukhi}/u, "Gurmukhi"], [/\p{Script=Oriya}/u, "Odia"], [/\p{Script=Devanagari}/u, "Devanagari"],
+    [/\p{Script=Arabic}/u, "Arabic"], [/\p{Script=Cyrillic}/u, "Cyrillic"], [/\p{Script=Hangul}/u, "Hangul"],
+    [/\p{Script=Hiragana}|\p{Script=Katakana}/u, "Japanese"], [/\p{Script=Han}/u, "Han"],
+  ];
+  const match = scripts.find(([pattern]) => pattern.test(text));
+  return match ? `\nThe latest message uses ${match[1]} script. Write your reply in that script, not Latin transliteration, unless this message explicitly requests another language or script. Earlier Romanised turns do not override this.` : "";
+}
+
 /** Added to the system prompt when the person is speaking an Indian language. */
 export function languageNote(name: string | null): string {
   if (!name || name === "English") return "";
-  return `\n\nThe person is speaking ${name}. Reply in ${name}, in simple everyday words, written in the script they would read. Keep institution names, document names and numbers as they are. The JSON keys and action types stay in English.`;
+  return `\n\nThe person is speaking ${name}. This is a recognition hint; a clear language choice in their latest words takes priority. Reply in ${name}, in simple everyday words, written in the script they would read. Keep institution names, document names and numbers as they are. The JSON keys and action types stay in English.`;
 }
 
 export function snapshotText(ctx: AgentContext): string {
@@ -96,6 +135,8 @@ export function snapshotText(ctx: AgentContext): string {
     `Holdings:\n${ctx.assets.map((a) => `- id=${a.id} ${a.institution} (${a.category}) evidence=${a.evidence.replace(/_/g, " ")} ${a.status}`).join("\n") || "(none yet)"}`,
     `Open steps:\n${ctx.tasks.filter((t) => t.status !== "completed").slice(0, 10).map((t) => `- id=${t.id} ${t.title}`).join("\n") || "(none)"}`,
     `Claims:\n${ctx.claims.map((c) => `- id=${c.id} asset=${c.assetId} ${c.status}`).join("\n") || "(none)"}`,
+    `Current UTC date: ${new Date().toISOString().slice(0, 10)}.`,
+    `Follow-up choices (self-reported; no automated monitoring):\n${(ctx.followUps ?? []).map(f => `- ${f.label}: ${f.enabled ? "tracking" : "paused"}; review=${f.nextCheckOn ?? "not scheduled"}; target=${f.target}`).join("\n") || "(none saved)"}`,
     `Family instructions saved: ${ctx.family ? "yes" : "no"}`,
   ].join("\n");
 }
@@ -153,7 +194,7 @@ export function vetActions(raw: unknown[], ctx: AgentContext): { actions: AgentA
 }
 
 /** Parse + vet one model reply. Returns null when it is not a usable turn. */
-export function readModelTurn(raw: unknown, ctx: AgentContext): { say: string; actions: AgentAction[]; listen: boolean; finish: boolean; handoff: boolean } | null {
+export function readModelTurn(raw: unknown, ctx: AgentContext): { say: string; actions: AgentAction[]; listen: boolean; finish: boolean; handoff: boolean; language?: string } | null {
   const parsed = ModelTurn.safeParse(raw);
   if (!parsed.success) return null;
   const { actions, unavailable } = vetActions(parsed.data.actions, ctx);
@@ -162,11 +203,23 @@ export function readModelTurn(raw: unknown, ctx: AgentContext): { say: string; a
   if (unavailable) say = "Thanks, I'll keep that in mind. I can't add or confirm holdings until identity checks are complete, but we can carry on talking.";
   // Honesty guard: the agent cannot have submitted, filed or approved anything.
   if (/\b(i|we)('ve| have)?\s+(submitted|filed|approved|sent)\b/i.test(say)) say = "I can prepare your claim, but you approve and send it yourself on the claim screen.";
-  return { say, actions, listen: parsed.data.finish ? false : parsed.data.listen, finish: parsed.data.finish, handoff: parsed.data.handoff };
+  return { ...(parsed.data.language ? { language: parsed.data.language } : {}), say, actions, listen: parsed.data.finish ? false : parsed.data.listen, finish: parsed.data.finish, handoff: parsed.data.handoff };
 }
 
-export function agentContext(input: { caseType: string; unlocked: boolean; assets: AgentContext["assets"]; tasks: AgentContext["tasks"]; claims: AgentContext["claims"]; ui: { facts?: Record<string, { value: string | null }>; family?: { instructions?: string } } | null }): AgentContext {
+export function agentContext(input: { caseType: string; unlocked: boolean; assets: AgentContext["assets"]; tasks: AgentContext["tasks"]; claims: AgentContext["claims"]; ui: { facts?: Record<string, { value: string | null }>; family?: { instructions?: string }; plan?: { id: string; label: string }[]; followUps?: Record<string, { enabled: boolean; nextCheckOn: string | null }> } | null }): AgentContext {
   const facts: Record<string, string> = {};
   for (const [k, f] of Object.entries(input.ui?.facts ?? {})) if (f?.value) facts[k] = f.value.slice(0, 160);
-  return { caseType: input.caseType, unlocked: input.unlocked, assets: input.assets, tasks: input.tasks, claims: input.claims, facts, family: input.ui?.family?.instructions ? "yes" : "" };
+  const followUps: NonNullable<AgentContext["followUps"]> = [];
+  for (const [target, value] of Object.entries(input.ui?.followUps ?? {}).slice(0, 100)) {
+    if (target.startsWith("claim:")) {
+      const claim = input.claims.find(c => c.id === target.slice(6));
+      if (!claim || ["settled", "transferred", "rejected", "withdrawn", "closed"].includes(claim.status)) continue;
+      const asset = input.assets.find(a => a.id === claim.assetId);
+      followUps.push({ target, label: (asset?.institution ?? "Institution") + " claim", ...value });
+    } else if (target.startsWith("search:") && input.unlocked) {
+      const source = input.ui?.plan?.find(p => p.id === target.slice(7));
+      if (source) followUps.push({ target, label: source.label.slice(0, 160), ...value });
+    }
+  }
+  return { followUps, caseType: input.caseType, unlocked: input.unlocked, assets: input.assets, tasks: input.tasks, claims: input.claims, facts, family: input.ui?.family?.instructions ? "yes" : "" };
 }

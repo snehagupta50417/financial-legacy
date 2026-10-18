@@ -5,15 +5,17 @@
   "description": "Keeper API: trust gates, masking, OCR, RAG, claims and the AI agent. Runs as its own service.",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
-    "build": "prisma generate",
-    "start": "prisma db push --skip-generate && tsx --env-file-if-exists=.env src/index.ts",
+    "build": "node scripts/database.mjs generate",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:prepare": "node --env-file-if-exists=.env scripts/database.mjs generate",
+    "db:setup": "node --env-file-if-exists=.env scripts/database.mjs push"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

@@ -1,5 +1,8 @@
+import { checkDeployment } from "./server/core/deployment";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
+
+checkDeployment();
 
 const port = Number(process.env.PORT ?? 4000);
 

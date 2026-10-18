@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, Check, CircleSlash, Headset, Keyboard, Loader2, MessageSquare, Mic, MicOff, PhoneOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { useAgent, type Phase } from "@/keeper/agent";
 import { setPrefs, useKeeper } from "@/keeper/store";
-import { LANGUAGE_NAMES } from "@/keeper/sarvam-speech";
+import { CONVERSATION_LANGUAGES as LANGUAGE_NAMES } from "@shared/languages";
 import { stopSpeaking, useRecognitionSupport, VOICE_ERROR_TEXT } from "@/keeper/voice";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -144,9 +144,13 @@ function CallRoom({ onClose, startWith }: { onClose: () => void; startWith?: str
             <p role="status" aria-live="polite" className="text-[0.85rem] text-muted-foreground">{status}</p>
           </div>
           <span className={cn("hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex", mode === "ai" ? "border-moss/40 bg-moss-soft" : "border-line bg-secondary")}><Sparkles className="h-3.5 w-3.5 text-moss" aria-hidden />{mode === "ai" ? "Gemini" : "Built-in guide"}</span>
-          {agent.engine === "sarvam" && <span className="hidden items-center rounded-full border border-line bg-paper px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex" title="Keeper understands Indian languages">{agent.language && agent.language !== "en-IN" ? LANGUAGE_NAMES[agent.language] ?? "Your language" : "Any Indian language"}</span>}
+          {agent.engine === "sarvam" && <span className="hidden items-center rounded-full border border-line bg-paper px-2.5 py-0.5 text-[0.75rem] font-medium sm:inline-flex" title="Keeper understands Indian languages">{agent.language && agent.language !== "en-IN" ? LANGUAGE_NAMES[agent.language] ?? "Your language" : "23 speech languages"}</span>}
         </div>
         <div className="flex items-center gap-1">
+        <select aria-label="Conversation language" value={agent.languagePreference} onChange={e => agent.chooseLanguage(e.target.value)} className="min-h-10 max-w-36 rounded-full border border-line bg-paper px-2 text-sm">
+          <option value="">Auto language</option>
+          {Object.entries(LANGUAGE_NAMES).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
         {mode === "ai" && <button onClick={() => { setNatural((n) => !n); stopSpeaking(); }} aria-pressed={natural} title="Gemini's voice sounds more natural, but takes a few seconds to start" className={cn("hidden min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.78rem] font-medium sm:inline-flex", natural ? "border-ink bg-ink text-ivory" : "border-line bg-paper hover:bg-secondary")}><Volume2 className="h-3.5 w-3.5" aria-hidden />{natural ? "Natural voice" : "Fast voice"}</button>}
         <button onClick={() => setTranscript(true)} aria-label="Show the written conversation" className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary"><MessageSquare className="h-5 w-5" aria-hidden /></button>
         </div>
