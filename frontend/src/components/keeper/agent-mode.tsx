@@ -26,19 +26,19 @@ const CAPTION: Record<Phase, string> = {
   ended: "Session closed",
 };
 
-function Orb({ phase, onClick, supported }: { phase: Phase; onClick: () => void; supported: boolean }) {
+export function Orb({ phase, onClick, supported = true, small = false }: { phase: Phase; onClick?: () => void; supported?: boolean; small?: boolean }) {
   const live = phase === "listening" || phase === "speaking";
   return (
-    <button onClick={onClick} aria-label={phase === "listening" ? "Stop listening" : "Talk to Keeper"} className="keeper-orb relative flex h-36 w-36 items-center justify-center rounded-full outline-none focus-visible:ring-4 focus-visible:ring-moss/40 sm:h-44 sm:w-44">
+    <button type="button" onClick={onClick} disabled={!onClick} tabIndex={onClick ? 0 : -1} aria-label={phase === "listening" ? "Stop listening" : "Talk to Keeper"} className={cn("keeper-orb relative flex items-center justify-center rounded-full outline-none focus-visible:ring-4 focus-visible:ring-moss/40", small ? "h-20 w-20" : "h-36 w-36 sm:h-44 sm:w-44", !onClick && "cursor-default")}>
       {live && <><span aria-hidden className={cn("keeper-ring absolute inset-0 rounded-full", phase === "speaking" ? "bg-moss/25" : "bg-apricot/40")} /><span aria-hidden className={cn("keeper-ring absolute inset-0 rounded-full [animation-delay:.9s]", phase === "speaking" ? "bg-moss/20" : "bg-apricot/30")} /></>}
       <span className={cn("relative flex h-full w-full items-center justify-center rounded-full border-2 shadow-sm transition-colors", phase === "listening" ? "border-apricot bg-apricot text-ink" : phase === "speaking" ? "border-moss bg-moss text-white" : phase === "thinking" || phase === "acting" ? "border-ink bg-ink text-ivory" : phase === "confirming" ? "border-apricot bg-paper text-ink" : "border-line bg-paper text-ink")}>
-        {phase === "thinking" || phase === "acting" ? <Loader2 className="h-12 w-12 animate-spin" aria-hidden /> : phase === "speaking" ? <Volume2 className="h-12 w-12" aria-hidden /> : supported ? <Mic className="h-12 w-12" aria-hidden /> : <MicOff className="h-12 w-12" aria-hidden />}
+        {phase === "thinking" || phase === "acting" ? <Loader2 className="h-12 w-12 animate-spin" aria-hidden /> : phase === "speaking" ? <Volume2 className={small ? "h-8 w-8" : "h-12 w-12"} aria-hidden /> : supported ? <Mic className={small ? "h-8 w-8" : "h-12 w-12"} aria-hidden /> : <MicOff className={small ? "h-8 w-8" : "h-12 w-12"} aria-hidden />}
       </span>
     </button>
   );
 }
 
-function LoopRail({ phase }: { phase: Phase }) {
+export function LoopRail({ phase }: { phase: Phase }) {
   return (
     <ol aria-label="What Keeper is doing" className="flex w-full max-w-md items-center justify-between gap-1">
       {LOOP.map((s, i) => {

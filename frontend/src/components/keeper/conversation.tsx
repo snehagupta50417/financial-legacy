@@ -11,7 +11,7 @@ import { speak } from "@/keeper/voice";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Panel } from "./panel";
-import { AgentMode } from "./agent-mode";
+import { AgentMode, Orb } from "./agent-mode";
 import { Btn, ChatBubble } from "./ui";
 import { nextWork, plainCopy } from "@/keeper/presentation";
 
@@ -62,6 +62,13 @@ export default function Conversation() {
   const text = th ? state?.drafts?.[th.id] || "" : "";
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
+  // The details panel is there when asked for, not by default: the conversation leads.
+  const [asideOpen, setAsideOpen] = useState(() => { try { return localStorage.getItem("keeper.details") === "open"; } catch { return false; } });
+  const toggleDetails = () => {
+    dispatch({ t: "focus", focus: c?.focus ?? { type: "know" } });
+    if (window.matchMedia("(min-width: 1280px)").matches) setAsideOpen((o) => { try { localStorage.setItem("keeper.details", o ? "closed" : "open"); } catch { /* not remembered */ } return !o; });
+    else setSheet(true);
+  };
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastThread = useRef<string | null>(null);
@@ -112,25 +119,32 @@ export default function Conversation() {
   const submit = () => { const t = text.trim(); if (!t || backend.busy) return; followLatest.current = true; const result = dispatch({ t: "send", text: t }); if (result) void result.then(ok => { if (ok) updateText(""); }); else updateText(""); };
   const pick = (ch: Choice) => { followLatest.current = true; if (ch.id.startsWith("a:sampleDoc:") || ch.id.startsWith("a:linkStatement:")) { router.push("/app/documents"); return; } dispatch({ t: "choose", id: ch.id, label: ch.label }); };
   const lastMsg = msgs.at(-1);
+  const who = state?.session?.name?.trim();
+  const greeting = who && who !== "You" ? "Hi " + who.split(" ")[0] + ". What’s on your mind?" : "What’s on your mind?";
 
   return (
     <div className="flex h-full min-h-0">
       <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation with Keeper">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-8">
           <div className="min-w-0"><p className="truncate font-semibold">{th.title}</p><p className="truncate text-[0.85rem] text-muted-foreground">Whose information: <b className="text-ink">{c.name}</b></p></div>
-          <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem] xl:hidden" onClick={() => { dispatch({ t: "focus", focus: c.focus ?? { type: "know" } }); setSheet(true); }}><Info className="h-4 w-4" aria-hidden />Details</Btn></div>
+          <div className="flex items-center gap-2"><Btn variant="quiet" className="min-h-10 px-4 text-[0.88rem]" aria-pressed={asideOpen} onClick={toggleDetails}><Info className="h-4 w-4" aria-hidden />Details</Btn></div>
         </header>
 
         <div ref={scrollRef} onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; sessionStorage.setItem("keeper.scroll." + th.id, String(el.scrollTop)); }} className="scroll-soft flex-1 overflow-y-auto px-4 py-6 sm:px-8" role="log" aria-live="polite" aria-label="Messages">
           <div className="mx-auto flex max-w-[44rem] flex-col gap-3">
-            {msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} onOpen={open} />)}
+            {!fresh && msgs.map((m) => <Bubble key={m.id} m={m} current={m.id === lastMsg?.id} onOpen={open} />)}
             {backend.busy && <p role="status" className="px-4 text-sm text-muted-foreground">Reviewing records…</p>}
             {fresh ? (
-              <div className="settle mt-2 space-y-5">
-
-                <div><p className="mb-2 text-[0.85rem] font-medium text-muted-foreground">Or start with a situation</p>
-                  <div className="flex flex-col gap-2">{STARTERS.map((s) => <button key={s.journey} onClick={() => dispatch({ t: "send", text: s.text })} className="min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{s.label}</button>)}</div></div>
-
+              <div className="settle flex flex-col items-center gap-6 pt-4 text-center sm:pt-10">
+                <Orb phase="idle" onClick={() => setVoiceOpen(true)} />
+                <div>
+                  <h2 className="display text-[1.9rem] leading-tight sm:text-[2.3rem]">{greeting}</h2>
+                  <p className="mx-auto mt-2 max-w-md text-ink/75">Tap the mic and tell Keeper what’s going on, or type below. It takes things one step at a time and asks before it changes anything.</p>
+                </div>
+                <div className="w-full max-w-md">
+                  <p className="mb-2 text-[0.85rem] font-medium text-muted-foreground">Or start with a situation</p>
+                  <div className="flex flex-col gap-2">{STARTERS.map((s) => <button key={s.journey} onClick={() => dispatch({ t: "send", text: s.text })} className="min-h-12 rounded-2xl border border-moss/40 bg-paper px-4 py-2 text-left font-medium hover:bg-moss-soft">{s.label}</button>)}</div>
+                </div>
               </div>
             ) : work && lastMsg?.card === undefined && !lastMsg?.pending ? <div className="flex flex-wrap items-center gap-2 text-sm"><span className="mr-1 text-muted-foreground">{work.text}</span><Btn variant="quiet" onClick={() => open(work.card.type, work.card.id)}>Continue</Btn><button className="min-h-11 px-3 text-moss" onClick={() => dispatch({ t: "choose", id: "m:something", label: "Something else" })}>Something else</button></div> : lastMsg && lastMsg.role !== "user" ? <Chips choices={lastMsg.card ? lastMsg.choices?.filter(c => c.id !== "m:resume") : lastMsg.choices} pending={lastMsg.pending} onPick={pick} /> : null}
             <div ref={endRef} />
@@ -156,7 +170,7 @@ export default function Conversation() {
         </form>
       </section>
 
-      <aside className="scroll-soft hidden w-[26rem] shrink-0 overflow-y-auto border-l border-line bg-card/60 p-5 xl:block" aria-label="Details panel"><Panel c={c} onContinue={() => dispatch({ t: "choose", id: "m:resume", label: "Continue" })} /></aside>
+      <aside className={cn("scroll-soft hidden w-[26rem] shrink-0 overflow-y-auto border-l border-line bg-card/60 p-5", asideOpen && "xl:block")} aria-label="Details panel"><Panel c={c} onContinue={() => dispatch({ t: "choose", id: "m:resume", label: "Continue" })} /></aside>
       <Sheet open={sheet} onOpenChange={setSheet}>
         <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-3xl bg-ivory p-5">
           <SheetHeader className="p-0"><SheetTitle className="display text-[1.6rem]">Details</SheetTitle><SheetDescription className="sr-only">Saved case details</SheetDescription></SheetHeader>
