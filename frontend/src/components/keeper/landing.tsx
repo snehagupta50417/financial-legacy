@@ -7,7 +7,7 @@ import { Wordmark, FamilyScene, Pill, Btn, ChatBubble } from "./ui";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  ["How it works", "#how"], ["Find assets", "#find"], ["Prepare for family", "#prepare"], ["Claims", "#claims"], ["Security", "#control"],
+  ["How it works", "#how"], ["Find assets", "#find"], ["Prepare for family", "#prepare"], ["Claims", "#claims"], ["Security", "#control"], ["For institutions", "#institutions"],
 ] as const;
 
 function Header() {
@@ -288,6 +288,31 @@ function Control() {
   );
 }
 
+const INSTITUTION_POINTS: [string, string][] = [
+  ["Claims arrive organised", "Each claim comes with its documents laid out beside what the claimant declared, so a reviewer starts from the facts."],
+  ["Anything unusual comes with evidence", "A flag shows what was expected, what was seen and where. Signals are things to look at, not proof."],
+  ["Your team makes every decision", "Risk follows fixed, published rules rather than an AI model. Approve, ask for documents or escalate, with everything on the record."],
+];
+
+function Institutions() {
+  return (
+    <section id="institutions" className="scroll-mt-20 border-b border-line bg-paper">
+      <div className="mx-auto max-w-[1180px] px-5 py-20">
+        <p className="eyebrow">For banks &amp; insurers</p>
+        <h2 className="display mt-3 max-w-[22ch] text-[clamp(2rem,4vw,3.1rem)]">Pay the right heir, on time, every time.</h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {INSTITUTION_POINTS.map(([t, d]) => <div key={t} className="rounded-2xl border border-line bg-card p-5"><h3 className="font-semibold">{t}</h3><p className="mt-2 text-ink/80">{d}</p></div>)}
+        </div>
+        <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <p className="text-[1.05rem]"><span className="font-semibold">Pricing.</span> Per claim verified, or an annual plan.</p>
+          <Link href="/verify" className="inline-flex min-h-12 items-center rounded-full bg-ink px-7 font-semibold text-ivory hover:bg-[#3a403a]">Open the claims console demo.</Link>
+        </div>
+        <p className="mt-4 max-w-[48rem] text-[0.9rem] text-muted-foreground">The console is a demo with synthetic claims. Pricing is illustrative and no institution is connected.</p>
+      </div>
+    </section>
+  );
+}
+
 const FAQ: [string, string][] = [
   ["Can I use Keeper while I’m alive?", "Yes. You can discover forgotten accounts, or organise what you have so it’s easy to find later."],
   ["Is it for end-of-life preparation?", "Yes, without needing a medical reason. Keeper helps you record assets, documents, nominations, trusted contacts and practical instructions, without asking about health."],
@@ -352,9 +377,9 @@ export default function Landing() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-ivory">Skip to content</a>
       <Header />
       <main id="main">
-        <Hero /><Problem /><Introduction /><Stories /><How /><WhatYouGet /><Coverage /><Control /><Faq /><FinalCta />
+        <Hero /><Problem /><Introduction /><Stories /><How /><WhatYouGet /><Coverage /><Control /><Institutions /><Faq /><FinalCta />
       </main>
-      <footer className="border-t border-line bg-paper"><div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 py-8 text-[0.9rem] text-muted-foreground"><Wordmark /><span>© keeper · Not legal or financial advice.</span><Btn variant="quiet" className="min-h-10 px-4 text-[0.85rem]" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}>Back to top</Btn></div></footer>
+      <footer className="border-t border-line bg-paper"><div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 py-8 text-[0.9rem] text-muted-foreground"><Wordmark /><span>© keeper · Not legal or financial advice.</span><Link href="/verify" className="underline underline-offset-4">For institutions</Link><Btn variant="quiet" className="min-h-10 px-4 text-[0.85rem]" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}>Back to top</Btn></div></footer>
     </div>
   );
 }

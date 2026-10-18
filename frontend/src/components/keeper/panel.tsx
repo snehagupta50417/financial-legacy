@@ -358,6 +358,7 @@ export function ClaimDetail({ cl, c }: { cl: Claim; c: Case }) {
             <div><dt className="text-[0.82rem] text-muted-foreground">Last confirmed update</dt><dd className="font-medium">{formatDay(cl.lastConfirmed)}</dd></div>
             <div><dt className="text-[0.82rem] text-muted-foreground">Next follow-up</dt><dd className="font-medium">{cl.nextFollowUp ? formatDay(cl.nextFollowUp) : "Not set"}</dd></div>
           </dl>
+          <p className="mt-3 text-[0.9rem] text-muted-foreground">You submitted this yourself. If the institution uses Verify, your package can arrive there already checked. Keeper sends nothing and never submits a claim for your family.</p>
           <div className="mt-3 rounded-xl bg-secondary p-3 text-[0.9rem]"><b>For a real claim. handoff package</b><pre className="mt-1 whitespace-pre-wrap font-sans">{handoff}</pre><Btn variant="quiet" className="mt-2 min-h-9" onClick={() => navigator.clipboard?.writeText(handoff)}>Copy package summary</Btn></div>
           {!cl.acknowledged && !cl.outcome && (
             <form className="mt-3 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); const result = dispatch({ t: "claim.ack", id: cl.id, note: ack }); if (result) void result.then(ok => { if (ok) setAck(""); }); else setAck(""); }}>

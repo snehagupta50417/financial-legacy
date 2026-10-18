@@ -154,7 +154,7 @@ export async function runClaimChecks(consoleId: string, claimId: string, reviewe
   const rating = rate(results);
   const run = await db.verifyCheckRun.create({ data: { claimId, riskLevel: rating.level, riskRule: rating.rule, explanation: rating.explanation, results: JSON.stringify(results) } });
   const statuses = Object.fromEntries(results.map((r) => [r.check, r.status]));
-  await db.verifyEvent.create({ data: { consoleId, claimId, kind: "checks_run", actor: reviewer, note: `${RISK_LABEL[rating.level]}. ${rating.explanation}`, meta: JSON.stringify({ level: rating.level, statuses }) } });
+  await db.verifyEvent.create({ data: { consoleId, claimId, kind: "checks_run", actor: reviewer, note: rating.explanation, meta: JSON.stringify({ level: rating.level, statuses }) } });
   const unfinished = results.filter((r) => r.status === "incomplete");
   if (unfinished.length) {
     await db.verifyEvent.create({ data: { consoleId, claimId, kind: "checks_incomplete", actor: "system", note: `${INCOMPLETE_TEXT}: ${unfinished.map((r) => CHECK_LABEL[r.check]).join(", ")}.`, meta: JSON.stringify({ checks: unfinished.map((r) => r.check) }) } });

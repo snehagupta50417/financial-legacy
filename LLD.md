@@ -726,8 +726,8 @@ Unused variables (connector modes, console key, demo mode, log level) were remov
 | M1 | Gemini provider, fixture provider, fallbacks, rate limits | Done |
 | M2 | Schema, trust gates, masking, name matching, one case per deceased, audit events | Done |
 | M3 | Gate UI: proof screens; locked, masked and frozen states | Done |
-| M4 | Discovery: document pipeline (AI, OCR, rules) and realistic synthetic demo — **done**; guided search outcome logging — moved to B5 | Partly done |
-| M5 | Verify console — demo of the Later capability FL-56, labelled "Simulated" | Optional |
+| M4 | Discovery: document pipeline (AI, OCR, rules) and realistic synthetic demo — **done**; guided search outcome logging — built | Done locally |
+| M5 | Verify console — demo of the Later capability FL-56, labelled "Simulated" | Built as a local demo: [VERIFY_DEMO](docs/VERIFY_DEMO.md) |
 | M6 | Claim paths (§11.1) and packs for bank, mutual fund and LIC; approve + receipt | Done (B6, #16) |
 | M7 | Deploy to Cloud Run on the free tier ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)) — needs the project ID | Next |
 

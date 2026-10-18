@@ -478,7 +478,7 @@ A case can be closed only with a reviewed summary and the user's acknowledgement
 | FL-44 | MVP | Version and review institution procedures, source descriptions, AI models and tools. | Unsafe or out-of-date procedures can be suspended without losing in-flight cases; a material change triggers review. |
 | FL-47 | MVP | Put specific actions **on hold** for suspected fraud, competing claimants or disputed evidence. | Only the affected actions stop; other claimants' data stays protected; lifting a hold needs authorised, evidence-based review. |
 | FL-49 | MVP | Track help requests and complaints with an owner, status, escalation and resolution. | Ordinary support messages never contain financial documents. |
-| FL-56 | Later | A **Verify console** for banks and insurers to review death claims: cross-document consistency, authenticity signals, duplicate claims across claimants and completeness, with an explainable risk level and approve / request documents / escalate actions. | Risk levels are computed by code from recorded checks, never by the AI; authenticity findings are shown as signals, not proof; every decision is logged. Tied to the "software for institutions" revenue hypothesis (BRD §7). |
+| FL-56 | Later (demo built, see docs/VERIFY_DEMO.md) | A **Verify console** for banks and insurers to review death claims: cross-document consistency, authenticity signals, duplicate claims across claimants and completeness, with an explainable risk level and approve / request documents / escalate actions. | Risk levels are computed by code from recorded checks, never by the AI; authenticity findings are shown as signals, not proof; every decision is logged. Tied to the "software for institutions" revenue hypothesis (BRD §7). |
 
 ---
 
