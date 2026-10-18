@@ -880,3 +880,20 @@ Every conversational action is bound to the case and thread that initiated it. L
 Each case has a source-backed evidence map joining holdings, documents, extracted fields, corrections, dated observations, recorded official searches and claims. Links express their actual provenance, never a guessed ownership match. Highlight duplicate candidates, rejected critical fields and conflicting dated observations for human review. The map respects ownership/discovery gates and masks protected asset values.
 
 A persistent claim-review workflow checkpoints evidence collection, reconciliation and canonical claim-pack preparation. One workflow per claim prevents duplicate concurrent runs. Leases permit safe recovery after process interruption; bounded retries expose failure and an explicit retry. Resume after changed evidence rechecks the workflow rather than trusting stale results. The worker never approves, submits, records a financial outcome, or upgrades evidence on its own. Completion of a review is distinct from resolution of the claim. Free-tier Cloud Run may suspend idle background work; returning to the app can advance saved work through an authenticated endpoint.
+
+
+### Voice fallback clarity (FL-01, FL-02)
+
+If transcription fails, explain that the last utterance was not received and request repetition only when browser recognition is supported and the microphone is enabled. Do not restart listening after a call ends or its context changes. Audio playback failure must speak the failed sentence as well as remaining text through the browser fallback.
+
+
+Voice transcription recovery (FL-01, FL-02): after primary STT failure, retry the same in-memory audio with the existing Gemini API key under the same AI consent. Bound each provider timeout, never persist audio or log provider secrets, and use browser recognition only if both server providers fail.
+
+
+Synthetic example conversation (FL-01, FL-02): example sessions may use consented Gemini conversation without sign-in. Example AI receives only supplied conversational history, does not access canonical cases, and returns no executable actions. Clearly label example guidance; retain existing consent, rate limits, masking and failure recovery.
+
+
+Spoken reply availability (FL-01, FL-02): calls must select server speech when no browser voice is available, including auto language mode. If playback fails, retain the text and show a visible audio-unavailable notice rather than silently implying speech succeeded.
+
+
+Microphone reliability: the browser loudness meter must not discard a captured recording solely because it failed to detect speech. Send bounded, nonempty recordings for transcription, including manual stop; show pending microphone permission and transcription separately. Permission requests must time out visibly and release any stream that arrives after cancellation.

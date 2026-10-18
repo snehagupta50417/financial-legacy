@@ -79,13 +79,21 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
     token.current++;
     const mine = token.current;
     cleanup();
-    setError(null); setText(""); setInterim(""); setLanguage(null);
+    setError(null); setText(""); setInterim("Waiting for microphone permission…"); setLanguage(null);
     stopSpeaking(); // interruption: Keeper stops talking when you start
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      let expired = false;
+      let permissionTimer: ReturnType<typeof setTimeout> | undefined;
+      const pending = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      void pending.then(s => { if (expired || mine !== token.current) s.getTracks().forEach(t => t.stop()); }, () => {});
+      try {
+        stream = await Promise.race([pending, new Promise<never>((_, reject) => {
+          permissionTimer = setTimeout(() => { expired = true; reject(new Error("Microphone permission timed out")); }, 15_000);
+        })]);
+      } finally { clearTimeout(permissionTimer); }
     } catch (e) {
-      if (mine === token.current) setError(e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "SecurityError") ? "denied" : "other");
+      if (mine === token.current) { setInterim(""); setError(e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "SecurityError") ? "denied" : "other"); }
       return;
     }
     if (mine !== token.current) { stream.getTracks().forEach((t) => t.stop()); return; }
@@ -115,12 +123,13 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
     release.current = () => { clearInterval(timer); stream.getTracks().forEach((t) => t.stop()); void ctx.close().catch(() => {}); if (mr.state === "recording") { mr.ondataavailable = null; mr.onstop = null; mr.stop(); } };
 
     mr.onstop = async () => {
-      const spoke = endpointer.spoke;
       cleanup();
       if (mine !== token.current) return;
       setListening(false); setLevel(0);
-      if (!spoke) { setError("no-speech"); return; }
-      setInterim("…");
+      // A suspended analyser or quiet microphone can report zero while MediaRecorder captures speech.
+      // Let STT decide whether the captured audio contains words; the meter is only an endpoint hint.
+      if (!chunks.some(chunk => chunk.size > 0)) { setInterim(""); setError("no-speech"); return; }
+      setInterim("Transcribing your recording…");
       try {
         const form = new FormData();
         if (hint) form.set("language", hint);
@@ -140,7 +149,7 @@ export function useSarvamSpeech(opts: { onFail?: (reason: "unavailable" | "quota
     };
     recorder.current = mr;
     mr.start(250);
-    setListening(true);
+    setInterim(""); setListening(true);
   }, [cleanup]);
 
   /** Finish now: whatever was said so far is sent. */

@@ -41,7 +41,7 @@ function opening() {
   const last = th?.messages.filter((m) => m.role !== "user").at(-1);
   return {
     mode: "basic" as "ai" | "basic",
-    reason: (s?.session?.mode === "signin" ? null : "example") as "not_configured" | "consent" | "example" | null,
+    reason: null as "not_configured" | "consent" | "example" | null,
     hello: last && last.pending ? withoutSources(last.text).slice(0, 280) : GREETING,
     choices: last?.pending ? (last.choices ?? []).filter((x) => x.id !== "m:sample") : [],
   };
@@ -109,9 +109,17 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const langRef = useRef<string | null>(null);
   const web = useSpeech();
   const sarvam = useSarvamSpeech({ onFail: (reason) => {
+    if (!current() || phaseRef.current === "ended") return;
     setEngine("browser");
-    setNotice(reason === "quota" ? "Speech in your language is busy, so Keeper is using your browser's speech recognition for now." : "Speech in your language isn't available right now, so Keeper is using your browser's speech recognition.");
-    web.start(langRef.current ?? undefined);
+    const missed = reason === "quota" ? "The voice service is busy. I didn't receive that sentence." : "I couldn't transcribe that sentence.";
+    if (!web.supported || !micRef.current) {
+      setNotice(missed + (web.supported ? " Turn the microphone on to try again, or type your message." : " Open Keeper in Chrome or Edge to talk, or type your message here."));
+      phaseRef.current = "idle"; setPhaseState("idle");
+      return;
+    }
+    setNotice(missed + " Please say it again. I'm switching to your browser's microphone service; spoken replies are still on when the speaker is enabled.");
+    web.clear();
+    web.start(preferenceRef.current || langRef.current || undefined);
     phaseRef.current = "listening"; setPhaseState("listening");
   } });
   const sp = engine === "sarvam" && sarvam.supported ? sarvam : web;
@@ -150,7 +158,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     const next = () => { if (live()) { if (after === "listen") listenAgain(); else if (phaseRef.current === "speaking") setPhase("idle"); } };
     if (phaseRef.current !== "confirming") setPhase("speaking");
     if (!speakRef.current) { setTimeout(next, 0); return; }
-    speakKeeper(withoutSources(text).slice(0, 700), next, { gemini: aiVoice.current && (naturalRef.current || (!!langRef.current && !window.speechSynthesis?.getVoices().some(v => v.lang.split("-")[0] === langRef.current?.split("-")[0]))), lang: langRef.current ?? undefined });
+    speakKeeper(withoutSources(text).slice(0, 700), next, { gemini: aiVoice.current && (naturalRef.current || !window.speechSynthesis?.getVoices().length || (!!langRef.current && !window.speechSynthesis?.getVoices().some(v => v.lang.split("-")[0] === langRef.current?.split("-")[0]))), lang: langRef.current ?? undefined, onUnavailable: () => { if (current()) setNotice("Keeper replied, but audio could not play in this browser. Your reply is shown here. Check site sound permissions or open Keeper in Chrome or Edge."); } });
   }, [listenAgain, setPhase]);
 
   const run = async (a: AgentAction, caseId: string): Promise<{ ok: boolean; answer?: AskReply }> => {
@@ -276,7 +284,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
         }
         setPending(null); queued.actions.forEach((a) => addStep("act", a.label, "skipped"));
       }
-      if (aiBlocked.current && s?.session?.mode === "signin") {
+      if (aiBlocked.current) {
         try {
           const availability = await api.get<{ available: boolean }>("/api/ai/agent");
           if (availability.available) { aiBlocked.current = false; aiVoice.current = true; setConsentNeeded(false); setAiReason(null); }
@@ -284,9 +292,18 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
       }
       const closing = DONE.test(text);
       setPhase("thinking");
-      if (!aiBlocked.current && s?.session?.mode === "signin" && caseId) {
+      if (!aiBlocked.current && (s?.session?.mode === "sample" || caseId)) {
         const stepRef = addStep("info", "Understanding with Gemini", "running");
         try {
+          if (s?.session?.mode === "sample") {
+            const turn = await api.post<Turn>("/api/ai/demo", { utterance: text, history: history.current.map(m => ({ ...m, text: m.text.slice(0, 800) })), ...(langRef.current ? { language: langRef.current } : {}) }, { signal: requestController.current?.signal });
+            if (!current() || phaseRef.current === "ended") return;
+            markStep(stepRef, "done", "Example conversation with Gemini"); setMode("ai");
+            if (!(await saveTurn({ t: "agent.turn", user: text, reply: turn.say, voice }))) { if (current()) setPhase("idle"); return; }
+            history.current = [...history.current, { role: "user" as const, text }, { role: "keeper" as const, text: turn.say }].slice(-10);
+            say(turn.say); return;
+          }
+          if (!caseId) throw new Error("No active case");
           const turn = await api.post<Turn>("/api/ai/agent", { caseId, threadId: origin.current?.threadId, utterance: text, history: history.current.map(m => ({ ...m, text: m.text.slice(0, 800) })), ...(langRef.current ? { language: langRef.current } : {}) }, { signal: requestController.current?.signal });
           if (!current() || phaseRef.current === "ended") return;
           markStep(stepRef, "done", "Understood"); setMode("ai");
@@ -342,7 +359,7 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
     if (phaseRef.current === "ended") phaseRef.current = "idle";
     const greet = passive ? undefined : setTimeout(() => { if (startWith) void handle(startWith, false); else say(start.hello); }, delayMs);
     // Say honestly, before the first turn, whether the AI planner is on.
-    if (peekState()?.session?.mode === "signin") {
+    if (peekState()?.session) {
       api.get<{ available: boolean; reason?: string; stt?: "sarvam" | "browser" }>("/api/ai/agent").then((r) => {
         if (r.stt === "sarvam") { sarvamAvailable.current = true; setEngine("sarvam"); }
         aiBlocked.current = !r.available;
@@ -404,6 +421,6 @@ export function useAgent(speakAloud: boolean, opts: { micOn?: boolean; delayMs?:
   const resume = () => { setSummary(null); setPhase("idle"); listenAgain(); };
 
   // A listening turn that heard nothing (the browser ended it) reads as idle, not as a stuck mic.
-  const shown: Phase = phase === "listening" && !sp.listening && !sp.text.trim() ? "idle" : phase;
+  const shown: Phase = phase === "listening" && !sp.listening && !sp.text.trim() && !sp.interim ? "idle" : phase;
   return { unsaved, retrySave: () => unsavedRef.current ? saveTurn(unsavedRef.current) : Promise.resolve(true), languagePreference, chooseLanguage, aiReason, micLevel: engine === "sarvam" && sarvam.supported ? sarvam.level : null, sp, engine: engine === "sarvam" && sarvam.supported ? "sarvam" as const : "browser" as const, language, phase: shown, consentNeeded, allowAi, handoffOffer, setHandoffOffer, handoffSent, requestHuman, pauseMic, steps, reply, choices, pending, summary, mode, notice, handle, onChoice, tapMic, finish: () => finish(), resume, answerPending: (yes: boolean) => handle(yes ? "yes" : "no", false) };
 }

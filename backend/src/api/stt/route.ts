@@ -1,3 +1,4 @@
+import { geminiSpeechConfigured, transcribeWithGemini } from "@server/speech/gemini";
 import { requireSession, unauthorized } from "@server/core/session";
 import { hasAiConsent } from "@server/core/ai-consent";
 import { takeToken } from "@server/core/rate-limit";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   if (!session) return unauthorized();
   if (!takeToken(`stt:${session.id}`, 60)) return Response.json({ error: "Speech in your language is busy right now.", code: "stt_quota" }, { status: 429 });
   if (!(await hasAiConsent(session.id))) return Response.json({ error: "Turn on AI help to use speech in your language.", code: "ai_consent_required" }, { status: 403 });
-  if (!sarvamConfigured()) return Response.json({ error: "Speech in your language is not set up here.", code: "stt_unavailable" }, { status: 503 });
+  if (!sarvamConfigured() && !geminiSpeechConfigured()) return Response.json({ error: "Speech in your language is not set up here.", code: "stt_unavailable" }, { status: 503 });
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("audio");
@@ -26,16 +27,21 @@ export async function POST(req: Request) {
   if (!/^(audio|video)\//.test(mime)) return Response.json({ error: "That is not an audio recording." }, { status: 415 });
   const hint = form?.get("language");
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
-  try {
-    const out = await transcribe(new Uint8Array(await file.arrayBuffer()), mime, controller.signal, typeof hint === "string" && /^[a-z]{2,3}-[A-Z]{2}$/.test(hint) ? hint : undefined);
-    return Response.json(out);
-  } catch (e) {
-    const reason = e instanceof SarvamError ? e.reason : "failed";
-    if (reason === "quota") return Response.json({ error: "Speech in your language is busy right now.", code: "stt_quota" }, { status: 429 });
-    return Response.json({ error: "Speech in your language is not available right now.", code: "stt_unavailable" }, { status: 503 });
-  } finally {
-    clearTimeout(timer);
+  const audio = new Uint8Array(await file.arrayBuffer());
+  const language = typeof hint === "string" && /^[a-z]{2,3}-[A-Z]{2}$/.test(hint) ? hint : undefined;
+  let primaryFailure: unknown;
+  const run = async (provider: typeof transcribe) => {
+    const signal = AbortSignal.any([req.signal, AbortSignal.timeout(12_000)]);
+    return provider(audio, mime, signal, language);
+  };
+  if (sarvamConfigured()) {
+    try { return Response.json(await run(transcribe)); }
+    catch (e) { primaryFailure = e; }
   }
+  if (!req.signal.aborted && geminiSpeechConfigured()) {
+    try { return Response.json(await run(transcribeWithGemini)); }
+    catch { /* No audio, transcript, credentials or raw provider errors in logs/responses. */ }
+  }
+  const quota = primaryFailure instanceof SarvamError && primaryFailure.reason === "quota";
+  return Response.json({ error: "Voice transcription could not be completed. Please try again or type.", code: quota ? "stt_quota" : "stt_unavailable" }, { status: quota ? 429 : 503 });
 }
